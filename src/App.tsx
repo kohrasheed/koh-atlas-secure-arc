@@ -69,28 +69,6 @@ function App() {
     }
   }, [connections, removeConnection]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Delete selected component or connection
-      if (event.key === 'Delete' || event.key === 'Backspace') {
-        if (selectedComponent) {
-          handleComponentDelete(selectedComponent);
-        } else if (selectedConnection) {
-          handleConnectionDelete(selectedConnection);
-        }
-      }
-      
-      // Analyze with Ctrl/Cmd + Enter
-      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        handleAnalyze();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedComponent, selectedConnection, handleComponentDelete, handleConnectionDelete, handleAnalyze]);
-
   const handleAnalyze = useCallback(async () => {
     if (components.length === 0) {
       toast.warning('Add some components to analyze');
@@ -117,6 +95,27 @@ function App() {
     }
   }, [components, connections, analyzer]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Delete selected component or connection
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (selectedComponent) {
+          handleComponentDelete(selectedComponent);
+        } else if (selectedConnection) {
+          handleConnectionDelete(selectedConnection);
+        }
+      }
+      
+      // Analyze with Ctrl/Cmd + Enter
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        handleAnalyze();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedComponent, selectedConnection, handleComponentDelete, handleConnectionDelete, handleAnalyze]);
   const handleApplyFix = useCallback((findingId: string) => {
     const finding = findings.find(f => f.id === findingId);
     if (!finding) return;
