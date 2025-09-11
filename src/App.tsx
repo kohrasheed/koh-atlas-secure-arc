@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { toast } from 'sonner';
 import { ComponentPalette } from './components/palette/ComponentPalette';

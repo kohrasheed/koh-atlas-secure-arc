@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ArchComponent, Connection } from '../types';
 import { COMPONENT_CATALOG } from '../data/catalog';
 

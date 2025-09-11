@@ -1,5 +1,5 @@
 import { useKV } from '@github/spark/hooks';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 export type Theme = 'light' | 'dark' | 'system';
 

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ReactFlow,
   Node,
@@ -13,7 +13,6 @@ import {
   Panel,
   useReactFlow,
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 import { ArchComponent, Connection as ArchConnection } from '../../types';
 import { ArchComponentNode } from './ArchComponentNode';
 import { Button } from '../ui/button';
@@ -83,11 +82,11 @@ export function DiagramCanvas({
   }, [connections, setEdges]);
 
   // Update nodes and edges when components/connections change
-  React.useEffect(() => {
+  useEffect(() => {
     convertComponentsToNodes();
   }, [convertComponentsToNodes]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     convertConnectionsToEdges();
   }, [convertConnectionsToEdges]);
 
