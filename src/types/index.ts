@@ -17,6 +17,9 @@ export interface ArchComponent {
   };
 }
 
+// Alias for backward compatibility
+export type Component = ArchComponent;
+
 export interface Connection {
   id: string;
   from: string;

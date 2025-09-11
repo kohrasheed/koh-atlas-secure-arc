@@ -6,7 +6,7 @@ import {
   addEdge,
   useNodesState,
   useEdgesState,
-  Connection,
+  Connection as ReactFlowConnection,
   Controls,
   Background,
   ConnectionMode,
@@ -114,7 +114,7 @@ export function DiagramCanvas({
   }, [convertConnectionsToEdges]);
 
   const onConnect = useCallback(
-    (connection: Connection) => {
+    (connection: ReactFlowConnection) => {
       if (connection.source && connection.target) {
         onConnectionCreate(connection.source, connection.target);
       }
