@@ -1,4 +1,3 @@
-import React from 'react';
 import * as PhosphorIcons from '@phosphor-icons/react';
 
 interface IconProps {

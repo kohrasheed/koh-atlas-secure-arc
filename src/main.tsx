@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import { StrictMode } from 'react'
 import { ErrorBoundary } from "react-error-boundary";
 import { Toaster } from "sonner";
 import "@github/spark/spark"
@@ -11,8 +12,10 @@ import "./styles/theme.css"
 import "./index.css"
 
 createRoot(document.getElementById('root')!).render(
-  <ErrorBoundary FallbackComponent={ErrorFallback}>
-    <App />
-    <Toaster position="top-right" />
-   </ErrorBoundary>
+  <StrictMode>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <App />
+      <Toaster position="top-right" />
+    </ErrorBoundary>
+  </StrictMode>
 )
