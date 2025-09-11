@@ -1,0 +1,42 @@
+==================================================
+  KOH ATLAS - SECURE ARCHITECTURE DESIGNER
+  COMPLETE PROJECT BACKUP - INITIAL VERSION
+==================================================
+
+Backup Created: $(date)
+Total Files Backed Up: 75+ files
+Project Status: Feature Complete v1.0
+
+CONTENTS:
+├── Root configuration files (9 files)
+├── Complete source code (66+ files)
+├── Documentation (README.md)
+├── Backup manifest and summary
+
+KEY FEATURES PRESERVED:
+✓ Visual architecture design canvas
+✓ 50+ component library (app, infra, security)
+✓ Interactive connection system with annotations
+✓ AI-powered security analysis (25+ rules)
+✓ Dark/light theme support
+✓ Preset templates (secure & vulnerable designs)
+✓ Export functionality (JSON reports)
+✓ Keyboard shortcuts and intuitive UX
+
+TECHNICAL STACK:
+- React 18 + TypeScript
+- React Flow (diagram editing)
+- shadcn/ui + Tailwind CSS
+- Phosphor Icons
+- Vite build system
+
+TO RESTORE:
+1. Copy contents to new directory
+2. Run: npm install
+3. Run: npm run dev
+4. Open browser to localhost:5173
+
+This backup represents the complete, working
+Koh Atlas application as delivered.
+
+==================================================
