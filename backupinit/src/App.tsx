@@ -256,6 +256,16 @@ function App() {
           isAnalyzing={isAnalyzing}
           onApplyFix={handleApplyFix}
           onExportReport={handleExportReport}
+          components={components}
+          connections={connections}
+          onHighlightPath={(componentIds, connectionIds) => {
+            // TODO: Implement path highlighting in diagram
+            console.log('Highlight path:', { componentIds, connectionIds });
+          }}
+          onClearHighlight={() => {
+            // TODO: Implement clear highlighting in diagram
+            console.log('Clear highlight');
+          }}
         />
       </div>
 
