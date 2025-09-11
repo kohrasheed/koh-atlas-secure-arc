@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArchComponent, Connection } from '../types';
+import { ArchComponent, Connection, Project } from '../types';
 import { COMPONENT_CATALOG } from '../data/catalog';
 
 export function useArchitectureDesigner() {
@@ -73,6 +73,20 @@ export function useArchitectureDesigner() {
     }
   };
 
+  const loadPreset = (preset: Project) => {
+    setComponents(preset.components);
+    setConnections(preset.connections);
+    setSelectedComponent(null);
+    setSelectedConnection(null);
+  };
+
+  const clearAll = () => {
+    setComponents([]);
+    setConnections([]);
+    setSelectedComponent(null);
+    setSelectedConnection(null);
+  };
+
   return {
     components,
     connections,
@@ -88,5 +102,7 @@ export function useArchitectureDesigner() {
     removeConnection,
     setComponents,
     setConnections,
+    loadPreset,
+    clearAll,
   };
 }

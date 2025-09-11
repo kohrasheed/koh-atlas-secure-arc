@@ -1,13 +1,15 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { ComponentPalette } from './components/palette/ComponentPalette';
 import { DiagramCanvas } from './components/canvas/DiagramCanvas';
 import { SecurityAnalysis } from './components/analysis/SecurityAnalysis';
 import { ThemeToggle } from './components/ThemeToggle';
+import { PresetSelector } from './components/PresetSelector';
 import { useArchitectureDesigner } from './hooks/use-architecture-designer';
 import { SecurityAnalyzer } from './lib/security-analyzer';
-import { SecurityFinding } from './types';
+import { SecurityFinding, Project } from './types';
 import { Icon } from './components/Icon';
 
 function App() {
@@ -26,13 +28,28 @@ function App() {
     removeConnection,
     setComponents,
     setConnections,
+    loadPreset,
+    clearAll,
   } = useArchitectureDesigner();
 
   const [findings, setFindings] = useState<SecurityFinding[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedComponentTemplate, setSelectedComponentTemplate] = useState<string | null>(null);
+  const [showPresetSelector, setShowPresetSelector] = useState(true);
 
   const analyzer = new SecurityAnalyzer();
+
+  const handleSelectPreset = useCallback((preset: Project) => {
+    loadPreset(preset);
+    setShowPresetSelector(false);
+    toast.success(`Loaded ${preset.name}`);
+  }, [loadPreset]);
+
+  const handleStartBlank = useCallback(() => {
+    clearAll();
+    setShowPresetSelector(false);
+    toast.info('Starting with blank canvas');
+  }, [clearAll]);
 
   const handleComponentSelect = useCallback((componentId: string) => {
     setSelectedComponentTemplate(componentId);
@@ -163,6 +180,17 @@ function App() {
     toast.success('Report exported successfully');
   }, [components, connections, findings]);
 
+  const handleBackToPresets = useCallback(() => {
+    setShowPresetSelector(true);
+    clearAll();
+    setFindings([]);
+  }, [clearAll]);
+
+  // Show preset selector if requested
+  if (showPresetSelector) {
+    return <PresetSelector onSelectPreset={handleSelectPreset} onStartBlank={handleStartBlank} />;
+  }
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
@@ -177,6 +205,15 @@ function App() {
           </div>
           
           <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleBackToPresets}
+              className="text-sm"
+            >
+              <Icon name="CaretLeft" size={16} className="mr-1" />
+              Presets
+            </Button>
             <ThemeToggle />
             <span className="text-sm text-muted-foreground">
               {components.length} components, {connections.length} connections
