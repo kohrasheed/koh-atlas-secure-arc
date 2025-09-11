@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { ComponentPalette } from './components/palette/ComponentPalette';
 import { DiagramCanvas } from './components/canvas/DiagramCanvas';
 import { SecurityAnalysis } from './components/analysis/SecurityAnalysis';
+import { ThemeToggle } from './components/ThemeToggle';
 import { useArchitectureDesigner } from './hooks/use-architecture-designer';
 import { SecurityAnalyzer } from './lib/security-analyzer';
 import { SecurityFinding } from './types';
@@ -139,6 +140,7 @@ function App() {
           </div>
           
           <div className="flex items-center space-x-2">
+            <ThemeToggle />
             <span className="text-sm text-muted-foreground">
               {components.length} components, {connections.length} connections
             </span>
