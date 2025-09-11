@@ -15,6 +15,7 @@ import {
 } from '@xyflow/react';
 import { ArchComponent, Connection as ArchConnection } from '../../types';
 import { ArchComponentNode } from './ArchComponentNode';
+import { ConnectionEditor } from './ConnectionEditor';
 import { Button } from '../ui/button';
 import { Icon } from '../Icon';
 
@@ -26,10 +27,14 @@ interface DiagramCanvasProps {
   components: ArchComponent[];
   connections: ArchConnection[];
   selectedComponent: string | null;
+  selectedConnection: string | null;
   onComponentSelect: (id: string | null) => void;
   onComponentUpdate: (id: string, updates: Partial<ArchComponent>) => void;
+  onComponentDelete: (id: string) => void;
   onConnectionCreate: (from: string, to: string) => void;
   onConnectionSelect: (id: string | null) => void;
+  onConnectionUpdate: (id: string, updates: Partial<ArchConnection>) => void;
+  onConnectionDelete: (id: string) => void;
   onAnalyze: () => void;
   isAnalyzing?: boolean;
 }
@@ -38,15 +43,20 @@ export function DiagramCanvas({
   components,
   connections,
   selectedComponent,
+  selectedConnection,
   onComponentSelect,
   onComponentUpdate,
+  onComponentDelete,
   onConnectionCreate,
   onConnectionSelect,
+  onConnectionUpdate,
+  onConnectionDelete,
   onAnalyze,
   isAnalyzing = false,
 }: DiagramCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [showConnectionEditor, setShowConnectionEditor] = useState(false);
   const { getViewport, setViewport } = useReactFlow();
 
   // Convert components to nodes
@@ -60,10 +70,11 @@ export function DiagramCanvas({
         isSelected: selectedComponent === component.id,
         onSelect: onComponentSelect,
         onUpdate: onComponentUpdate,
+        onDelete: onComponentDelete,
       },
     }));
     setNodes(newNodes);
-  }, [components, selectedComponent, onComponentSelect, onComponentUpdate, setNodes]);
+  }, [components, selectedComponent, onComponentSelect, onComponentUpdate, onComponentDelete, setNodes]);
 
   // Convert connections to edges
   const convertConnectionsToEdges = useCallback(() => {
@@ -73,13 +84,25 @@ export function DiagramCanvas({
       target: connection.to,
       label: `${connection.protocol}:${connection.ports.join(',')}`,
       style: {
-        stroke: connection.encryption.includes('TLS') ? '#10b981' : '#ef4444',
-        strokeWidth: 2,
+        stroke: selectedConnection === connection.id 
+          ? '#3b82f6' 
+          : connection.encryption.includes('TLS') ? '#10b981' : '#ef4444',
+        strokeWidth: selectedConnection === connection.id ? 3 : 2,
+        strokeDasharray: selectedConnection === connection.id ? '5,5' : undefined,
       },
-      data: { connection },
+      labelStyle: {
+        fill: selectedConnection === connection.id ? '#3b82f6' : '#64748b',
+        fontWeight: selectedConnection === connection.id ? 'bold' : 'normal',
+      },
+      data: { 
+        connection,
+        isSelected: selectedConnection === connection.id,
+        onUpdate: onConnectionUpdate,
+        onDelete: onConnectionDelete,
+      },
     }));
     setEdges(newEdges);
-  }, [connections, setEdges]);
+  }, [connections, selectedConnection, onConnectionUpdate, onConnectionDelete, setEdges]);
 
   // Update nodes and edges when components/connections change
   useEffect(() => {
@@ -103,6 +126,7 @@ export function DiagramCanvas({
     (event: React.MouseEvent, edge: Edge) => {
       event.stopPropagation();
       onConnectionSelect(edge.id);
+      setShowConnectionEditor(true);
     },
     [onConnectionSelect]
   );
@@ -110,11 +134,19 @@ export function DiagramCanvas({
   const onPaneClick = useCallback(() => {
     onComponentSelect(null);
     onConnectionSelect(null);
+    setShowConnectionEditor(false);
   }, [onComponentSelect, onConnectionSelect]);
 
   const fitView = useCallback(() => {
     setViewport({ x: 0, y: 0, zoom: 1 });
   }, [setViewport]);
+
+  const handleConnectionEditorClose = () => {
+    setShowConnectionEditor(false);
+    onConnectionSelect(null);
+  };
+
+  const selectedConnectionData = connections.find(c => c.id === selectedConnection);
 
   return (
     <div className="flex-1 h-full relative">
@@ -131,9 +163,29 @@ export function DiagramCanvas({
         fitView
         className="bg-background"
       >
-        <Background color="#e2e8f0" size={1} />
+        <Background color="#e2e8f0" size={1} className="dark:!bg-muted" />
         <Controls />
         
+        {/* Help overlay when empty */}
+        {components.length === 0 && (
+          <Panel position="center" className="pointer-events-none">
+            <div className="bg-card/80 backdrop-blur-sm border border-border rounded-lg p-6 max-w-md text-center">
+              <Icon name="Info" size={32} className="mx-auto mb-3 text-muted-foreground" />
+              <h3 className="font-semibold mb-2">Get Started</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Select components from the left panel and click here to place them. 
+                Connect components by dragging from their connection points.
+              </p>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>• Right-click components to edit or delete</div>
+                <div>• Click edges to edit connection details</div>
+                <div>• Use Delete key to remove selected items</div>
+                <div>• Press Ctrl+Enter to analyze security</div>
+              </div>
+            </div>
+          </Panel>
+        )}
+
         <Panel position="top-right" className="space-y-2">
           <Button onClick={fitView} variant="outline" size="sm">
             <Icon name="CornersOut" size={16} className="mr-2" />
@@ -152,6 +204,18 @@ export function DiagramCanvas({
             {isAnalyzing ? 'Analyzing...' : 'Analyze Security'}
           </Button>
         </Panel>
+
+        {/* Connection Editor Panel */}
+        {showConnectionEditor && selectedConnectionData && (
+          <Panel position="top-left" className="mt-4">
+            <ConnectionEditor
+              connection={selectedConnectionData}
+              onUpdate={onConnectionUpdate}
+              onDelete={onConnectionDelete}
+              onClose={handleConnectionEditorClose}
+            />
+          </Panel>
+        )}
       </ReactFlow>
     </div>
   );

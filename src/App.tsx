@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { toast } from 'sonner';
 import { ComponentPalette } from './components/palette/ComponentPalette';
@@ -52,6 +52,44 @@ function App() {
       toast.success('Component added to diagram');
     }
   }, [selectedComponentTemplate, addComponent]);
+
+  const handleComponentDelete = useCallback((componentId: string) => {
+    const component = components.find(c => c.id === componentId);
+    if (component) {
+      removeComponent(componentId);
+      toast.success(`${component.name} deleted`);
+    }
+  }, [components, removeComponent]);
+
+  const handleConnectionDelete = useCallback((connectionId: string) => {
+    const connection = connections.find(c => c.id === connectionId);
+    if (connection) {
+      removeConnection(connectionId);
+      toast.success('Connection deleted');
+    }
+  }, [connections, removeConnection]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Delete selected component or connection
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (selectedComponent) {
+          handleComponentDelete(selectedComponent);
+        } else if (selectedConnection) {
+          handleConnectionDelete(selectedConnection);
+        }
+      }
+      
+      // Analyze with Ctrl/Cmd + Enter
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        handleAnalyze();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedComponent, selectedConnection, handleComponentDelete, handleConnectionDelete, handleAnalyze]);
 
   const handleAnalyze = useCallback(async () => {
     if (components.length === 0) {
@@ -163,10 +201,14 @@ function App() {
               components={components}
               connections={connections}
               selectedComponent={selectedComponent}
+              selectedConnection={selectedConnection}
               onComponentSelect={setSelectedComponent}
               onComponentUpdate={updateComponent}
+              onComponentDelete={handleComponentDelete}
               onConnectionCreate={addConnection}
               onConnectionSelect={setSelectedConnection}
+              onConnectionUpdate={updateConnection}
+              onConnectionDelete={handleConnectionDelete}
               onAnalyze={handleAnalyze}
               isAnalyzing={isAnalyzing}
             />
@@ -184,7 +226,12 @@ function App() {
       {/* Status Bar */}
       <footer className="h-8 border-t border-border bg-muted px-4 flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          {selectedComponentTemplate ? 'Click on canvas to place component' : 'Ready'}
+          {selectedComponentTemplate 
+            ? 'Click on canvas to place component' 
+            : selectedComponent || selectedConnection
+            ? 'Press Delete to remove • Ctrl+Enter to analyze'
+            : 'Select components to edit • Ctrl+Enter to analyze'
+          }
         </span>
         <span>Koh Atlas v1.0</span>
       </footer>
