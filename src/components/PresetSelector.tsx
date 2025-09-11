@@ -2,9 +2,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Icon } from '../Icon';
-import { Project } from '../../types';
-import { PRESET_DESIGNS } from '../../data/presets';
+import { Icon } from './Icon';
+import { Project } from '../types';
+import { PRESET_DESIGNS } from '../data/presets';
 
 interface PresetSelectorProps {
   onSelectPreset: (preset: Project) => void;
