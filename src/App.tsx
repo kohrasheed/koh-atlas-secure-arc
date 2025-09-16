@@ -59,7 +59,7 @@ import {
 interface ComponentConfig {
   type: string;
   label: string;
-  icon: React.ReactNode;
+  icon: React.ReactElement;
   category: 'application' | 'security' | 'network' | 'data' | 'container';
   color: string;
   isContainer?: boolean;
@@ -137,8 +137,9 @@ const protocolConfigs = {
 };
 
 // Custom node component with connection handles
-const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
+const CustomNode = ({ data, selected }: NodeProps) => {
   const config = componentTypes.find(c => c.type === data.type);
+  const isHighlighted = data.isHighlighted;
   
   if (config?.isContainer) {
     // Container node (VPC, Subnet, Network Segmentation)
@@ -147,31 +148,32 @@ const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
         className={`
           relative min-w-[200px] min-h-[150px] rounded-lg border-2 border-dashed 
           ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
+          ${isHighlighted ? 'ring-4 ring-yellow-400/60 border-yellow-400' : ''}
           transition-all duration-200 hover:border-primary/50
           bg-card/10 backdrop-blur-sm
         `}
         style={{ 
-          borderColor: config?.color || '#666',
+          borderColor: isHighlighted ? '#facc15' : (config?.color || '#666'),
           backgroundColor: `${config?.color}10` || '#66610'
         }}
       >
         {/* Container header */}
         <div 
-          className="absolute -top-6 left-2 px-2 py-1 bg-card border border-border rounded-md shadow-sm"
-          style={{ borderLeftColor: config?.color || '#666', borderLeftWidth: '3px' }}
+          className={`absolute -top-6 left-2 px-2 py-1 bg-card border border-border rounded-md shadow-sm ${isHighlighted ? 'bg-yellow-100 border-yellow-400' : ''}`}
+          style={{ borderLeftColor: isHighlighted ? '#facc15' : (config?.color || '#666'), borderLeftWidth: '3px' }}
         >
           <div className="flex items-center gap-2">
-            <div style={{ color: config?.color || '#666' }}>
-              {config?.icon}
+            <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
+              {config?.icon || null}
             </div>
             <div>
-              <div className="font-medium text-xs">{data.label}</div>
-              <div className="text-xs text-muted-foreground">{config?.label}</div>
+              <div className="font-medium text-xs">{(data.label as string) || ''}</div>
+              <div className="text-xs text-muted-foreground">{config?.label || ''}</div>
             </div>
           </div>
-          {data.zone && (
+          {data.zone && String(data.zone) && (
             <Badge variant="secondary" className="mt-1 text-xs">
-              {data.zone}
+              {String(data.zone)}
             </Badge>
           )}
         </div>
@@ -218,9 +220,10 @@ const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
       className={`
         px-4 py-2 shadow-lg rounded-lg bg-card border-2 min-w-[120px] relative
         ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
+        ${isHighlighted ? 'ring-4 ring-yellow-400/60 border-yellow-400 bg-yellow-50' : ''}
         transition-all duration-200 hover:shadow-xl hover:border-primary/50
       `}
-      style={{ borderLeftColor: config?.color || '#666' }}
+      style={{ borderLeftColor: isHighlighted ? '#facc15' : (config?.color || '#666') }}
     >
       {/* Connection handles */}
       <Handle
@@ -249,17 +252,17 @@ const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
       />
       
       <div className="flex items-center gap-2">
-        <div style={{ color: config?.color || '#666' }}>
-          {config?.icon}
+        <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
+          {config?.icon || null}
         </div>
         <div>
-          <div className="font-medium text-sm">{data.label}</div>
-          <div className="text-xs text-muted-foreground">{config?.label}</div>
+          <div className="font-medium text-sm">{(data.label as string) || ''}</div>
+          <div className="text-xs text-muted-foreground">{config?.label || ''}</div>
         </div>
       </div>
-      {data.zone && (
+      {data.zone && String(data.zone) && (
         <Badge variant="secondary" className="mt-1 text-xs">
-          {data.zone}
+          {String(data.zone)}
         </Badge>
       )}
     </div>
@@ -460,6 +463,7 @@ function App() {
   const [showAttackPaths, setShowAttackPaths] = useState(false);
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
   const [showConnectionDialog, setShowConnectionDialog] = useState(false);
+  const [highlightedElements, setHighlightedElements] = useState<string[]>([]);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   // Security findings
@@ -648,6 +652,9 @@ function App() {
 
   // Security analysis
   const runSecurityAnalysis = async () => {
+    // Clear any existing highlights first
+    clearHighlights();
+    
     const newFindings: SecurityFinding[] = [];
     const newAttackPaths: AttackPath[] = [];
 
@@ -776,6 +783,61 @@ function App() {
           }
         : edge
     ));
+  };
+
+  // Highlight findings on canvas
+  const highlightFinding = (finding: SecurityFinding) => {
+    // Clear previous highlights
+    setHighlightedElements([]);
+    
+    // Update nodes with highlight status
+    setNodes((nds: Node[]) => nds.map((node: Node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        isHighlighted: finding.affected.includes(node.id)
+      }
+    })));
+
+    // Update edges with highlight status
+    setEdges((eds: Edge[]) => eds.map((edge: Edge) => ({
+      ...edge,
+      style: {
+        ...edge.style,
+        stroke: finding.affected.includes(edge.id!) ? '#facc15' : (
+          (edge.data as any)?.encryption === 'None' ? '#ef4444' : '#10b981'
+        ),
+        strokeWidth: finding.affected.includes(edge.id!) ? 4 : 2,
+        filter: finding.affected.includes(edge.id!) ? 'drop-shadow(0 0 8px #facc15)' : undefined
+      }
+    })));
+
+    toast.success(`Highlighted components for: ${finding.title}`);
+  };
+
+  // Clear highlights
+  const clearHighlights = () => {
+    setHighlightedElements([]);
+    
+    // Reset node highlights
+    setNodes((nds: Node[]) => nds.map((node: Node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        isHighlighted: false
+      }
+    })));
+
+    // Reset edge highlights
+    setEdges((eds: Edge[]) => eds.map((edge: Edge) => ({
+      ...edge,
+      style: {
+        ...edge.style,
+        stroke: (edge.data as any)?.encryption === 'None' ? '#ef4444' : '#10b981',
+        strokeWidth: 2,
+        filter: undefined
+      }
+    })));
   };
 
   // Connection Dialog Component
@@ -1292,18 +1354,33 @@ function App() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium">Security Findings</h3>
-                    {attackPaths.length > 0 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowAttackPaths(true)}
-                      >
-                        View Attack Paths
-                      </Button>
-                    )}
+                    <div className="flex gap-2">
+                      {highlightedElements.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={clearHighlights}
+                        >
+                          Clear Highlights
+                        </Button>
+                      )}
+                      {attackPaths.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowAttackPaths(true)}
+                        >
+                          View Attack Paths
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   {findings.map(finding => (
-                    <Card key={finding.id}>
+                    <Card 
+                      key={finding.id}
+                      className="cursor-pointer hover:bg-accent/5 transition-colors"
+                      onClick={() => highlightFinding(finding)}
+                    >
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-sm">{finding.title}</CardTitle>
@@ -1330,6 +1407,9 @@ function App() {
                               {standard}
                             </Badge>
                           ))}
+                        </div>
+                        <div className="text-xs text-muted-foreground pt-1 border-t border-border">
+                          Click to highlight affected components on the diagram
                         </div>
                       </CardContent>
                     </Card>
