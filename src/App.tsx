@@ -41,6 +41,11 @@ import {
   Desktop,
   DeviceMobile,
   HardDrives,
+  Browser,
+  Scales,
+  Network,
+  Tree,
+  Hexagon,
 } from '@phosphor-icons/react';
 
 // Component types and configurations
@@ -54,11 +59,21 @@ interface ComponentConfig {
 
 const componentTypes: ComponentConfig[] = [
   // Application Components
+  { type: 'web-browser', label: 'Web Browser', icon: <Browser />, category: 'application', color: '#3b82f6' },
   { type: 'web-server', label: 'Web Server', icon: <Desktop />, category: 'application', color: '#3b82f6' },
   { type: 'app-server', label: 'App Server', icon: <Desktop />, category: 'application', color: '#6366f1' },
   { type: 'api-gateway', label: 'API Gateway', icon: <Globe />, category: 'application', color: '#8b5cf6' },
   { type: 'microservice', label: 'Microservice', icon: <Cloud />, category: 'application', color: '#06b6d4' },
   { type: 'mobile-app', label: 'Mobile App', icon: <DeviceMobile />, category: 'application', color: '#10b981' },
+  { type: 'kubernetes-cluster', label: 'Kubernetes Cluster', icon: <Hexagon />, category: 'application', color: '#326ce5' },
+  { type: 'container', label: 'Container', icon: <Hexagon />, category: 'application', color: '#0db7ed' },
+  
+  // Network Components
+  { type: 'load-balancer-global', label: 'Global Load Balancer', icon: <Scales />, category: 'network', color: '#059669' },
+  { type: 'load-balancer-internal', label: 'Internal Load Balancer', icon: <Scales />, category: 'network', color: '#047857' },
+  { type: 'vpc-vnet', label: 'VPC / VNet', icon: <Network />, category: 'network', color: '#0ea5e9' },
+  { type: 'subnet', label: 'Subnet', icon: <Network />, category: 'network', color: '#0284c7' },
+  { type: 'network-segmentation', label: 'Network Segmentation', icon: <Tree />, category: 'network', color: '#0891b2' },
   
   // Data Components
   { type: 'database', label: 'Database', icon: <Database />, category: 'data', color: '#f59e0b' },
@@ -69,7 +84,6 @@ const componentTypes: ComponentConfig[] = [
   { type: 'firewall', label: 'Firewall', icon: <Shield />, category: 'security', color: '#dc2626' },
   { type: 'waf', label: 'WAF', icon: <Shield />, category: 'security', color: '#b91c1c' },
   { type: 'ids-ips', label: 'IDS/IPS', icon: <Eye />, category: 'security', color: '#991b1b' },
-  { type: 'load-balancer', label: 'Load Balancer', icon: <Globe />, category: 'network', color: '#059669' },
 ];
 
 // Security findings types
@@ -133,9 +147,9 @@ const customDesigns = {
   secure: {
     name: "Secure Web Application",
     nodes: [
-      { id: '1', type: 'custom', position: { x: 100, y: 100 }, data: { type: 'mobile-app', label: 'Mobile Client', zone: 'External' } },
+      { id: '1', type: 'custom', position: { x: 100, y: 100 }, data: { type: 'web-browser', label: 'Web Browser', zone: 'External' } },
       { id: '2', type: 'custom', position: { x: 300, y: 100 }, data: { type: 'waf', label: 'WAF', zone: 'DMZ' } },
-      { id: '3', type: 'custom', position: { x: 500, y: 100 }, data: { type: 'load-balancer', label: 'Load Balancer', zone: 'DMZ' } },
+      { id: '3', type: 'custom', position: { x: 500, y: 100 }, data: { type: 'load-balancer-global', label: 'Global Load Balancer', zone: 'DMZ' } },
       { id: '4', type: 'custom', position: { x: 700, y: 50 }, data: { type: 'web-server', label: 'Web Server 1', zone: 'Web Tier' } },
       { id: '5', type: 'custom', position: { x: 700, y: 150 }, data: { type: 'web-server', label: 'Web Server 2', zone: 'Web Tier' } },
       { id: '6', type: 'custom', position: { x: 900, y: 100 }, data: { type: 'api-gateway', label: 'API Gateway', zone: 'App Tier' } },
@@ -161,7 +175,7 @@ const customDesigns = {
   vulnerable: {
     name: "Vulnerable Architecture",
     nodes: [
-      { id: '1', type: 'custom', position: { x: 100, y: 100 }, data: { type: 'mobile-app', label: 'Mobile Client', zone: 'External' } },
+      { id: '1', type: 'custom', position: { x: 100, y: 100 }, data: { type: 'web-browser', label: 'Web Browser', zone: 'External' } },
       { id: '2', type: 'custom', position: { x: 400, y: 100 }, data: { type: 'web-server', label: 'Web Server', zone: 'Public' } },
       { id: '3', type: 'custom', position: { x: 700, y: 100 }, data: { type: 'database', label: 'Database', zone: 'Internal' } },
       { id: '4', type: 'custom', position: { x: 400, y: 250 }, data: { type: 'app-server', label: 'Admin Panel', zone: 'Public' } },
@@ -471,7 +485,7 @@ function App() {
           <TabsContent value="components" className="flex-1 px-4 pb-4">
             <ScrollArea className="h-full">
               <div className="space-y-4">
-                {(['application', 'security', 'network', 'data'] as const).map(category => (
+                {(['application', 'network', 'data', 'security'] as const).map(category => (
                   <div key={category}>
                     <h3 className="font-medium mb-2 capitalize">{category}</h3>
                     <div className="grid grid-cols-2 gap-2">
