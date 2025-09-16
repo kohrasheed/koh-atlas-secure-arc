@@ -1,285 +1,203 @@
 # Koh Atlas - Secure Architecture Designer
 
-A comprehensive web application for designing, analyzing, and securing application architectures with AI-powered threat modeling and attack path visualization.
+A powerful, interactive web-based tool for designing and analyzing secure application architectures. Koh Atlas helps security architects, solutions architects, and DevOps teams create secure system designs with built-in security analysis and threat modeling capabilities.
 
-## Features
+![Koh Atlas](https://img.shields.io/badge/status-active-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![React](https://img.shields.io/badge/React-18-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 
-### 🎨 **Architecture Design**
-- **Drag-and-drop interface** with comprehensive component palette
-- **Real-time diagramming** with automated connection management
-- **Multi-tier architecture support** (Presentation, App, Data, Management tiers)
-- **Security zones** (External, DMZ, Internal, Data, Management)
-- **Visual component library** covering web, database, network, security, and platform components
+## 🚀 Features
 
-### 🔒 **Security Analysis**
-- **AI-powered security scanning** with 50+ built-in security rules
-- **Real-time vulnerability detection** for misconfigurations and security gaps
-- **Standards compliance mapping** (NIST 800-53, CIS Benchmarks, ISO 27001, OWASP)
-- **Auto-fix recommendations** with one-click remediation
-- **Risk scoring and prioritization** based on likelihood and impact
+### 🎨 **Visual Architecture Design**
+- **Drag & Drop Components**: Intuitive component palette with application, security, network, and data components
+- **Interactive Canvas**: Built on ReactFlow for smooth, interactive diagramming experience
+- **Component Categories**: Pre-built components for web servers, databases, firewalls, load balancers, and more
+- **Custom Zones**: Organize components into security zones (DMZ, Web Tier, App Tier, Data Tier, etc.)
+
+### 🔒 **Security-First Approach**
+- **Built-in Security Controls**: First-class security components (WAF, Firewall, IDS/IPS, etc.)
+- **Connection Annotations**: Detailed protocol, port, and encryption settings for all connections
+- **Security Zones**: Visual organization by security zones and trust boundaries
+- **Compliance Standards**: Mapped to NIST 800-53, ISO 27001, OWASP, and CIS Controls
+
+### 🔍 **AI-Powered Security Analysis**
+- **Automated Vulnerability Detection**: Identifies unencrypted communications, direct database access, missing security controls
+- **Risk Scoring**: CVSS-inspired risk scoring with severity levels (Critical, High, Medium, Low)
+- **Standards Mapping**: Findings mapped to compliance frameworks (NIST, ISO, OWASP, CIS)
+- **Remediation Guidance**: Specific, actionable recommendations for each finding
 
 ### 🎯 **Attack Path Visualization**
-- **Threat modeling capabilities** with MITRE ATT&CK framework integration
-- **Attack path analysis** showing potential attack vectors from entry points to targets
-- **Step-by-step attack simulation** with difficulty assessment and prerequisites
-- **Mitigation recommendations** for each identified attack path
-- **Interactive path highlighting** on the architecture diagram
+- **Threat Modeling**: Visual attack path analysis to understand potential threat scenarios
+- **Impact Assessment**: Clear visualization of attack impact and likelihood
+- **Mitigation Planning**: Suggested security controls to break attack chains
+- **Risk Communication**: Easy-to-understand visualizations for stakeholders
 
-### 🌙 **Modern UI/UX**
-- **Dark/Light theme support** with system preference detection
-- **Responsive design** optimized for desktop and mobile
-- **Keyboard shortcuts** for power users (Delete, Ctrl+Enter for analysis)
-- **Real-time feedback** with toast notifications and loading states
+### 🌙 **Modern User Experience**
+- **Dark/Light Theme**: Toggle between themes for comfortable viewing
+- **Responsive Design**: Works on desktop and tablet devices
+- **Persistent State**: Your work is automatically saved locally
+- **Template Library**: Pre-built secure and vulnerable architecture templates
 
-### 📊 **Export & Reporting**
-- **Comprehensive security reports** in JSON format
-- **Architecture documentation** with component metadata
-- **Risk registers** with finding details and remediation steps
-- **Visual diagram exports** (planned feature)
+## 🛠️ Technical Stack
 
-## Getting Started
+- **Frontend**: React 19 with TypeScript
+- **UI Framework**: Tailwind CSS with shadcn/ui components
+- **Diagramming**: ReactFlow for interactive canvas
+- **Icons**: Phosphor Icons for consistent iconography
+- **State Management**: React hooks with local persistence
+- **Build Tool**: Vite for fast development and builds
+
+## 🏁 Getting Started
 
 ### Prerequisites
 - Node.js 18+ 
-- Modern web browser with JavaScript enabled
+- npm or yarn
 
 ### Installation
+```bash
+# Clone the repository
+git clone https://github.com/your-org/koh-atlas.git
+cd koh-atlas
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd koh-atlas
-   ```
+# Install dependencies
+npm install
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open in browser**
-   Navigate to `http://localhost:5173`
-
-## Usage
-
-### Basic Workflow
-
-1. **Choose a starting point**
-   - Select from pre-built templates (Secure Design, Vulnerable Design)
-   - Start with a blank canvas for custom architecture
-
-2. **Design your architecture**
-   - Drag components from the palette to the canvas
-   - Connect components by dragging between connection points
-   - Configure component properties and connection details
-
-3. **Analyze security**
-   - Click "Analyze" or use Ctrl+Enter to run security checks
-   - Review findings in the Security Analysis panel
-   - Apply auto-fixes where available
-
-4. **Explore attack paths**
-   - Switch to the "Threats" tab in the analysis panel
-   - Select attack paths to see step-by-step simulation
-   - View recommended mitigations for each threat
-
-5. **Export results**
-   - Generate security reports with findings and recommendations
-   - Save architecture designs for future reference
-
-### Keyboard Shortcuts
-
-- **Delete/Backspace**: Remove selected component or connection
-- **Ctrl+Enter** (Cmd+Enter on Mac): Run security analysis
-- **Escape**: Clear selection
-
-### Component Categories
-
-#### **Application/Infrastructure**
-- **Client/UI**: Browser, Mobile App, API Client, IoT Device
-- **Web/App**: Web Server, API Gateway, Microservice, Container/Pod
-- **Data**: PostgreSQL, MongoDB, Redis, Object Store, Message Queue
-- **Network**: Load Balancer, CDN, DNS, VPN, ZTNA Connector
-- **Platform**: IdP/SSO, KMS/HSM, SIEM, CI/CD, Monitoring
-
-#### **Security Controls**
-- **Perimeter**: Firewall, NGFW, WAF, DDoS Protection
-- **Detection**: IDS/IPS, EDR/XDR, SIEM/SOAR
-- **Data Protection**: DLP, KMS, Secrets Manager, Database Activity Monitoring
-- **Identity**: MFA, SSO, PAM, Directory Services
-- **Network**: Micro-segmentation, VLANs, Service Mesh
-
-## Architecture
-
-### Technology Stack
-- **Frontend**: React 18 + TypeScript
-- **Diagramming**: ReactFlow for interactive canvas
-- **UI Components**: shadcn/ui with Tailwind CSS
-- **State Management**: React hooks with persistent storage
-- **Icons**: Phosphor Icons
-- **Styling**: Tailwind CSS with custom design system
-
-### Project Structure
-```
-src/
-├── components/           # React components
-│   ├── analysis/        # Security analysis components
-│   ├── canvas/          # Diagram canvas components
-│   ├── palette/         # Component palette
-│   └── ui/              # shadcn/ui components
-├── hooks/               # Custom React hooks
-├── lib/                 # Utility libraries
-├── types/               # TypeScript type definitions
-└── data/                # Static data and templates
+# Start development server
+npm run dev
 ```
 
-### Key Components
+### Quick Start Guide
 
-- **App.tsx**: Main application component with state management
-- **DiagramCanvas**: Interactive architecture diagram editor
-- **SecurityAnalysis**: Security findings and threat modeling interface
-- **AttackPathVisualization**: Threat modeling and attack simulation
-- **ComponentPalette**: Draggable component library
-- **SecurityAnalyzer**: Core security analysis engine
+1. **Load a Template**: Click "Secure" or "Vulnerable" to load pre-built architecture templates
+2. **Add Components**: Drag components from the sidebar to the canvas
+3. **Create Connections**: Drag between component connection points to create links
+4. **Configure Properties**: Click nodes/connections to edit protocols, ports, encryption
+5. **Run Analysis**: Click "Analyze" to identify security issues
+6. **View Attack Paths**: Click "Attacks" to see potential threat scenarios
 
-## Security Rules
+## 📚 Component Library
 
-The application includes 50+ built-in security rules covering:
+### Application Components
+- **Web Server**: Frontend web servers (Nginx, Apache, IIS)
+- **App Server**: Application servers and middleware
+- **API Gateway**: API management and routing (Kong, Apigee)
+- **Microservice**: Containerized application services
+- **Mobile App**: Mobile client applications
 
-### **Encryption & Communication**
-- Unencrypted HTTP traffic detection
-- Missing TLS/mTLS on sensitive connections
-- Weak encryption protocols and ciphers
+### Data Components
+- **Database**: SQL and NoSQL databases (PostgreSQL, MySQL, MongoDB)
+- **Cache**: In-memory data stores (Redis, Memcached)
+- **Message Queue**: Asynchronous messaging (Kafka, RabbitMQ)
 
-### **Architecture Patterns**
-- Direct database access from web tier
-- Missing application tier validation
-- Flat network topology issues
+### Security Components
+- **Firewall**: Network firewalls and next-gen firewalls
+- **WAF**: Web Application Firewalls
+- **IDS/IPS**: Intrusion Detection and Prevention Systems
+- **Load Balancer**: Traffic distribution and SSL termination
 
-### **Access Control**
-- Missing multi-factor authentication
-- Overprivileged service accounts
-- Inadequate network segmentation
+### Network Components
+- **Load Balancer**: Application and network load balancers
+- **API Gateway**: API management platforms
 
-### **Data Protection**
-- Unmonitored database access
-- Missing data loss prevention
-- Inadequate backup and recovery
+## 🔍 Security Analysis Rules
 
-### **Cloud Security**
-- Misconfigured storage buckets
-- Overly permissive security groups
-- Missing encryption at rest
+### Encryption & Integrity
+- Detects unencrypted HTTP communications
+- Identifies missing TLS/mTLS on sensitive connections
+- Validates database encryption requirements
 
-## Attack Path Analysis
+### Architecture Patterns
+- Checks for proper tier separation
+- Identifies direct database access bypassing application layer
+- Validates security zone boundaries
 
-### Threat Modeling Features
+### Missing Controls
+- Detects missing firewalls and WAFs
+- Identifies lack of intrusion detection systems
+- Validates monitoring and logging coverage
 
-- **Entry Point Detection**: Automatically identifies external-facing components
-- **Target Identification**: Locates high-value assets (databases, identity providers)
-- **Path Generation**: Calculates shortest attack paths using graph algorithms
-- **Risk Scoring**: Combines likelihood and impact for prioritization
-- **Mitigation Mapping**: Provides specific controls for each attack step
+### Standards Compliance
+- **NIST 800-53**: Security and privacy controls
+- **ISO 27001**: Information security management
+- **OWASP**: Web application security standards
+- **CIS Controls**: Critical security controls
 
-### MITRE ATT&CK Integration
+## 🎯 Attack Path Analysis
 
-Attack paths are mapped to MITRE ATT&CK techniques:
-- Initial Access
-- Execution
-- Persistence
-- Privilege Escalation
-- Defense Evasion
-- Credential Access
-- Discovery
-- Lateral Movement
-- Collection
-- Exfiltration
-- Impact
+The attack path visualization helps understand how attackers might compromise your architecture:
 
-## Customization
+### Attack Scenarios
+- **Web Application Attacks**: SQL injection, XSS, authentication bypass
+- **Network Lateral Movement**: Privilege escalation and pivot attacks  
+- **Data Exfiltration**: Unauthorized access to sensitive data
+- **Infrastructure Attacks**: Server compromise and persistence
 
-### Adding New Components
+### Mitigation Strategies
+- **Defense in Depth**: Layered security controls
+- **Network Segmentation**: Micro-segmentation and zero trust
+- **Access Controls**: Authentication, authorization, and monitoring
+- **Encryption**: Data protection in transit and at rest
 
-1. Update the component data in `src/data/components.ts`
-2. Add appropriate security rules in `src/lib/security-analyzer.ts`
-3. Include attack path logic if applicable
+## 🔧 Configuration
 
-### Custom Security Rules
-
-Create new rules in the SecurityAnalyzer class:
+### Custom Components
+You can extend the component library by modifying the `componentTypes` array in `App.tsx`:
 
 ```typescript
-{
-  id: 'custom-rule',
-  title: 'Custom Security Check',
-  category: 'Custom',
-  severity: 'high',
-  check: (components, connections) => {
-    // Rule logic here
-    return findings;
-  }
-}
+const customComponent = {
+  type: 'custom-server',
+  label: 'Custom Server',
+  icon: <YourIcon />,
+  category: 'application',
+  color: '#your-color'
+};
 ```
 
-### Theming
+### Security Rules
+Add custom security analysis rules by extending the analysis logic in the `runSecurityAnalysis` function.
 
-Modify CSS variables in `src/index.css` to customize colors:
+### Compliance Frameworks
+Map findings to your organization's compliance requirements by updating the standards arrays.
 
-```css
-:root {
-  --primary: oklch(0.25 0.08 240);
-  --secondary: oklch(0.90 0.02 240);
-  /* ... other variables */
-}
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Setup
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Lint code
+npm run lint
+
+# Build for production
+npm run build
 ```
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow TypeScript best practices
-- Use semantic commit messages
-- Add tests for new security rules
-- Update documentation for new features
-
-## License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Roadmap
+## 🙏 Acknowledgments
 
-### Version 2.0 (Planned)
-- [ ] Real-time collaboration features
-- [ ] Cloud provider integrations (AWS, Azure, GCP)
-- [ ] Custom threat model templates
-- [ ] PDF/PNG diagram exports
-- [ ] Advanced compliance reporting
-- [ ] API for programmatic access
+- **ReactFlow** for the excellent diagramming foundation
+- **shadcn/ui** for beautiful, accessible UI components  
+- **Tailwind CSS** for utility-first styling
+- **Phosphor Icons** for comprehensive icon library
+- **NIST, OWASP, CIS** for security frameworks and standards
 
-### Version 1.5 (Current)
-- [x] Attack path visualization
-- [x] Dark theme support
-- [x] Enhanced component library
-- [x] Component deletion capabilities
-- [x] Connection editing and deletion
-- [x] Custom preset designs
-- [ ] Improved mobile experience
-- [ ] Bulk component import/export
+## 📞 Support
 
-## Support
-
-For support, please open an issue on GitHub or contact the development team.
+- **Documentation**: [docs.koh-atlas.dev](https://docs.koh-atlas.dev)
+- **Issues**: [GitHub Issues](https://github.com/your-org/koh-atlas/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/koh-atlas/discussions)
+- **Email**: support@koh-atlas.dev
 
 ---
 
-**Koh Atlas** - Securing architectures, one design at a time. 🛡️
+**Built with ❤️ for the security community**
