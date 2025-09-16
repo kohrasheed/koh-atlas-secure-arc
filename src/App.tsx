@@ -12,6 +12,10 @@ import {
   Connection,
   ReactFlowProvider,
   ReactFlowInstance,
+  Handle,
+  Position,
+  MarkerType,
+  ConnectionMode,
 } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useKV } from '@github/spark/hooks';
 import {
@@ -107,19 +112,64 @@ interface AttackPath {
   mitigations: string[];
 }
 
-// Custom node component
+// Protocol configurations with common ports
+const protocolConfigs = {
+  'HTTPS': { port: 443, description: 'Secure HTTP over TLS' },
+  'HTTP': { port: 80, description: 'Unencrypted HTTP (not recommended)' },
+  'gRPC': { port: 443, description: 'gRPC over TLS' },
+  'PostgreSQL': { port: 5432, description: 'PostgreSQL database connection' },
+  'MySQL': { port: 3306, description: 'MySQL database connection' },
+  'Redis': { port: 6379, description: 'Redis cache connection' },
+  'MongoDB': { port: 27017, description: 'MongoDB database connection' },
+  'SSH': { port: 22, description: 'Secure Shell protocol' },
+  'RDP': { port: 3389, description: 'Remote Desktop Protocol' },
+  'SMTP': { port: 587, description: 'SMTP email with STARTTLS' },
+  'SMTPS': { port: 465, description: 'SMTP over SSL/TLS' },
+  'DNS': { port: 53, description: 'Domain Name System' },
+  'LDAPS': { port: 636, description: 'LDAP over SSL/TLS' },
+  'KAFKA': { port: 9092, description: 'Apache Kafka messaging' },
+  'ELASTICSEARCH': { port: 9200, description: 'Elasticsearch REST API' }
+};
+
+// Custom node component with connection handles
 const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
   const config = componentTypes.find(c => c.type === data.type);
   
   return (
     <div 
       className={`
-        px-4 py-2 shadow-lg rounded-lg bg-card border-2 min-w-[120px]
-        ${selected ? 'border-primary' : 'border-border'}
-        transition-all duration-200 hover:shadow-xl
+        px-4 py-2 shadow-lg rounded-lg bg-card border-2 min-w-[120px] relative
+        ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
+        transition-all duration-200 hover:shadow-xl hover:border-primary/50
       `}
       style={{ borderLeftColor: config?.color || '#666' }}
     >
+      {/* Connection handles */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="w-3 h-3 !bg-primary border-2 border-background"
+        style={{ left: -6 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="w-3 h-3 !bg-primary border-2 border-background"
+        style={{ right: -6 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="w-3 h-3 !bg-primary border-2 border-background"
+        style={{ top: -6 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="w-3 h-3 !bg-primary border-2 border-background"
+        style={{ bottom: -6 }}
+      />
+      
       <div className="flex items-center gap-2">
         <div style={{ color: config?.color || '#666' }}>
           {config?.icon}
@@ -160,16 +210,106 @@ const customDesigns = {
       { id: '11', type: 'custom', position: { x: 900, y: 250 }, data: { type: 'ids-ips', label: 'IDS/IPS', zone: 'Security' } },
     ] as Node[],
     edges: [
-      { id: 'e1-2', source: '1', target: '2', label: 'HTTPS:443', data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3' } },
-      { id: 'e2-3', source: '2', target: '3', label: 'HTTPS:443', data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3' } },
-      { id: 'e3-4', source: '3', target: '4', label: 'HTTPS:443', data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3' } },
-      { id: 'e3-5', source: '3', target: '5', label: 'HTTPS:443', data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3' } },
-      { id: 'e4-6', source: '4', target: '6', label: 'HTTPS:443', data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3' } },
-      { id: 'e5-6', source: '5', target: '6', label: 'HTTPS:443', data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3' } },
-      { id: 'e6-7', source: '6', target: '7', label: 'gRPC:443', data: { protocol: 'gRPC', port: 443, encryption: 'mTLS' } },
-      { id: 'e6-8', source: '6', target: '8', label: 'gRPC:443', data: { protocol: 'gRPC', port: 443, encryption: 'mTLS' } },
-      { id: 'e7-9', source: '7', target: '9', label: 'PostgreSQL:5432', data: { protocol: 'PostgreSQL', port: 5432, encryption: 'TLS' } },
-      { id: 'e8-9', source: '8', target: '9', label: 'PostgreSQL:5432', data: { protocol: 'PostgreSQL', port: 5432, encryption: 'TLS' } },
+      { 
+        id: 'e1-2', 
+        source: '1', 
+        target: '2', 
+        label: 'HTTPS:443', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3', sourceLabel: 'Web Browser', targetLabel: 'WAF' } 
+      },
+      { 
+        id: 'e2-3', 
+        source: '2', 
+        target: '3', 
+        label: 'HTTPS:443', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3', sourceLabel: 'WAF', targetLabel: 'Global Load Balancer' } 
+      },
+      { 
+        id: 'e3-4', 
+        source: '3', 
+        target: '4', 
+        label: 'HTTPS:443', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3', sourceLabel: 'Global Load Balancer', targetLabel: 'Web Server 1' } 
+      },
+      { 
+        id: 'e3-5', 
+        source: '3', 
+        target: '5', 
+        label: 'HTTPS:443', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3', sourceLabel: 'Global Load Balancer', targetLabel: 'Web Server 2' } 
+      },
+      { 
+        id: 'e4-6', 
+        source: '4', 
+        target: '6', 
+        label: 'HTTPS:443', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3', sourceLabel: 'Web Server 1', targetLabel: 'API Gateway' } 
+      },
+      { 
+        id: 'e5-6', 
+        source: '5', 
+        target: '6', 
+        label: 'HTTPS:443', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.3', sourceLabel: 'Web Server 2', targetLabel: 'API Gateway' } 
+      },
+      { 
+        id: 'e6-7', 
+        source: '6', 
+        target: '7', 
+        label: 'gRPC:443', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'gRPC', port: 443, encryption: 'mTLS', sourceLabel: 'API Gateway', targetLabel: 'App Server 1' } 
+      },
+      { 
+        id: 'e6-8', 
+        source: '6', 
+        target: '8', 
+        label: 'gRPC:443', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'gRPC', port: 443, encryption: 'mTLS', sourceLabel: 'API Gateway', targetLabel: 'App Server 2' } 
+      },
+      { 
+        id: 'e7-9', 
+        source: '7', 
+        target: '9', 
+        label: 'PostgreSQL:5432', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'PostgreSQL', port: 5432, encryption: 'TLS', sourceLabel: 'App Server 1', targetLabel: 'Primary DB' } 
+      },
+      { 
+        id: 'e8-9', 
+        source: '8', 
+        target: '9', 
+        label: 'PostgreSQL:5432', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        data: { protocol: 'PostgreSQL', port: 5432, encryption: 'TLS', sourceLabel: 'App Server 2', targetLabel: 'Primary DB' } 
+      },
     ] as Edge[]
   },
   vulnerable: {
@@ -181,10 +321,46 @@ const customDesigns = {
       { id: '4', type: 'custom', position: { x: 400, y: 250 }, data: { type: 'app-server', label: 'Admin Panel', zone: 'Public' } },
     ] as Node[],
     edges: [
-      { id: 'e1-2', source: '1', target: '2', label: 'HTTP:80', data: { protocol: 'HTTP', port: 80, encryption: 'None' } },
-      { id: 'e2-3', source: '2', target: '3', label: 'MySQL:3306', data: { protocol: 'MySQL', port: 3306, encryption: 'None' } },
-      { id: 'e1-4', source: '1', target: '4', label: 'HTTP:80', data: { protocol: 'HTTP', port: 80, encryption: 'None' } },
-      { id: 'e4-3', source: '4', target: '3', label: 'MySQL:3306', data: { protocol: 'MySQL', port: 3306, encryption: 'None' } },
+      { 
+        id: 'e1-2', 
+        source: '1', 
+        target: '2', 
+        label: 'HTTP:80', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#ef4444', strokeWidth: 2 },
+        data: { protocol: 'HTTP', port: 80, encryption: 'None', sourceLabel: 'Web Browser', targetLabel: 'Web Server' } 
+      },
+      { 
+        id: 'e2-3', 
+        source: '2', 
+        target: '3', 
+        label: 'MySQL:3306', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#ef4444', strokeWidth: 2 },
+        data: { protocol: 'MySQL', port: 3306, encryption: 'None', sourceLabel: 'Web Server', targetLabel: 'Database' } 
+      },
+      { 
+        id: 'e1-4', 
+        source: '1', 
+        target: '4', 
+        label: 'HTTP:80', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#ef4444', strokeWidth: 2 },
+        data: { protocol: 'HTTP', port: 80, encryption: 'None', sourceLabel: 'Web Browser', targetLabel: 'Admin Panel' } 
+      },
+      { 
+        id: 'e4-3', 
+        source: '4', 
+        target: '3', 
+        label: 'MySQL:3306', 
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: '#ef4444', strokeWidth: 2 },
+        data: { protocol: 'MySQL', port: 3306, encryption: 'None', sourceLabel: 'Admin Panel', targetLabel: 'Database' } 
+      },
     ] as Edge[]
   }
 };
@@ -198,6 +374,8 @@ function App() {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [showAttackPaths, setShowAttackPaths] = useState(false);
+  const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
+  const [showConnectionDialog, setShowConnectionDialog] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   // Security findings
@@ -258,19 +436,81 @@ function App() {
     [reactFlowInstance, selectedComponent, setNodes]
   );
 
-  // Handle connections
+  // Handle connection validation and dialog
   const onConnect = useCallback(
     (params: Connection) => {
-      const newEdge = {
-        ...params,
-        id: `e${params.source}-${params.target}`,
-        label: 'HTTPS:443',
-        data: { protocol: 'HTTPS', port: 443, encryption: 'TLS 1.2' },
-      };
-      setEdges(eds => addEdge(newEdge, eds));
+      // Store the pending connection and show dialog for protocol selection
+      setPendingConnection(params);
+      setShowConnectionDialog(true);
     },
-    [setEdges]
+    []
   );
+
+  // Create connection with specified protocol
+  const createConnection = (protocol: string, port: number, encryption: string) => {
+    if (!pendingConnection) return;
+
+    const sourceNode = nodes.find(n => n.id === pendingConnection.source);
+    const targetNode = nodes.find(n => n.id === pendingConnection.target);
+    
+    const newEdge: Edge = {
+      ...pendingConnection,
+      id: `e${pendingConnection.source}-${pendingConnection.target}-${Date.now()}`,
+      label: `${protocol}:${port}`,
+      type: 'smoothstep',
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        width: 20,
+        height: 20,
+      },
+      data: { 
+        protocol, 
+        port, 
+        encryption,
+        sourceLabel: sourceNode?.data?.label,
+        targetLabel: targetNode?.data?.label,
+      },
+      style: {
+        stroke: encryption === 'None' ? '#ef4444' : '#10b981',
+        strokeWidth: 2,
+      },
+    };
+    
+    setEdges(eds => addEdge(newEdge, eds));
+    setPendingConnection(null);
+    setShowConnectionDialog(false);
+    
+    toast.success(`Connected ${sourceNode?.data?.label} → ${targetNode?.data?.label}`);
+  };
+
+  // Quick connection with smart defaults
+  const createQuickConnection = () => {
+    if (!pendingConnection) return;
+
+    const sourceNode = nodes.find(n => n.id === pendingConnection.source);
+    const targetNode = nodes.find(n => n.id === pendingConnection.target);
+    
+    // Smart protocol selection based on target component type
+    let protocol = 'HTTPS';
+    let port = 443;
+    let encryption = 'TLS 1.3';
+    
+    if (targetNode?.data?.type === 'database') {
+      protocol = 'PostgreSQL';
+      port = 5432;
+      encryption = 'TLS';
+    } else if (targetNode?.data?.type === 'cache') {
+      protocol = 'Redis';
+      port = 6379;
+      encryption = 'TLS';
+    } else if (targetNode?.data?.type === 'message-queue') {
+      protocol = 'KAFKA';
+      port = 9092;
+      encryption = 'SASL_SSL';
+    }
+    
+    createConnection(protocol, port, encryption);
+  };
 
   // Delete selected elements
   const onDeleteSelected = useCallback(() => {
@@ -407,9 +647,130 @@ function App() {
   const updateEdgeData = (edgeId: string, newData: any) => {
     setEdges((eds: Edge[]) => eds.map((edge: Edge) => 
       edge.id === edgeId 
-        ? { ...edge, data: { ...edge.data, ...newData }, label: `${newData.protocol}:${newData.port}` }
+        ? { 
+            ...edge, 
+            data: { ...edge.data, ...newData }, 
+            label: `${newData.protocol}:${newData.port}`,
+            style: {
+              ...edge.style,
+              stroke: newData.encryption === 'None' ? '#ef4444' : '#10b981',
+            }
+          }
         : edge
     ));
+  };
+
+  // Connection Dialog Component
+  const ConnectionDialog = () => {
+    const [selectedProtocol, setSelectedProtocol] = useState('HTTPS');
+    const [selectedPort, setSelectedPort] = useState(443);
+    const [selectedEncryption, setSelectedEncryption] = useState('TLS 1.3');
+
+    const sourceNode = nodes.find(n => n.id === pendingConnection?.source);
+    const targetNode = nodes.find(n => n.id === pendingConnection?.target);
+
+    const handleProtocolChange = (protocol: string) => {
+      setSelectedProtocol(protocol);
+      const config = protocolConfigs[protocol as keyof typeof protocolConfigs];
+      if (config) {
+        setSelectedPort(config.port);
+      }
+    };
+
+    return (
+      <Dialog open={showConnectionDialog} onOpenChange={setShowConnectionDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configure Connection</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Connecting: <span className="font-medium">{sourceNode?.data?.label}</span> → <span className="font-medium">{targetNode?.data?.label}</span>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="connection-protocol">Protocol</Label>
+              <Select value={selectedProtocol} onValueChange={handleProtocolChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(protocolConfigs).map(([protocol, config]) => (
+                    <SelectItem key={protocol} value={protocol}>
+                      <div className="flex flex-col">
+                        <span>{protocol}</span>
+                        <span className="text-xs text-muted-foreground">{config.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="connection-port">Port</Label>
+              <Input
+                id="connection-port"
+                type="number"
+                value={selectedPort}
+                onChange={(e) => setSelectedPort(parseInt(e.target.value))}
+                min="1"
+                max="65535"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="connection-encryption">Encryption</Label>
+              <Select value={selectedEncryption} onValueChange={setSelectedEncryption}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TLS 1.3">TLS 1.3 (Recommended)</SelectItem>
+                  <SelectItem value="TLS 1.2">TLS 1.2</SelectItem>
+                  <SelectItem value="mTLS">Mutual TLS (mTLS)</SelectItem>
+                  <SelectItem value="SASL_SSL">SASL with SSL</SelectItem>
+                  <SelectItem value="None">None (Not Recommended)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {selectedEncryption === 'None' && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <div className="flex items-center gap-2 text-destructive text-sm">
+                  <Shield className="w-4 h-4" />
+                  <span className="font-medium">Security Warning</span>
+                </div>
+                <p className="text-xs text-destructive/80 mt-1">
+                  Unencrypted connections are vulnerable to eavesdropping and tampering.
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConnectionDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="secondary"
+              onClick={createQuickConnection}
+            >
+              Quick Connect
+            </Button>
+            <Button 
+              onClick={() => createConnection(selectedProtocol, selectedPort, selectedEncryption)}
+            >
+              Create Connection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   return (
@@ -560,26 +921,40 @@ function App() {
               {selectedEdge && (
                 <div className="space-y-4">
                   <h3 className="font-medium">Connection Properties</h3>
+                  
+                  <div className="p-3 bg-muted/50 rounded-md">
+                    <div className="text-sm">
+                      <span className="font-medium">{(selectedEdge.data as any)?.sourceLabel}</span>
+                      <span className="mx-2 text-muted-foreground">→</span>
+                      <span className="font-medium">{(selectedEdge.data as any)?.targetLabel}</span>
+                    </div>
+                  </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="edge-protocol">Protocol</Label>
                     <Select
                       value={(selectedEdge.data as any)?.protocol || 'HTTPS'}
-                      onValueChange={(value) => updateEdgeData(selectedEdge.id, { 
-                        ...(selectedEdge.data || {}), 
-                        protocol: value,
-                        port: value === 'HTTPS' ? 443 : value === 'HTTP' ? 80 : (selectedEdge.data as any)?.port || 443
-                      })}
+                      onValueChange={(value) => {
+                        const config = protocolConfigs[value as keyof typeof protocolConfigs];
+                        updateEdgeData(selectedEdge.id, { 
+                          ...(selectedEdge.data || {}), 
+                          protocol: value,
+                          port: config?.port || (selectedEdge.data as any)?.port || 443
+                        });
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="HTTPS">HTTPS</SelectItem>
-                        <SelectItem value="HTTP">HTTP</SelectItem>
-                        <SelectItem value="gRPC">gRPC</SelectItem>
-                        <SelectItem value="PostgreSQL">PostgreSQL</SelectItem>
-                        <SelectItem value="MySQL">MySQL</SelectItem>
-                        <SelectItem value="Redis">Redis</SelectItem>
+                        {Object.entries(protocolConfigs).map(([protocol, config]) => (
+                          <SelectItem key={protocol} value={protocol}>
+                            <div className="flex flex-col">
+                              <span>{protocol}</span>
+                              <span className="text-xs text-muted-foreground">{config.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -593,6 +968,8 @@ function App() {
                         ...(selectedEdge.data || {}), 
                         port: parseInt(e.target.value) 
                       })}
+                      min="1"
+                      max="65535"
                     />
                   </div>
                   <div className="space-y-2">
@@ -608,13 +985,40 @@ function App() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="TLS 1.3">TLS 1.3</SelectItem>
+                        <SelectItem value="TLS 1.3">TLS 1.3 (Recommended)</SelectItem>
                         <SelectItem value="TLS 1.2">TLS 1.2</SelectItem>
-                        <SelectItem value="mTLS">mTLS</SelectItem>
-                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="mTLS">Mutual TLS (mTLS)</SelectItem>
+                        <SelectItem value="SASL_SSL">SASL with SSL</SelectItem>
+                        <SelectItem value="None">None (Not Recommended)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                  
+                  {(selectedEdge.data as any)?.encryption === 'None' && (
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                      <div className="flex items-center gap-2 text-destructive text-sm">
+                        <Shield className="w-4 h-4" />
+                        <span className="font-medium">Security Risk</span>
+                      </div>
+                      <p className="text-xs text-destructive/80 mt-1">
+                        This connection is unencrypted and vulnerable to attacks.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="edge-description">Description</Label>
+                    <Input
+                      id="edge-description"
+                      placeholder="Optional connection description"
+                      value={(selectedEdge.data as any)?.description || ''}
+                      onChange={(e) => updateEdgeData(selectedEdge.id, { 
+                        ...(selectedEdge.data || {}), 
+                        description: e.target.value 
+                      })}
+                    />
+                  </div>
+                  
                   <Button 
                     variant="destructive" 
                     size="sm" 
@@ -769,12 +1173,24 @@ function App() {
             nodeTypes={nodeTypes}
             fitView
             className="bg-background"
+            connectionMode={ConnectionMode.Loose}
+            defaultEdgeOptions={{
+              type: 'smoothstep',
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+              },
+            }}
           >
             <Background />
             <MiniMap />
             <Controls />
           </ReactFlow>
         </ReactFlowProvider>
+        
+        {/* Connection Dialog */}
+        <ConnectionDialog />
         
         {/* Instructions overlay */}
         {nodes.length === 0 && (
@@ -787,6 +1203,7 @@ function App() {
               <div className="text-sm text-muted-foreground space-y-1">
                 <p>• Load a secure or vulnerable template to get started</p>
                 <p>• Connect components by dragging between connection points</p>
+                <p>• Specify protocols and ports for each connection</p>
                 <p>• Run security analysis to identify vulnerabilities</p>
                 <p>• View attack paths to understand threat scenarios</p>
               </div>

@@ -1,172 +1,107 @@
-# Koh Atlas Backup - Initial Implementation
+# Koh Atlas Backup - Enhanced Connection System
 
-This backup contains the complete initial implementation of Koh Atlas - Secure Architecture Designer.
+This backup contains the complete implementation of the enhanced connection system with Visio-like functionality.
 
-## Backup Date
-Generated automatically as part of the initial development phase.
+## Implementation Date
+September 16, 2024
 
-## What's Included
+## Key Enhancements Added
 
-### Core Application
-- **App.tsx**: Complete React application with ReactFlow integration
-- **index.css**: Tailwind CSS configuration with light/dark theme support
-- **index.html**: HTML entry point with Google Fonts
+### 1. Protocol Configuration System
+```typescript
+const protocolConfigs = {
+  'HTTPS': { port: 443, description: 'Secure HTTP over TLS' },
+  'PostgreSQL': { port: 5432, description: 'PostgreSQL database connection' },
+  // ... 15+ protocols total
+};
+```
 
-### Features Implemented
+### 2. Enhanced Node Component with Connection Handles
+- Added 4 connection handles per node (top, bottom, left, right)
+- Visual feedback with hover states
+- Proper TypeScript typing with React Flow
 
-#### ✅ Visual Architecture Design
-- Drag and drop component palette
-- Interactive canvas with ReactFlow
-- Component categories (application, security, network, data)
-- Custom node rendering with icons and styling
-- Zone-based organization
+### 3. Connection Dialog System
+- Interactive protocol selection
+- Port configuration with validation
+- Encryption options (TLS 1.3, mTLS, SASL_SSL, None)
+- Security warnings for unencrypted connections
+- Smart defaults based on component types
 
-#### ✅ Component Library
-- **Application**: Web Server, App Server, API Gateway, Microservice, Mobile App
-- **Security**: Firewall, WAF, IDS/IPS
-- **Network**: Load Balancer
-- **Data**: Database, Cache, Message Queue
+### 4. Visual Connection Indicators
+- Green connections for encrypted traffic
+- Red connections for unencrypted traffic
+- Arrow markers on connection endpoints
+- Smooth step connection routing
 
-#### ✅ Security Analysis Engine
-- Automated vulnerability detection
-- Risk scoring and severity levels
-- Standards mapping (NIST, ISO, OWASP, CIS)
-- Specific remediation recommendations
+### 5. Enhanced Properties Panel
+- Detailed connection information
+- Source → Target labeling
+- Protocol descriptions
+- Security risk warnings
+- Connection descriptions
 
-#### ✅ Attack Path Visualization
-- Threat scenario modeling
-- Impact and likelihood assessment
-- Mitigation strategy recommendations
-- Interactive attack path exploration
+## File Structure Backed Up
 
-#### ✅ User Experience
-- Dark/light theme toggle
-- Persistent state with useKV
-- Template library (secure/vulnerable designs)
-- Real-time property editing
-- Component deletion and connection editing
+### Core Files
+- `/src/App.tsx` - Main application with enhanced connection system
+- `/src/index.css` - Theme definitions with dark/light mode support
+- `/index.html` - Base HTML with proper font loading
+- `/README.md` - Comprehensive documentation
 
-#### ✅ Technical Implementation
-- TypeScript for type safety
-- Modern React hooks pattern
-- Tailwind CSS with custom theme
-- shadcn/ui components
-- Phosphor Icons
-- ReactFlow for diagramming
+### Component Integration
+- React Flow with TypeScript
+- Shadcn/ui components for dialogs and forms
+- Phosphor Icons for visual elements
+- Custom node components with connection handles
 
-### Security Analysis Rules
+## Key Features Implemented
 
-#### Implemented Checks
-1. **Unencrypted Communications**: Detects HTTP, unencrypted DB connections
-2. **Architecture Violations**: Direct database access, missing app tier
-3. **Missing Security Controls**: No firewall, missing WAF for web servers
-4. **Standards Compliance**: Maps to NIST 800-53, ISO 27001, OWASP, CIS
+### Connection System
+1. **Visio-like Connection Experience**
+   - Click and drag between connection handles
+   - Visual feedback during connection creation
+   - Connection validation and dialog
 
-#### Attack Path Scenarios
-1. **Web Application Attack**: HTTP interception → credential theft → DB access → data breach
-2. **Network Lateral Movement**: External compromise → internal pivot → privilege escalation
-3. **Data Exfiltration**: Application bypass → direct DB access → data theft
+2. **Protocol-Aware Architecture**
+   - 15+ predefined protocols
+   - Automatic port detection
+   - Smart defaults based on component types
 
-### Pre-Built Templates
+3. **Security-First Design**
+   - Visual encryption indicators
+   - Security warnings for unencrypted connections
+   - Standards mapping (NIST, ISO 27001, OWASP)
 
-#### Secure Architecture Template
-- Multi-tier architecture with proper separation
-- WAF and firewall protection
-- Encrypted communications (HTTPS, mTLS, TLS)
-- Load balancer redundancy
-- Security monitoring (IDS/IPS)
+4. **Enhanced User Experience**
+   - Dark/light theme toggle
+   - Persistent preferences
+   - Template library with secure/vulnerable designs
+   - Real-time security analysis
 
-#### Vulnerable Architecture Template
-- Direct database connections
-- Unencrypted HTTP communications
-- Missing security controls
-- Flat network architecture
-- Public admin interfaces
+## Technical Implementation Details
 
-### UI/UX Features
+### React Flow Configuration
+- Custom node types with connection handles
+- Enhanced edge styling with color coding
+- Smooth step routing for professional appearance
+- Marker end arrows for directional clarity
 
-#### Sidebar Navigation
-- Component palette with drag-and-drop
-- Properties panel for editing
-- Security analysis results
+### State Management
+- useKV hooks for persistent storage
+- React state for UI interactions
+- Connection dialog state management
+- Theme persistence
+
+### TypeScript Integration
+- Proper typing for React Flow components
+- Interface definitions for protocols and connections
+- Type-safe component configurations
+
+## Security Analysis Integration
+- Automated detection of unencrypted connections
+- Protocol-specific security recommendations
 - Attack path visualization
+- Standards compliance checking
 
-#### Canvas Interactions
-- Node selection and editing
-- Connection creation and deletion
-- Real-time property updates
-- Visual zone indicators
-
-#### Theme System
-- Light/dark mode toggle
-- Consistent color palette
-- Accessible contrast ratios
-- Custom CSS variables
-
-### File Structure
-```
-src/
-├── App.tsx                 # Main application component
-├── index.css              # Tailwind config and themes
-├── components/ui/          # shadcn/ui components
-└── assets/                 # Static assets
-
-index.html                  # HTML entry point
-README.md                   # Comprehensive documentation
-```
-
-### Dependencies
-- React 19 with TypeScript
-- @xyflow/react for diagramming
-- Tailwind CSS for styling
-- shadcn/ui for components
-- Phosphor Icons for iconography
-- GitHub Spark hooks for persistence
-
-## Future Enhancement Opportunities
-
-### Advanced Security Analysis
-- Custom rule authoring
-- Integration with vulnerability databases
-- Automated penetration testing scenarios
-- Compliance report generation
-
-### Collaboration Features
-- Real-time multi-user editing
-- Comments and annotations
-- Approval workflows
-- Version control
-
-### Import/Export
-- Cloud provider integration (AWS, Azure, GCP)
-- Infrastructure-as-Code generation
-- SBOM (Software Bill of Materials) export
-- Integration with security tools
-
-### Enterprise Features
-- SSO integration
-- Role-based access control
-- Audit logging
-- Custom branding
-
-## Technical Notes
-
-### Performance Considerations
-- Optimized for diagrams up to 100 nodes
-- Lazy loading for large component libraries
-- Efficient React rendering with proper memoization
-
-### Browser Compatibility
-- Modern browsers with ES2020 support
-- Responsive design for desktop and tablet
-- Progressive enhancement approach
-
-### Security Considerations
-- Client-side only (no server dependencies)
-- Local data persistence
-- No external API calls for core functionality
-- CSP-friendly implementation
-
----
-
-This backup represents a complete, working implementation of Koh Atlas with all requested features including dark theme toggle, component editing/deletion, custom designs, attack path visualization, and comprehensive security analysis capabilities.
+This backup ensures all enhanced connection functionality is preserved and documented for future reference.
