@@ -94,4 +94,8 @@
   code {
     font-family: 'JetBrains Mono', monospace;
   }
+  
+  kbd {
+    @apply px-1.5 py-0.5 text-xs font-mono bg-muted border border-border rounded;
+  }
 }

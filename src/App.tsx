@@ -16,6 +16,8 @@ import {
   Position,
   MarkerType,
   ConnectionMode,
+  XYPosition,
+  NodeProps,
 } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,11 +60,17 @@ interface ComponentConfig {
   type: string;
   label: string;
   icon: React.ReactNode;
-  category: 'application' | 'security' | 'network' | 'data';
+  category: 'application' | 'security' | 'network' | 'data' | 'container';
   color: string;
+  isContainer?: boolean;
 }
 
 const componentTypes: ComponentConfig[] = [
+  // Container Components (can contain other components)
+  { type: 'vpc-vnet', label: 'VPC / VNet', icon: <Network />, category: 'container', color: '#0ea5e9', isContainer: true },
+  { type: 'subnet', label: 'Subnet', icon: <Network />, category: 'container', color: '#0284c7', isContainer: true },
+  { type: 'network-segmentation', label: 'Network Segmentation', icon: <Tree />, category: 'container', color: '#0891b2', isContainer: true },
+  
   // Application Components
   { type: 'web-browser', label: 'Web Browser', icon: <Browser />, category: 'application', color: '#3b82f6' },
   { type: 'web-server', label: 'Web Server', icon: <Desktop />, category: 'application', color: '#3b82f6' },
@@ -76,9 +84,6 @@ const componentTypes: ComponentConfig[] = [
   // Network Components
   { type: 'load-balancer-global', label: 'Global Load Balancer', icon: <Scales />, category: 'network', color: '#059669' },
   { type: 'load-balancer-internal', label: 'Internal Load Balancer', icon: <Scales />, category: 'network', color: '#047857' },
-  { type: 'vpc-vnet', label: 'VPC / VNet', icon: <Network />, category: 'network', color: '#0ea5e9' },
-  { type: 'subnet', label: 'Subnet', icon: <Network />, category: 'network', color: '#0284c7' },
-  { type: 'network-segmentation', label: 'Network Segmentation', icon: <Tree />, category: 'network', color: '#0891b2' },
   
   // Data Components
   { type: 'database', label: 'Database', icon: <Database />, category: 'data', color: '#f59e0b' },
@@ -135,6 +140,79 @@ const protocolConfigs = {
 const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
   const config = componentTypes.find(c => c.type === data.type);
   
+  if (config?.isContainer) {
+    // Container node (VPC, Subnet, Network Segmentation)
+    return (
+      <div 
+        className={`
+          relative min-w-[200px] min-h-[150px] rounded-lg border-2 border-dashed 
+          ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
+          transition-all duration-200 hover:border-primary/50
+          bg-card/10 backdrop-blur-sm
+        `}
+        style={{ 
+          borderColor: config?.color || '#666',
+          backgroundColor: `${config?.color}10` || '#66610'
+        }}
+      >
+        {/* Container header */}
+        <div 
+          className="absolute -top-6 left-2 px-2 py-1 bg-card border border-border rounded-md shadow-sm"
+          style={{ borderLeftColor: config?.color || '#666', borderLeftWidth: '3px' }}
+        >
+          <div className="flex items-center gap-2">
+            <div style={{ color: config?.color || '#666' }}>
+              {config?.icon}
+            </div>
+            <div>
+              <div className="font-medium text-xs">{data.label}</div>
+              <div className="text-xs text-muted-foreground">{config?.label}</div>
+            </div>
+          </div>
+          {data.zone && (
+            <Badge variant="secondary" className="mt-1 text-xs">
+              {data.zone}
+            </Badge>
+          )}
+        </div>
+        
+        {/* Container content area */}
+        <div className="w-full h-full p-4 flex items-center justify-center">
+          <div className="text-xs text-muted-foreground opacity-50">
+            Drop components here
+          </div>
+        </div>
+        
+        {/* Connection handles */}
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="w-3 h-3 !bg-primary border-2 border-background"
+          style={{ left: -6 }}
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="w-3 h-3 !bg-primary border-2 border-background"
+          style={{ right: -6 }}
+        />
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="w-3 h-3 !bg-primary border-2 border-background"
+          style={{ top: -6 }}
+        />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="w-3 h-3 !bg-primary border-2 border-background"
+          style={{ bottom: -6 }}
+        />
+      </div>
+    );
+  }
+
+  // Regular component node
   return (
     <div 
       className={`
@@ -197,17 +275,23 @@ const customDesigns = {
   secure: {
     name: "Secure Web Application",
     nodes: [
-      { id: '1', type: 'custom', position: { x: 100, y: 100 }, data: { type: 'web-browser', label: 'Web Browser', zone: 'External' } },
-      { id: '2', type: 'custom', position: { x: 300, y: 100 }, data: { type: 'waf', label: 'WAF', zone: 'DMZ' } },
-      { id: '3', type: 'custom', position: { x: 500, y: 100 }, data: { type: 'load-balancer-global', label: 'Global Load Balancer', zone: 'DMZ' } },
-      { id: '4', type: 'custom', position: { x: 700, y: 50 }, data: { type: 'web-server', label: 'Web Server 1', zone: 'Web Tier' } },
-      { id: '5', type: 'custom', position: { x: 700, y: 150 }, data: { type: 'web-server', label: 'Web Server 2', zone: 'Web Tier' } },
-      { id: '6', type: 'custom', position: { x: 900, y: 100 }, data: { type: 'api-gateway', label: 'API Gateway', zone: 'App Tier' } },
-      { id: '7', type: 'custom', position: { x: 1100, y: 50 }, data: { type: 'app-server', label: 'App Server 1', zone: 'App Tier' } },
-      { id: '8', type: 'custom', position: { x: 1100, y: 150 }, data: { type: 'app-server', label: 'App Server 2', zone: 'App Tier' } },
-      { id: '9', type: 'custom', position: { x: 1300, y: 100 }, data: { type: 'database', label: 'Primary DB', zone: 'Data Tier' } },
-      { id: '10', type: 'custom', position: { x: 500, y: 250 }, data: { type: 'firewall', label: 'Internal Firewall', zone: 'Security' } },
-      { id: '11', type: 'custom', position: { x: 900, y: 250 }, data: { type: 'ids-ips', label: 'IDS/IPS', zone: 'Security' } },
+      { id: 'vpc-1', type: 'custom', position: { x: 50, y: 50 }, data: { type: 'vpc-vnet', label: 'Production VPC', zone: 'Cloud' } },
+      { id: 'subnet-dmz', type: 'custom', position: { x: 100, y: 120 }, data: { type: 'subnet', label: 'DMZ Subnet', zone: 'DMZ' } },
+      { id: 'subnet-web', type: 'custom', position: { x: 400, y: 120 }, data: { type: 'subnet', label: 'Web Subnet', zone: 'Web Tier' } },
+      { id: 'subnet-app', type: 'custom', position: { x: 700, y: 120 }, data: { type: 'subnet', label: 'App Subnet', zone: 'App Tier' } },
+      { id: 'subnet-data', type: 'custom', position: { x: 1000, y: 120 }, data: { type: 'subnet', label: 'Data Subnet', zone: 'Data Tier' } },
+      
+      { id: '1', type: 'custom', position: { x: 100, y: 300 }, data: { type: 'web-browser', label: 'Web Browser', zone: 'External' } },
+      { id: '2', type: 'custom', position: { x: 150, y: 180 }, data: { type: 'waf', label: 'WAF', zone: 'DMZ' } },
+      { id: '3', type: 'custom', position: { x: 450, y: 180 }, data: { type: 'load-balancer-global', label: 'Global Load Balancer', zone: 'Web Tier' } },
+      { id: '4', type: 'custom', position: { x: 420, y: 240 }, data: { type: 'web-server', label: 'Web Server 1', zone: 'Web Tier' } },
+      { id: '5', type: 'custom', position: { x: 480, y: 240 }, data: { type: 'web-server', label: 'Web Server 2', zone: 'Web Tier' } },
+      { id: '6', type: 'custom', position: { x: 750, y: 180 }, data: { type: 'api-gateway', label: 'API Gateway', zone: 'App Tier' } },
+      { id: '7', type: 'custom', position: { x: 720, y: 240 }, data: { type: 'app-server', label: 'App Server 1', zone: 'App Tier' } },
+      { id: '8', type: 'custom', position: { x: 780, y: 240 }, data: { type: 'app-server', label: 'App Server 2', zone: 'App Tier' } },
+      { id: '9', type: 'custom', position: { x: 1050, y: 200 }, data: { type: 'database', label: 'Primary DB', zone: 'Data Tier' } },
+      { id: '10', type: 'custom', position: { x: 300, y: 350 }, data: { type: 'firewall', label: 'Internal Firewall', zone: 'Security' } },
+      { id: '11', type: 'custom', position: { x: 600, y: 350 }, data: { type: 'ids-ips', label: 'IDS/IPS', zone: 'Security' } },
     ] as Node[],
     edges: [
       { 
@@ -391,6 +475,25 @@ function App() {
     }
   }, [isDarkTheme]);
 
+  // Keyboard shortcuts for deletion
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (selectedNode || selectedEdge) {
+          event.preventDefault();
+          onDeleteSelected();
+        }
+      }
+      if (event.key === 'Escape') {
+        setSelectedNode(null);
+        setSelectedEdge(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNode, selectedEdge]);
+
   // Load custom design
   const loadCustomDesign = (designKey: 'secure' | 'vulnerable') => {
     const design = customDesigns[designKey];
@@ -399,7 +502,7 @@ function App() {
     toast.success(`Loaded ${design.name}`);
   };
 
-  // Add new component to canvas
+  // Add new component to canvas with container detection
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -419,15 +522,30 @@ function App() {
         y: event.clientY - reactFlowBounds.top,
       });
 
+      // For container components, set larger size
+      const isContainer = selectedComponent.isContainer;
+      const nodeData: any = {
+        type: selectedComponent.type,
+        label: selectedComponent.label,
+        zone: selectedComponent.category === 'security' ? 'Security' : 'Internal',
+      };
+
+      if (isContainer) {
+        nodeData.width = 300;
+        nodeData.height = 200;
+      }
+
       const newNode: Node = {
         id: `${Date.now()}`,
         type: 'custom',
         position,
-        data: {
-          type: selectedComponent.type,
-          label: selectedComponent.label,
-          zone: selectedComponent.category === 'security' ? 'Security' : 'Internal',
-        },
+        data: nodeData,
+        ...(isContainer && {
+          style: {
+            width: 300,
+            height: 200,
+          },
+        }),
       };
 
       setNodes(nds => nds.concat(newNode));
@@ -846,6 +964,30 @@ function App() {
           <TabsContent value="components" className="flex-1 px-4 pb-4">
             <ScrollArea className="h-full">
               <div className="space-y-4">
+                {/* Container Components */}
+                <div>
+                  <h3 className="font-medium mb-2">Containers</h3>
+                  <div className="grid grid-cols-1 gap-2">
+                    {componentTypes.filter(c => c.category === 'container').map(component => (
+                      <Button
+                        key={component.type}
+                        variant="outline"
+                        className="h-auto p-2 justify-start border-dashed"
+                        draggable
+                        onDragStart={() => setSelectedComponent(component)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div style={{ color: component.color }}>
+                            {component.icon}
+                          </div>
+                          <span className="text-xs">{component.label}</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Regular Components */}
                 {(['application', 'network', 'data', 'security'] as const).map(category => (
                   <div key={category}>
                     <h3 className="font-medium mb-2 capitalize">{category}</h3>
@@ -877,7 +1019,9 @@ function App() {
             <ScrollArea className="h-full">
               {selectedNode && (
                 <div className="space-y-4">
-                  <h3 className="font-medium">Node Properties</h3>
+                  <h3 className="font-medium">
+                    {componentTypes.find(c => c.type === selectedNode.data?.type)?.isContainer ? 'Container' : 'Node'} Properties
+                  </h3>
                   <div className="space-y-2">
                     <Label htmlFor="node-label">Label</Label>
                     <Input
@@ -903,9 +1047,44 @@ function App() {
                         <SelectItem value="Data Tier">Data Tier</SelectItem>
                         <SelectItem value="Security">Security</SelectItem>
                         <SelectItem value="Management">Management</SelectItem>
+                        <SelectItem value="Cloud">Cloud</SelectItem>
+                        <SelectItem value="Internal">Internal</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                  
+                  {/* Container-specific properties */}
+                  {componentTypes.find(c => c.type === selectedNode.data?.type)?.isContainer && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="container-cidr">CIDR Block (optional)</Label>
+                        <Input
+                          id="container-cidr"
+                          placeholder="e.g., 10.0.0.0/16"
+                          value={(selectedNode.data as any)?.cidr || ''}
+                          onChange={(e) => updateNodeData(selectedNode.id, { cidr: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="container-description">Description</Label>
+                        <Input
+                          id="container-description"
+                          placeholder="Container purpose or notes"
+                          value={(selectedNode.data as any)?.description || ''}
+                          onChange={(e) => updateNodeData(selectedNode.id, { description: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  )}
+                  
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Keyboard Shortcuts:</p>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• <kbd>Delete</kbd> or <kbd>Backspace</kbd> to delete</p>
+                      <p>• <kbd>Escape</kbd> to deselect</p>
+                    </div>
+                  </div>
+                  
                   <Button 
                     variant="destructive" 
                     size="sm" 
@@ -913,7 +1092,7 @@ function App() {
                     className="w-full"
                   >
                     <Trash className="w-4 h-4 mr-2" />
-                    Delete Node
+                    Delete {componentTypes.find(c => c.type === selectedNode.data?.type)?.isContainer ? 'Container' : 'Node'}
                   </Button>
                 </div>
               )}
@@ -1019,6 +1198,14 @@ function App() {
                     />
                   </div>
                   
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Keyboard Shortcuts:</p>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• <kbd>Delete</kbd> or <kbd>Backspace</kbd> to delete</p>
+                      <p>• <kbd>Escape</kbd> to deselect</p>
+                    </div>
+                  </div>
+                  
                   <Button 
                     variant="destructive" 
                     size="sm" 
@@ -1034,6 +1221,11 @@ function App() {
               {!selectedNode && !selectedEdge && (
                 <div className="text-center text-muted-foreground py-8">
                   <p>Select a node or connection to edit properties</p>
+                  <div className="mt-4 text-xs space-y-1">
+                    <p>• Click on any component to select it</p>
+                    <p>• Click on connections to edit protocols</p>
+                    <p>• Use keyboard shortcuts for faster editing</p>
+                  </div>
                 </div>
               )}
             </ScrollArea>
@@ -1202,8 +1394,11 @@ function App() {
               </p>
               <div className="text-sm text-muted-foreground space-y-1">
                 <p>• Load a secure or vulnerable template to get started</p>
+                <p>• Start with container components (VPC, Subnet) to organize zones</p>
+                <p>• Drag regular components into containers or onto the canvas</p>
                 <p>• Connect components by dragging between connection points</p>
                 <p>• Specify protocols and ports for each connection</p>
+                <p>• Use the Properties panel to edit selected components</p>
                 <p>• Run security analysis to identify vulnerabilities</p>
                 <p>• View attack paths to understand threat scenarios</p>
               </div>
