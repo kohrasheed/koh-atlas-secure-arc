@@ -1,9 +1,23 @@
 import { useEffect, useState } from 'react';
+import { useKV } from '@github/spark/hooks';
 
 export type Theme = 'light' | 'dark' | 'system';
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>('system');
+  const [storedTheme, setStoredTheme] = useKV<Theme>('theme-preference', 'system');
+  const [theme, setThemeState] = useState<Theme>(storedTheme || 'system');
+
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    setStoredTheme(newTheme);
+  };
+
+  useEffect(() => {
+    // Sync with stored theme on mount
+    if (storedTheme) {
+      setThemeState(storedTheme);
+    }
+  }, [storedTheme]);
 
   useEffect(() => {
     const root = window.document.documentElement;

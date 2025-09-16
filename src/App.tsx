@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from './components/ThemeToggle';
 
 function App() {
@@ -15,22 +16,44 @@ function App() {
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
             <ThemeToggle />
             <span className="text-sm text-muted-foreground">
-              Test Mode - All errors resolved
+              Theme Toggle Active
             </span>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">Application is running successfully!</h2>
-          <p className="text-muted-foreground">All React context errors have been resolved.</p>
-          <Button onClick={() => alert('Working!')}>Test Button</Button>
-        </div>
+      <div className="flex-1 flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Theme Toggle Demo</CardTitle>
+            <CardDescription>
+              Use the theme toggle in the top-right corner to switch between light, dark, and system themes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 rounded-md bg-muted">
+              <p className="text-sm text-muted-foreground">
+                This card demonstrates the theme colors. Notice how the background, 
+                text, and borders change when you toggle themes.
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              <Button variant="default">Primary Button</Button>
+              <Button variant="secondary">Secondary</Button>
+              <Button variant="outline">Outline</Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="p-2 rounded bg-primary text-primary-foreground">Primary</div>
+              <div className="p-2 rounded bg-secondary text-secondary-foreground">Secondary</div>
+              <div className="p-2 rounded bg-accent text-accent-foreground">Accent</div>
+              <div className="p-2 rounded bg-destructive text-destructive-foreground">Destructive</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
