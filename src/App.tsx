@@ -840,6 +840,116 @@ function App() {
     })));
   };
 
+  // Auto-fix vulnerabilities
+  const autoFixVulnerabilities = () => {
+    let fixesApplied = 0;
+    
+    // Fix unencrypted connections
+    setEdges((eds: Edge[]) => eds.map((edge: Edge) => {
+      const edgeData = edge.data || {};
+      
+      if (edgeData.protocol === 'HTTP' || edgeData.encryption === 'None') {
+        fixesApplied++;
+        
+        // Smart protocol upgrade based on target
+        const targetNode = nodes.find(n => n.id === edge.target);
+        let newProtocol = 'HTTPS';
+        let newPort = 443;
+        let newEncryption = 'TLS 1.3';
+        
+        if (targetNode?.data?.type === 'database') {
+          newProtocol = 'PostgreSQL';
+          newPort = 5432;
+          newEncryption = 'TLS';
+        } else if (targetNode?.data?.type === 'cache') {
+          newProtocol = 'Redis';
+          newPort = 6379;
+          newEncryption = 'TLS';
+        } else if (targetNode?.data?.type === 'message-queue') {
+          newProtocol = 'KAFKA';
+          newPort = 9092;
+          newEncryption = 'SASL_SSL';
+        }
+        
+        return {
+          ...edge,
+          label: `${newProtocol}:${newPort}`,
+          data: {
+            ...edgeData,
+            protocol: newProtocol,
+            port: newPort,
+            encryption: newEncryption
+          },
+          style: {
+            ...edge.style,
+            stroke: '#10b981',
+            strokeWidth: 2
+          }
+        };
+      }
+      
+      return edge;
+    }));
+
+    // Add missing security controls
+    const existingNodeTypes = nodes.map(n => n.data?.type);
+    const newNodes: Node[] = [];
+    
+    // Add WAF if web servers exist but no WAF
+    if (nodes.some(n => n.data?.type === 'web-server') && !existingNodeTypes.includes('waf')) {
+      const webServers = nodes.filter(n => n.data?.type === 'web-server');
+      if (webServers.length > 0) {
+        const avgX = webServers.reduce((sum, n) => sum + n.position.x, 0) / webServers.length;
+        const avgY = webServers.reduce((sum, n) => sum + n.position.y, 0) / webServers.length;
+        
+        newNodes.push({
+          id: `waf-autofix-${Date.now()}`,
+          type: 'custom',
+          position: { x: avgX - 100, y: avgY - 50 },
+          data: { type: 'waf', label: 'WAF (Auto-added)', zone: 'DMZ' }
+        });
+        fixesApplied++;
+      }
+    }
+    
+    // Add firewall if none exists
+    if (!existingNodeTypes.includes('firewall')) {
+      newNodes.push({
+        id: `firewall-autofix-${Date.now()}`,
+        type: 'custom',
+        position: { x: 100, y: 300 },
+        data: { type: 'firewall', label: 'Firewall (Auto-added)', zone: 'Security' }
+      });
+      fixesApplied++;
+    }
+    
+    // Add IDS/IPS if none exists and there are multiple tiers
+    if (!existingNodeTypes.includes('ids-ips') && nodes.length > 3) {
+      newNodes.push({
+        id: `ids-autofix-${Date.now()}`,
+        type: 'custom',
+        position: { x: 400, y: 350 },
+        data: { type: 'ids-ips', label: 'IDS/IPS (Auto-added)', zone: 'Security' }
+      });
+      fixesApplied++;
+    }
+    
+    if (newNodes.length > 0) {
+      setNodes(nds => [...nds, ...newNodes]);
+    }
+    
+    // Re-run analysis to update findings
+    setTimeout(() => {
+      runSecurityAnalysis();
+    }, 100);
+    
+    if (fixesApplied > 0) {
+      toast.success(`Applied ${fixesApplied} security fixes automatically`);
+    } else {
+      toast.info('No automatic fixes available');
+    }
+  };
+
   // Connection Dialog Component
   const ConnectionDialog = () => {
     const [selectedProtocol, setSelectedProtocol] = useState('HTTPS');
@@ -994,24 +1104,37 @@ function App() {
             </Button>
           </div>
 
-          <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              onClick={runSecurityAnalysis}
-              className="flex-1"
-            >
-              <Play className="w-4 h-4 mr-1" />
-              Analyze
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => setShowAttackPaths(!showAttackPaths)}
-              className="flex-1"
-            >
-              <Target className="w-4 h-4 mr-1" />
-              Attacks
-            </Button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                onClick={runSecurityAnalysis}
+                className="flex-1"
+              >
+                <Play className="w-4 h-4 mr-1" />
+                Analyze
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setShowAttackPaths(!showAttackPaths)}
+                className="flex-1"
+              >
+                <Target className="w-4 h-4 mr-1" />
+                Attacks
+              </Button>
+            </div>
+            {findings.length > 0 && (
+              <Button 
+                size="sm" 
+                variant="secondary"
+                onClick={autoFixVulnerabilities}
+                className="w-full"
+              >
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Fix Vulnerabilities
+              </Button>
+            )}
           </div>
         </div>
 
