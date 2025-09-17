@@ -18,6 +18,7 @@ import {
   ConnectionMode,
   XYPosition,
   NodeProps,
+  NodeResizer,
 } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -157,6 +158,20 @@ const CustomNode = ({ data, selected }: NodeProps) => {
           backgroundColor: `${config?.color}10` || '#66610'
         }}
       >
+        {/* Node Resizer */}
+        <NodeResizer 
+          isVisible={selected}
+          minWidth={200}
+          minHeight={150}
+          handleStyle={{
+            backgroundColor: config?.color || '#666',
+            borderColor: 'white',
+            borderWidth: 2,
+            width: 8,
+            height: 8
+          }}
+        />
+        
         {/* Container header */}
         <div 
           className={`absolute -top-6 left-2 px-2 py-1 bg-card border border-border rounded-md shadow-sm ${isHighlighted ? 'bg-yellow-100 border-yellow-400' : ''}`}
@@ -225,6 +240,20 @@ const CustomNode = ({ data, selected }: NodeProps) => {
       `}
       style={{ borderLeftColor: isHighlighted ? '#facc15' : (config?.color || '#666') }}
     >
+      {/* Node Resizer for regular components */}
+      <NodeResizer 
+        isVisible={selected}
+        minWidth={120}
+        minHeight={60}
+        handleStyle={{
+          backgroundColor: config?.color || '#666',
+          borderColor: 'white',
+          borderWidth: 2,
+          width: 6,
+          height: 6
+        }}
+      />
+      
       {/* Connection handles */}
       <Handle
         type="target"
@@ -1450,6 +1479,7 @@ function App() {
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p>• <kbd>Delete</kbd> or <kbd>Backspace</kbd> to delete</p>
                       <p>• <kbd>Escape</kbd> to deselect</p>
+                      <p>• Drag corners to resize when selected</p>
                     </div>
                   </div>
                   
@@ -1592,6 +1622,7 @@ function App() {
                   <div className="mt-4 text-xs space-y-1">
                     <p>• Click on any component to select it</p>
                     <p>• Click on connections to edit protocols</p>
+                    <p>• Drag corners of selected components to resize</p>
                     <p>• Use keyboard shortcuts for faster editing</p>
                   </div>
                 </div>
@@ -1784,6 +1815,7 @@ function App() {
                 <p>• Drag regular components into containers or onto the canvas</p>
                 <p>• Connect components by dragging between connection points</p>
                 <p>• Specify protocols and ports for each connection</p>
+                <p>• Select components to resize them by dragging the corners</p>
                 <p>• Use the Properties panel to edit selected components</p>
                 <p>• Run security analysis to identify vulnerabilities</p>
                 <p>• View attack paths to understand threat scenarios</p>
