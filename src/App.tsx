@@ -164,16 +164,16 @@ const CustomNode = ({ data, selected }: NodeProps) => {
         >
           <div className="flex items-center gap-2">
             <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-              {config?.icon || null}
+              {config?.icon}
             </div>
             <div>
-              <div className="font-medium text-xs">{(data.label as string) || ''}</div>
+              <div className="font-medium text-xs">{String((data as any).label || '')}</div>
               <div className="text-xs text-muted-foreground">{config?.label || ''}</div>
             </div>
           </div>
-          {data.zone && String(data.zone) && (
+          {(data as any).zone && String((data as any).zone) && (
             <Badge variant="secondary" className="mt-1 text-xs">
-              {String(data.zone)}
+              {String((data as any).zone)}
             </Badge>
           )}
         </div>
@@ -253,16 +253,16 @@ const CustomNode = ({ data, selected }: NodeProps) => {
       
       <div className="flex items-center gap-2">
         <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-          {config?.icon || null}
+          {config?.icon}
         </div>
         <div>
-          <div className="font-medium text-sm">{(data.label as string) || ''}</div>
+          <div className="font-medium text-sm">{String((data as any).label || '')}</div>
           <div className="text-xs text-muted-foreground">{config?.label || ''}</div>
         </div>
       </div>
-      {data.zone && String(data.zone) && (
+      {(data as any).zone && String((data as any).zone) && (
         <Badge variant="secondary" className="mt-1 text-xs">
-          {String(data.zone)}
+          {String((data as any).zone)}
         </Badge>
       )}
     </div>
@@ -843,6 +843,8 @@ function App() {
   // Auto-fix vulnerabilities
   const autoFixVulnerabilities = () => {
     let fixesApplied = 0;
+    const newNodes: Node[] = [];
+    const newEdges: Edge[] = [];
     
     // Fix unencrypted connections
     setEdges((eds: Edge[]) => eds.map((edge: Edge) => {
@@ -891,60 +893,241 @@ function App() {
       return edge;
     }));
 
-    // Add missing security controls
+    // Add missing security controls with proper connections
     const existingNodeTypes = nodes.map(n => n.data?.type);
-    const newNodes: Node[] = [];
+    const existingNodes = [...nodes];
     
     // Add WAF if web servers exist but no WAF
-    if (nodes.some(n => n.data?.type === 'web-server') && !existingNodeTypes.includes('waf')) {
-      const webServers = nodes.filter(n => n.data?.type === 'web-server');
+    if (existingNodes.some(n => n.data?.type === 'web-server') && !existingNodeTypes.includes('waf')) {
+      const webServers = existingNodes.filter(n => n.data?.type === 'web-server');
+      const browsers = existingNodes.filter(n => n.data?.type === 'web-browser');
+      
       if (webServers.length > 0) {
         const avgX = webServers.reduce((sum, n) => sum + n.position.x, 0) / webServers.length;
         const avgY = webServers.reduce((sum, n) => sum + n.position.y, 0) / webServers.length;
         
-        newNodes.push({
-          id: `waf-autofix-${Date.now()}`,
+        const wafId = `waf-autofix-${Date.now()}`;
+        const wafNode = {
+          id: wafId,
           type: 'custom',
-          position: { x: avgX - 100, y: avgY - 50 },
+          position: { x: avgX - 150, y: avgY - 50 },
           data: { type: 'waf', label: 'WAF (Auto-added)', zone: 'DMZ' }
+        };
+        
+        newNodes.push(wafNode);
+        
+        // Connect browsers to WAF and WAF to web servers
+        browsers.forEach(browser => {
+          // Find existing browser -> web server connections and reroute through WAF
+          const browserConnections = edges.filter(e => e.source === browser.id && 
+            webServers.some(ws => ws.id === e.target));
+          
+          browserConnections.forEach(conn => {
+            // Create browser -> WAF connection
+            newEdges.push({
+              id: `${browser.id}-${wafId}-autofix`,
+              source: browser.id,
+              target: wafId,
+              label: 'HTTPS:443',
+              type: 'smoothstep',
+              markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+              style: { stroke: '#10b981', strokeWidth: 2 },
+              data: { 
+                protocol: 'HTTPS', 
+                port: 443, 
+                encryption: 'TLS 1.3',
+                sourceLabel: browser.data?.label,
+                targetLabel: 'WAF (Auto-added)'
+              }
+            });
+            
+            // Create WAF -> web server connection
+            const targetServer = webServers.find(ws => ws.id === conn.target);
+            if (targetServer) {
+              newEdges.push({
+                id: `${wafId}-${targetServer.id}-autofix`,
+                source: wafId,
+                target: targetServer.id,
+                label: 'HTTPS:443',
+                type: 'smoothstep',
+                markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+                style: { stroke: '#10b981', strokeWidth: 2 },
+                data: { 
+                  protocol: 'HTTPS', 
+                  port: 443, 
+                  encryption: 'TLS 1.3',
+                  sourceLabel: 'WAF (Auto-added)',
+                  targetLabel: targetServer.data?.label
+                }
+              });
+            }
+          });
         });
+        
         fixesApplied++;
       }
     }
     
     // Add firewall if none exists
     if (!existingNodeTypes.includes('firewall')) {
-      newNodes.push({
-        id: `firewall-autofix-${Date.now()}`,
+      const firewallId = `firewall-autofix-${Date.now()}`;
+      const firewallNode = {
+        id: firewallId,
         type: 'custom',
-        position: { x: 100, y: 300 },
+        position: { x: 50, y: 300 },
         data: { type: 'firewall', label: 'Firewall (Auto-added)', zone: 'Security' }
+      };
+      
+      newNodes.push(firewallNode);
+      
+      // Connect firewall to protect internal traffic
+      const internalNodes = existingNodes.filter(n => 
+        ['app-server', 'database', 'cache'].includes(n.data?.type));
+      
+      // Create monitoring connections from firewall to critical assets
+      internalNodes.slice(0, 2).forEach((node, idx) => {
+        newEdges.push({
+          id: `${firewallId}-monitor-${node.id}`,
+          source: firewallId,
+          target: node.id,
+          label: 'Monitor',
+          type: 'smoothstep',
+          markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+          style: { stroke: '#059669', strokeWidth: 1, strokeDasharray: '5,5' },
+          data: { 
+            protocol: 'Monitoring', 
+            port: 443, 
+            encryption: 'TLS 1.3',
+            sourceLabel: 'Firewall (Auto-added)',
+            targetLabel: node.data?.label,
+            description: 'Traffic monitoring and filtering'
+          }
+        });
       });
+      
       fixesApplied++;
     }
     
     // Add IDS/IPS if none exists and there are multiple tiers
-    if (!existingNodeTypes.includes('ids-ips') && nodes.length > 3) {
-      newNodes.push({
-        id: `ids-autofix-${Date.now()}`,
+    if (!existingNodeTypes.includes('ids-ips') && existingNodes.length > 3) {
+      const idsId = `ids-autofix-${Date.now()}`;
+      const idsNode = {
+        id: idsId,
         type: 'custom',
-        position: { x: 400, y: 350 },
+        position: { x: 500, y: 350 },
         data: { type: 'ids-ips', label: 'IDS/IPS (Auto-added)', zone: 'Security' }
-      });
+      };
+      
+      newNodes.push(idsNode);
+      
+      // Connect IDS/IPS to monitor east-west traffic between tiers
+      const appServers = existingNodes.filter(n => n.data?.type === 'app-server');
+      const databases = existingNodes.filter(n => n.data?.type === 'database');
+      
+      // Monitor app server to database connections
+      if (appServers.length > 0 && databases.length > 0) {
+        const appServer = appServers[0];
+        const database = databases[0];
+        
+        // Create IDS monitoring connection
+        newEdges.push({
+          id: `${idsId}-monitor-${appServer.id}-${database.id}`,
+          source: idsId,
+          target: database.id,
+          label: 'Monitor',
+          type: 'smoothstep',
+          markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+          style: { stroke: '#991b1b', strokeWidth: 1, strokeDasharray: '3,3' },
+          data: { 
+            protocol: 'IDS Monitoring', 
+            port: 443, 
+            encryption: 'TLS 1.3',
+            sourceLabel: 'IDS/IPS (Auto-added)',
+            targetLabel: database.data?.label,
+            description: 'Intrusion detection and prevention'
+          }
+        });
+      }
+      
       fixesApplied++;
     }
     
+    // Add load balancer if web servers exist without one
+    const webServers = existingNodes.filter(n => n.data?.type === 'web-server');
+    const hasLoadBalancer = existingNodeTypes.includes('load-balancer-global') || 
+                          existingNodeTypes.includes('load-balancer-internal');
+    
+    if (webServers.length > 1 && !hasLoadBalancer) {
+      const avgX = webServers.reduce((sum, n) => sum + n.position.x, 0) / webServers.length;
+      const avgY = webServers.reduce((sum, n) => sum + n.position.y, 0) / webServers.length;
+      
+      const lbId = `lb-autofix-${Date.now()}`;
+      const lbNode = {
+        id: lbId,
+        type: 'custom',
+        position: { x: avgX, y: avgY - 100 },
+        data: { type: 'load-balancer-global', label: 'Load Balancer (Auto-added)', zone: 'Web Tier' }
+      };
+      
+      newNodes.push(lbNode);
+      
+      // Connect load balancer to web servers
+      webServers.forEach(server => {
+        newEdges.push({
+          id: `${lbId}-${server.id}-autofix`,
+          source: lbId,
+          target: server.id,
+          label: 'HTTPS:443',
+          type: 'smoothstep',
+          markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+          style: { stroke: '#10b981', strokeWidth: 2 },
+          data: { 
+            protocol: 'HTTPS', 
+            port: 443, 
+            encryption: 'TLS 1.3',
+            sourceLabel: 'Load Balancer (Auto-added)',
+            targetLabel: server.data?.label
+          }
+        });
+      });
+      
+      fixesApplied++;
+    }
+    
+    // Update nodes and edges
     if (newNodes.length > 0) {
       setNodes(nds => [...nds, ...newNodes]);
     }
     
-    // Re-run analysis to update findings
+    if (newEdges.length > 0) {
+      setEdges(eds => [...eds, ...newEdges]);
+    }
+    
+    // Remove old insecure direct connections that are now protected
     setTimeout(() => {
-      runSecurityAnalysis();
+      setEdges(eds => eds.filter(edge => {
+        const edgeData = edge.data || {};
+        const sourceNode = nodes.find(n => n.id === edge.source);
+        const targetNode = nodes.find(n => n.id === edge.target);
+        
+        // Remove direct browser -> web server connections if WAF was added
+        if (sourceNode?.data?.type === 'web-browser' && 
+            targetNode?.data?.type === 'web-server' &&
+            newNodes.some(n => n.data?.type === 'waf')) {
+          return false;
+        }
+        
+        return true;
+      }));
+      
+      // Re-run analysis to update findings
+      setTimeout(() => {
+        runSecurityAnalysis();
+      }, 200);
     }, 100);
     
     if (fixesApplied > 0) {
-      toast.success(`Applied ${fixesApplied} security fixes automatically`);
+      toast.success(`Applied ${fixesApplied} security fixes with proper connections`);
     } else {
       toast.info('No automatic fixes available');
     }
