@@ -559,12 +559,59 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedNode, selectedEdge]);
 
-  // Load custom design
+  // Load custom design with randomized positions
   const loadCustomDesign = (designKey: 'secure' | 'vulnerable') => {
     const design = customDesigns[designKey];
-    setNodes(design.nodes);
+    
+    // Create randomized positions while maintaining relative structure
+    const randomizedNodes = design.nodes.map((node, index) => {
+      const config = componentTypes.find(c => c.type === (node.data as any)?.type);
+      const isContainer = config?.isContainer;
+      
+      if (isContainer) {
+        // Container components get larger spacing and specific positioning
+        const containerIndex = design.nodes.filter((n, i) => i <= index && 
+          componentTypes.find(c => c.type === (n.data as any)?.type)?.isContainer).length - 1;
+        
+        const baseX = 50 + (containerIndex % 2) * 600; // Alternate left/right
+        const baseY = 50 + Math.floor(containerIndex / 2) * 400; // Stack vertically
+        
+        // Smaller random offset for containers to maintain structure
+        const randomOffsetX = (Math.random() - 0.5) * 100; // ±50px variation
+        const randomOffsetY = (Math.random() - 0.5) * 80; // ±40px variation
+        
+        return {
+          ...node,
+          position: { 
+            x: Math.max(50, baseX + randomOffsetX), 
+            y: Math.max(50, baseY + randomOffsetY) 
+          }
+        };
+      } else {
+        // Regular components get more spread out positioning
+        const regularIndex = design.nodes.filter((n, i) => i <= index && 
+          !componentTypes.find(c => c.type === (n.data as any)?.type)?.isContainer).length - 1;
+        
+        const baseX = 150 + (regularIndex % 5) * 250; // 5 columns
+        const baseY = 150 + Math.floor(regularIndex / 5) * 180; // Multiple rows
+        
+        // More random variation for regular components
+        const randomOffsetX = (Math.random() - 0.5) * 180; // ±90px variation
+        const randomOffsetY = (Math.random() - 0.5) * 120; // ±60px variation
+        
+        return {
+          ...node,
+          position: { 
+            x: Math.max(50, baseX + randomOffsetX), 
+            y: Math.max(50, baseY + randomOffsetY) 
+          }
+        };
+      }
+    });
+    
+    setNodes(randomizedNodes);
     setEdges(design.edges);
-    toast.success(`Loaded ${design.name}`);
+    toast.success(`Loaded ${design.name} with randomized layout`);
   };
 
   // Add new component to canvas with container detection
