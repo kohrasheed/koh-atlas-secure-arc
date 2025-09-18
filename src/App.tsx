@@ -502,6 +502,35 @@ function App() {
   const [findings, setFindings] = useState<SecurityFinding[]>([]);
   const [attackPaths, setAttackPaths] = useState<AttackPath[]>([]);
 
+  // Suppress ResizeObserver loop errors (benign browser warning)
+  useEffect(() => {
+    // Suppress ResizeObserver loop errors globally
+    const originalError = console.error;
+    console.error = (...args) => {
+      if (typeof args[0] === 'string' && args[0].includes('ResizeObserver loop')) {
+        return; // Suppress ResizeObserver errors
+      }
+      originalError.call(console, ...args);
+    };
+    
+    // Suppress ResizeObserver errors in window error handler
+    const originalWindowError = window.onerror;
+    window.onerror = (message, source, lineno, colno, error) => {
+      if (typeof message === 'string' && message.includes('ResizeObserver loop')) {
+        return true; // Suppress the error
+      }
+      if (originalWindowError) {
+        return originalWindowError.call(window, message, source, lineno, colno, error);
+      }
+      return false;
+    };
+    
+    return () => {
+      console.error = originalError;
+      window.onerror = originalWindowError;
+    };
+  }, []);
+
   // Update theme
   useEffect(() => {
     if (isDarkTheme === 'true') {
