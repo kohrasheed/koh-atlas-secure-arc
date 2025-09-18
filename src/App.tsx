@@ -95,6 +95,9 @@ const componentTypes: ComponentConfig[] = [
   { type: 'firewall', label: 'Firewall', icon: <Shield />, category: 'security', color: '#dc2626' },
   { type: 'waf', label: 'WAF', icon: <Shield />, category: 'security', color: '#b91c1c' },
   { type: 'ids-ips', label: 'IDS/IPS', icon: <Eye />, category: 'security', color: '#991b1b' },
+  { type: 'dam', label: 'DAM', icon: <Database />, category: 'security', color: '#7c2d12' },
+  { type: 'edge-dns', label: 'Edge DNS', icon: <Globe />, category: 'security', color: '#166534' },
+  { type: 'edge-cdn', label: 'Edge CDN', icon: <Cloud />, category: 'security', color: '#0f766e' },
 ];
 
 // Security findings types
@@ -724,6 +727,9 @@ function App() {
     // Check for missing security controls
     const hasFirewall = nodes.some((n: Node) => n.data.type === 'firewall');
     const hasWAF = nodes.some((n: Node) => n.data.type === 'waf');
+    const hasDAM = nodes.some((n: Node) => n.data.type === 'dam');
+    const hasEdgeDNS = nodes.some((n: Node) => n.data.type === 'edge-dns');
+    const hasEdgeCDN = nodes.some((n: Node) => n.data.type === 'edge-cdn');
     
     if (!hasFirewall) {
       newFindings.push({
@@ -749,6 +755,42 @@ function App() {
       });
     }
 
+    if (!hasDAM && nodes.some((n: Node) => n.data.type === 'database')) {
+      newFindings.push({
+        id: 'missing-dam',
+        title: 'Missing Database Activity Monitoring',
+        severity: 'Medium',
+        description: 'Databases without activity monitoring and threat detection',
+        affected: nodes.filter((n: Node) => n.data.type === 'database').map((n: Node) => n.id),
+        recommendation: 'Deploy DAM to monitor database access and detect anomalies',
+        standards: ['NIST 800-53 AU-2', 'PCI DSS 10.2']
+      });
+    }
+
+    if (!hasEdgeDNS && nodes.some((n: Node) => ['web-server', 'api-gateway'].includes((n.data as any).type))) {
+      newFindings.push({
+        id: 'missing-edge-dns',
+        title: 'Missing Edge DNS Protection',
+        severity: 'Low',
+        description: 'No DNS security and performance optimization at edge',
+        affected: ['architecture'],
+        recommendation: 'Deploy Edge DNS for DDoS protection and DNS filtering',
+        standards: ['NIST 800-53 SC-20', 'CIS Controls 9']
+      });
+    }
+
+    if (!hasEdgeCDN && nodes.some((n: Node) => ['web-server', 'web-browser'].includes((n.data as any).type))) {
+      newFindings.push({
+        id: 'missing-edge-cdn',
+        title: 'Missing Edge CDN Protection',
+        severity: 'Low',
+        description: 'No content delivery network for performance and DDoS protection',
+        affected: nodes.filter((n: Node) => n.data.type === 'web-server').map((n: Node) => n.id),
+        recommendation: 'Deploy Edge CDN for content caching and DDoS mitigation',
+        standards: ['NIST 800-53 SC-5', 'OWASP Top 10']
+      });
+    }
+
     // Generate attack paths
     if (newFindings.length > 0) {
       newAttackPaths.push({
@@ -762,7 +804,7 @@ function App() {
         ],
         impact: 'Data breach, compliance violations',
         likelihood: 'High',
-        mitigations: ['Implement HTTPS', 'Add WAF', 'Database access controls', 'Network segmentation']
+        mitigations: ['Implement HTTPS', 'Add WAF', 'Database access controls', 'Network segmentation', 'Deploy DAM for database monitoring', 'Add Edge DNS for DNS protection', 'Use Edge CDN for DDoS mitigation']
       });
     }
 
@@ -923,13 +965,164 @@ function App() {
     }));
 
     // Add missing security controls with proper connections
-    const existingNodeTypes = nodes.map(n => n.data?.type);
+    const existingNodeTypes = nodes.map(n => (n.data as any)?.type);
     const existingNodes = [...nodes];
     
+    // Add DAM if databases exist but no DAM
+    if (existingNodes.some(n => (n.data as any)?.type === 'database') && !existingNodeTypes.includes('dam')) {
+      const databases = existingNodes.filter(n => (n.data as any)?.type === 'database');
+      
+      if (databases.length > 0) {
+        const avgX = databases.reduce((sum, n) => sum + n.position.x, 0) / databases.length;
+        const avgY = databases.reduce((sum, n) => sum + n.position.y, 0) / databases.length;
+        
+        const damId = `dam-autofix-${Date.now()}`;
+        const damNode = {
+          id: damId,
+          type: 'custom',
+          position: { x: avgX + 150, y: avgY + 50 },
+          data: { type: 'dam', label: 'DAM (Auto-added)', zone: 'Security' }
+        };
+        
+        newNodes.push(damNode);
+        
+        // Connect DAM to databases for monitoring
+        databases.forEach(database => {
+          newEdges.push({
+            id: `${damId}-monitor-${database.id}`,
+            source: damId,
+            target: database.id,
+            label: 'Monitor',
+            type: 'smoothstep',
+            markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+            style: { stroke: '#7c2d12', strokeWidth: 1, strokeDasharray: '5,5' },
+            data: { 
+              protocol: 'DB Monitoring', 
+              port: 443, 
+              encryption: 'TLS 1.3',
+              sourceLabel: 'DAM (Auto-added)',
+              targetLabel: (database.data as any)?.label,
+              description: 'Database activity monitoring and threat detection'
+            }
+          });
+        });
+        
+        fixesApplied++;
+      }
+    }
+    
+    // Add Edge DNS if web servers exist but no Edge DNS
+    if (existingNodes.some(n => ['web-server', 'api-gateway'].includes((n.data as any)?.type)) && !existingNodeTypes.includes('edge-dns')) {
+      const webComponents = existingNodes.filter(n => ['web-server', 'api-gateway'].includes((n.data as any)?.type));
+      
+      if (webComponents.length > 0) {
+        const avgX = webComponents.reduce((sum, n) => sum + n.position.x, 0) / webComponents.length;
+        const avgY = webComponents.reduce((sum, n) => sum + n.position.y, 0) / webComponents.length;
+        
+        const edgeDnsId = `edge-dns-autofix-${Date.now()}`;
+        const edgeDnsNode = {
+          id: edgeDnsId,
+          type: 'custom',
+          position: { x: avgX - 200, y: avgY - 100 },
+          data: { type: 'edge-dns', label: 'Edge DNS (Auto-added)', zone: 'Edge' }
+        };
+        
+        newNodes.push(edgeDnsNode);
+        
+        // Connect Edge DNS to protect web components
+        webComponents.slice(0, 2).forEach(component => {
+          newEdges.push({
+            id: `${edgeDnsId}-protect-${component.id}`,
+            source: edgeDnsId,
+            target: component.id,
+            label: 'DNS:53',
+            type: 'smoothstep',
+            markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+            style: { stroke: '#166534', strokeWidth: 2 },
+            data: { 
+              protocol: 'DNS', 
+              port: 53, 
+              encryption: 'DNSSEC',
+              sourceLabel: 'Edge DNS (Auto-added)',
+              targetLabel: (component.data as any)?.label,
+              description: 'DNS filtering and DDoS protection'
+            }
+          });
+        });
+        
+        fixesApplied++;
+      }
+    }
+    
+    // Add Edge CDN if web servers exist but no Edge CDN
+    if (existingNodes.some(n => (n.data as any)?.type === 'web-server') && !existingNodeTypes.includes('edge-cdn')) {
+      const webServers = existingNodes.filter(n => (n.data as any)?.type === 'web-server');
+      const browsers = existingNodes.filter(n => (n.data as any)?.type === 'web-browser');
+      
+      if (webServers.length > 0) {
+        const avgX = webServers.reduce((sum, n) => sum + n.position.x, 0) / webServers.length;
+        const avgY = webServers.reduce((sum, n) => sum + n.position.y, 0) / webServers.length;
+        
+        const edgeCdnId = `edge-cdn-autofix-${Date.now()}`;
+        const edgeCdnNode = {
+          id: edgeCdnId,
+          type: 'custom',
+          position: { x: avgX - 250, y: avgY - 150 },
+          data: { type: 'edge-cdn', label: 'Edge CDN (Auto-added)', zone: 'Edge' }
+        };
+        
+        newNodes.push(edgeCdnNode);
+        
+        // Connect browsers to Edge CDN and Edge CDN to web servers
+        browsers.forEach(browser => {
+          newEdges.push({
+            id: `${browser.id}-${edgeCdnId}-autofix`,
+            source: browser.id,
+            target: edgeCdnId,
+            label: 'HTTPS:443',
+            type: 'smoothstep',
+            markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+            style: { stroke: '#10b981', strokeWidth: 2 },
+            data: { 
+              protocol: 'HTTPS', 
+              port: 443, 
+              encryption: 'TLS 1.3',
+              sourceLabel: (browser.data as any)?.label,
+              targetLabel: 'Edge CDN (Auto-added)',
+              description: 'Content delivery with DDoS protection'
+            }
+          });
+        });
+        
+        // Connect Edge CDN to web servers
+        webServers.forEach(server => {
+          newEdges.push({
+            id: `${edgeCdnId}-${server.id}-autofix`,
+            source: edgeCdnId,
+            target: server.id,
+            label: 'HTTPS:443',
+            type: 'smoothstep',
+            markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+            style: { stroke: '#10b981', strokeWidth: 2 },
+            data: { 
+              protocol: 'HTTPS', 
+              port: 443, 
+              encryption: 'TLS 1.3',
+              sourceLabel: 'Edge CDN (Auto-added)',
+              targetLabel: (server.data as any)?.label,
+              description: 'Origin server connection'
+            }
+          });
+        });
+        
+        fixesApplied++;
+      }
+    }
+    
     // Add WAF if web servers exist but no WAF
-    if (existingNodes.some(n => n.data?.type === 'web-server') && !existingNodeTypes.includes('waf')) {
-      const webServers = existingNodes.filter(n => n.data?.type === 'web-server');
-      const browsers = existingNodes.filter(n => n.data?.type === 'web-browser');
+    if (existingNodes.some(n => (n.data as any)?.type === 'web-server') && !existingNodeTypes.includes('waf')) {
+      const webServers = existingNodes.filter(n => (n.data as any)?.type === 'web-server');
+      const browsers = existingNodes.filter(n => (n.data as any)?.type === 'web-browser');
       
       if (webServers.length > 0) {
         const avgX = webServers.reduce((sum, n) => sum + n.position.x, 0) / webServers.length;
@@ -965,7 +1158,7 @@ function App() {
                 protocol: 'HTTPS', 
                 port: 443, 
                 encryption: 'TLS 1.3',
-                sourceLabel: browser.data?.label,
+                sourceLabel: (browser.data as any)?.label,
                 targetLabel: 'WAF (Auto-added)'
               }
             });
@@ -986,7 +1179,7 @@ function App() {
                   port: 443, 
                   encryption: 'TLS 1.3',
                   sourceLabel: 'WAF (Auto-added)',
-                  targetLabel: targetServer.data?.label
+                  targetLabel: (targetServer.data as any)?.label
                 }
               });
             }
@@ -1011,7 +1204,7 @@ function App() {
       
       // Connect firewall to protect internal traffic
       const internalNodes = existingNodes.filter(n => 
-        ['app-server', 'database', 'cache'].includes(n.data?.type));
+        ['app-server', 'database', 'cache'].includes((n.data as any)?.type));
       
       // Create monitoring connections from firewall to critical assets
       internalNodes.slice(0, 2).forEach((node, idx) => {
@@ -1028,7 +1221,7 @@ function App() {
             port: 443, 
             encryption: 'TLS 1.3',
             sourceLabel: 'Firewall (Auto-added)',
-            targetLabel: node.data?.label,
+            targetLabel: (node.data as any)?.label,
             description: 'Traffic monitoring and filtering'
           }
         });
@@ -1050,8 +1243,8 @@ function App() {
       newNodes.push(idsNode);
       
       // Connect IDS/IPS to monitor east-west traffic between tiers
-      const appServers = existingNodes.filter(n => n.data?.type === 'app-server');
-      const databases = existingNodes.filter(n => n.data?.type === 'database');
+      const appServers = existingNodes.filter(n => (n.data as any)?.type === 'app-server');
+      const databases = existingNodes.filter(n => (n.data as any)?.type === 'database');
       
       // Monitor app server to database connections
       if (appServers.length > 0 && databases.length > 0) {
@@ -1072,7 +1265,7 @@ function App() {
             port: 443, 
             encryption: 'TLS 1.3',
             sourceLabel: 'IDS/IPS (Auto-added)',
-            targetLabel: database.data?.label,
+            targetLabel: (database.data as any)?.label,
             description: 'Intrusion detection and prevention'
           }
         });
@@ -1082,7 +1275,7 @@ function App() {
     }
     
     // Add load balancer if web servers exist without one
-    const webServers = existingNodes.filter(n => n.data?.type === 'web-server');
+    const webServers = existingNodes.filter(n => (n.data as any)?.type === 'web-server');
     const hasLoadBalancer = existingNodeTypes.includes('load-balancer-global') || 
                           existingNodeTypes.includes('load-balancer-internal');
     
@@ -1115,7 +1308,7 @@ function App() {
             port: 443, 
             encryption: 'TLS 1.3',
             sourceLabel: 'Load Balancer (Auto-added)',
-            targetLabel: server.data?.label
+            targetLabel: (server.data as any)?.label
           }
         });
       });
@@ -1140,9 +1333,9 @@ function App() {
         const targetNode = nodes.find(n => n.id === edge.target);
         
         // Remove direct browser -> web server connections if WAF was added
-        if (sourceNode?.data?.type === 'web-browser' && 
-            targetNode?.data?.type === 'web-server' &&
-            newNodes.some(n => n.data?.type === 'waf')) {
+        if ((sourceNode?.data as any)?.type === 'web-browser' && 
+            (targetNode?.data as any)?.type === 'web-server' &&
+            newNodes.some(n => (n.data as any)?.type === 'waf')) {
           return false;
         }
         
