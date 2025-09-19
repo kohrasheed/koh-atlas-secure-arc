@@ -559,59 +559,129 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedNode, selectedEdge]);
 
-  // Load custom design with randomized positions
+  // Load custom design with randomized positions and variations
   const loadCustomDesign = (designKey: 'secure' | 'vulnerable') => {
     const design = customDesigns[designKey];
     
+    // Add more randomization by shuffling component positions and creating variations
+    const shuffledNodes = [...design.nodes];
+    
+    // Create completely randomized grid positions
+    const gridColumns = 6;
+    const gridRows = Math.ceil(shuffledNodes.length / gridColumns);
+    const cellWidth = 200;
+    const cellHeight = 150;
+    const margin = 100;
+    
+    // Shuffle the nodes for different arrangement each time
+    for (let i = shuffledNodes.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledNodes[i], shuffledNodes[j]] = [shuffledNodes[j], shuffledNodes[i]];
+    }
+    
     // Create randomized positions while maintaining relative structure
-    const randomizedNodes = design.nodes.map((node, index) => {
+    const randomizedNodes = shuffledNodes.map((node, index) => {
       const config = componentTypes.find(c => c.type === (node.data as any)?.type);
       const isContainer = config?.isContainer;
       
       if (isContainer) {
-        // Container components get larger spacing and specific positioning
-        const containerIndex = design.nodes.filter((n, i) => i <= index && 
+        // Container components get special positioning
+        const containerIndex = shuffledNodes.filter((n, i) => i <= index && 
           componentTypes.find(c => c.type === (n.data as any)?.type)?.isContainer).length - 1;
         
-        const baseX = 50 + (containerIndex % 2) * 600; // Alternate left/right
-        const baseY = 50 + Math.floor(containerIndex / 2) * 400; // Stack vertically
+        // More varied container positioning
+        const arrangements = [
+          { x: 50, y: 50 },
+          { x: 800, y: 50 },
+          { x: 50, y: 400 },
+          { x: 800, y: 400 },
+          { x: 400, y: 200 },
+          { x: 1200, y: 100 },
+        ];
         
-        // Smaller random offset for containers to maintain structure
-        const randomOffsetX = (Math.random() - 0.5) * 100; // ±50px variation
-        const randomOffsetY = (Math.random() - 0.5) * 80; // ±40px variation
+        const basePosition = arrangements[containerIndex % arrangements.length];
+        
+        // Larger random variation for containers
+        const randomOffsetX = (Math.random() - 0.5) * 200; // ±100px variation
+        const randomOffsetY = (Math.random() - 0.5) * 150; // ±75px variation
         
         return {
           ...node,
           position: { 
-            x: Math.max(50, baseX + randomOffsetX), 
-            y: Math.max(50, baseY + randomOffsetY) 
+            x: Math.max(50, basePosition.x + randomOffsetX), 
+            y: Math.max(50, basePosition.y + randomOffsetY) 
           }
         };
       } else {
-        // Regular components get more spread out positioning
-        const regularIndex = design.nodes.filter((n, i) => i <= index && 
+        // Regular components with more randomized grid positioning
+        const regularIndex = shuffledNodes.filter((n, i) => i <= index && 
           !componentTypes.find(c => c.type === (n.data as any)?.type)?.isContainer).length - 1;
         
-        const baseX = 150 + (regularIndex % 5) * 250; // 5 columns
-        const baseY = 150 + Math.floor(regularIndex / 5) * 180; // Multiple rows
+        // Calculate grid position with randomness
+        const col = regularIndex % gridColumns;
+        const row = Math.floor(regularIndex / gridColumns);
         
-        // More random variation for regular components
-        const randomOffsetX = (Math.random() - 0.5) * 180; // ±90px variation
-        const randomOffsetY = (Math.random() - 0.5) * 120; // ±60px variation
+        // Base grid position
+        const baseX = margin + col * cellWidth;
+        const baseY = margin + row * cellHeight;
+        
+        // Add significant random variation
+        const randomOffsetX = (Math.random() - 0.5) * 250; // ±125px variation
+        const randomOffsetY = (Math.random() - 0.5) * 200; // ±100px variation
+        
+        // Sometimes create clusters or lines
+        const layoutVariation = Math.random();
+        let finalX = baseX + randomOffsetX;
+        let finalY = baseY + randomOffsetY;
+        
+        if (layoutVariation < 0.3) {
+          // Cluster layout - group some components
+          const clusterCenterX = 300 + Math.random() * 600;
+          const clusterCenterY = 200 + Math.random() * 300;
+          const clusterRadius = 150;
+          const angle = Math.random() * 2 * Math.PI;
+          finalX = clusterCenterX + Math.cos(angle) * (Math.random() * clusterRadius);
+          finalY = clusterCenterY + Math.sin(angle) * (Math.random() * clusterRadius);
+        } else if (layoutVariation < 0.6) {
+          // Linear layout - arrange in flowing lines
+          const lineY = 150 + (regularIndex % 3) * 200 + Math.random() * 100;
+          finalX = 100 + regularIndex * 180 + Math.random() * 100;
+          finalY = lineY;
+        }
+        // Otherwise use the standard grid with variation
         
         return {
           ...node,
           position: { 
-            x: Math.max(50, baseX + randomOffsetX), 
-            y: Math.max(50, baseY + randomOffsetY) 
+            x: Math.max(50, finalX), 
+            y: Math.max(50, finalY) 
           }
         };
       }
     });
     
+    // Also randomize edge colors and styles slightly
+    const randomizedEdges = design.edges.map(edge => {
+      const variations = [
+        { strokeWidth: 2 },
+        { strokeWidth: 3 },
+        { strokeWidth: 1.5 },
+      ];
+      
+      const variation = variations[Math.floor(Math.random() * variations.length)];
+      
+      return {
+        ...edge,
+        style: {
+          ...edge.style,
+          ...variation
+        }
+      };
+    });
+    
     setNodes(randomizedNodes);
-    setEdges(design.edges);
-    toast.success(`Loaded ${design.name} with randomized layout`);
+    setEdges(randomizedEdges);
+    toast.success(`Loaded ${design.name} with completely randomized layout`);
   };
 
   // Add new component to canvas with container detection
