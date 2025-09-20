@@ -55,6 +55,7 @@ import {
   Network,
   Tree,
   Hexagon,
+  TrashSimple,
 } from '@phosphor-icons/react';
 
 // Component types and configurations
@@ -853,6 +854,19 @@ function App() {
       toast.success('Connection deleted');
     }
   }, [selectedNode, selectedEdge, setNodes, setEdges]);
+
+  // Clear all elements from canvas
+  const clearAll = useCallback(() => {
+    setNodes([]);
+    setEdges([]);
+    setFindings([]);
+    setAttackPaths([]);
+    setSelectedNode(null);
+    setSelectedEdge(null);
+    setHighlightedElements([]);
+    clearHighlights();
+    toast.success('Canvas cleared - all components and connections removed');
+  }, [setNodes, setEdges]);
 
   // Security analysis
   const runSecurityAnalysis = async () => {
@@ -1701,17 +1715,29 @@ function App() {
                 Attacks
               </Button>
             </div>
-            {findings.length > 0 && (
+            <div className="flex gap-2">
+              {findings.length > 0 && (
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={autoFixVulnerabilities}
+                  className="flex-1"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Fix Issues
+                </Button>
+              )}
               <Button 
                 size="sm" 
-                variant="secondary"
-                onClick={autoFixVulnerabilities}
-                className="w-full"
+                variant="destructive"
+                onClick={clearAll}
+                className={findings.length > 0 ? "flex-1" : "w-full"}
+                disabled={nodes.length === 0 && edges.length === 0}
               >
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Fix Vulnerabilities
+                <TrashSimple className="w-4 h-4 mr-1" />
+                Clear All
               </Button>
-            )}
+            </div>
           </div>
         </div>
 
