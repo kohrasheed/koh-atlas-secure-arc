@@ -422,17 +422,25 @@ function App() {
             backgroundColor: `${config?.color}10` || '#66610'
           }}
         >
-          {/* Node Resizer */}
+          {/* Node Resizer - Enhanced for containers */}
           <NodeResizer 
             isVisible={selected}
             minWidth={200}
             minHeight={150}
+            maxWidth={1200}
+            maxHeight={800}
+            keepAspectRatio={false}
             handleStyle={{
               backgroundColor: config?.color || '#666',
               borderColor: 'white',
               borderWidth: 2,
-              width: 8,
-              height: 8
+              width: 10,
+              height: 10,
+              borderRadius: '2px'
+            }}
+            lineStyle={{
+              borderColor: config?.color || '#666',
+              borderWidth: 2
             }}
           />
           
@@ -532,17 +540,25 @@ function App() {
         `}
         style={{ borderLeftColor: isHighlighted ? '#facc15' : (config?.color || '#666') }}
       >
-        {/* Node Resizer for regular components */}
+        {/* Node Resizer for regular components - Enhanced scaling */}
         <NodeResizer 
           isVisible={selected}
           minWidth={120}
           minHeight={60}
+          maxWidth={600}
+          maxHeight={400}
+          keepAspectRatio={false}
           handleStyle={{
             backgroundColor: config?.color || '#666',
             borderColor: 'white',
             borderWidth: 2,
-            width: 6,
-            height: 6
+            width: 8,
+            height: 8,
+            borderRadius: '2px'
+          }}
+          lineStyle={{
+            borderColor: config?.color || '#666',
+            borderWidth: 1.5
           }}
         />
         
@@ -2024,7 +2040,9 @@ function App() {
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p>• <kbd>Delete</kbd> or <kbd>Backspace</kbd> to delete</p>
                       <p>• <kbd>Escape</kbd> to deselect</p>
-                      <p>• Drag corners to resize when selected</p>
+                      <p>• Drag corners to resize horizontally and vertically</p>
+                      <p>• Hold and drag any corner/edge to scale freely</p>
+                      <p>• Components scale independently in both dimensions</p>
                     </div>
                   </div>
                   
@@ -2146,6 +2164,8 @@ function App() {
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p>• <kbd>Delete</kbd> or <kbd>Backspace</kbd> to delete</p>
                       <p>• <kbd>Escape</kbd> to deselect</p>
+                      <p>• Click connection line to select and edit</p>
+                      <p>• Drag endpoints to reconnect</p>
                     </div>
                   </div>
                   
@@ -2167,7 +2187,8 @@ function App() {
                   <div className="mt-4 text-xs space-y-1">
                     <p>• Click on any component to select it</p>
                     <p>• Click on connections to edit protocols</p>
-                    <p>• Drag corners of selected components to resize</p>
+                    <p>• Drag corners/edges to resize horizontally & vertically</p>
+                    <p>• All components scale freely in both dimensions</p>
                     <p>• Use keyboard shortcuts for faster editing</p>
                   </div>
                 </div>
@@ -2360,7 +2381,8 @@ function App() {
                 <p>• Drag regular components into containers or onto the canvas</p>
                 <p>• Connect components by dragging between connection points</p>
                 <p>• Specify protocols and ports for each connection</p>
-                <p>• Select components to resize them by dragging the corners</p>
+                <p>• Select components to resize them horizontally and vertically</p>
+                <p>• Drag corners/edges freely to scale in both dimensions</p>
                 <p>• Use the Properties panel to edit selected components</p>
                 <p>• Run security analysis to identify vulnerabilities</p>
                 <p>• View attack paths to understand threat scenarios</p>
