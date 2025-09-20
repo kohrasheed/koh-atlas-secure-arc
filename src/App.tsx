@@ -142,8 +142,17 @@ const protocolConfigs = {
   'ELASTICSEARCH': { port: 9200, description: 'Elasticsearch REST API' }
 };
 
+// Security edge controls for VPC/VNet
+const securityEdgeControls = [
+  { type: 'firewall', label: 'Firewall', icon: <Shield />, color: '#dc2626' },
+  { type: 'waf', label: 'WAF', icon: <Shield />, color: '#b91c1c' },
+  { type: 'ids-ips', label: 'IDS/IPS', icon: <Eye />, color: '#991b1b' },
+  { type: 'edge-dns', label: 'Edge DNS', icon: <Globe />, color: '#166534' },
+  { type: 'edge-cdn', label: 'Edge CDN', icon: <Cloud />, color: '#0f766e' },
+];
+
 // Custom node component with connection handles
-const CustomNode = ({ data, selected }: NodeProps) => {
+const CustomNode = ({ data, selected, id }: NodeProps) => {
   const config = componentTypes.find(c => c.type === data.type);
   const isHighlighted = data.isHighlighted;
   
@@ -197,6 +206,34 @@ const CustomNode = ({ data, selected }: NodeProps) => {
             </Badge>
           )}
         </div>
+
+        {/* Security Edge Controls Panel - Only for VPC/VNet */}
+        {data.type === 'vpc-vnet' && selected && (
+          <div className="absolute -right-32 top-2 w-28 bg-card border border-border rounded-md shadow-lg p-2 z-10">
+            <div className="text-xs font-medium mb-2 text-center">Edge Security</div>
+            <div className="space-y-1">
+              {securityEdgeControls.map(control => (
+                <Button
+                  key={control.type}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full h-7 p-1 justify-start text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addSecurityControl(control, id);
+                  }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <div style={{ color: control.color }} className="w-3 h-3">
+                      {control.icon}
+                    </div>
+                    <span className="truncate">{control.label}</span>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Container content area */}
         <div className="w-full h-full p-4 flex items-center justify-center">
@@ -301,10 +338,6 @@ const CustomNode = ({ data, selected }: NodeProps) => {
       )}
     </div>
   );
-};
-
-const nodeTypes = {
-  custom: CustomNode,
 };
 
 // Custom designs
@@ -500,6 +533,253 @@ function App() {
   const [highlightedElements, setHighlightedElements] = useState<string[]>([]);
   const [customComponents, setCustomComponents] = useState<CustomComponent[]>([]);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+
+  // Add security control near a VPC/VNet
+  const addSecurityControl = (control: any, vpcId: string) => {
+    const vpcNode = nodes.find(n => n.id === vpcId);
+    if (!vpcNode) return;
+
+    // Position the security control near the VPC/VNet
+    const controlPosition = {
+      x: vpcNode.position.x - 150, // Position to the left of VPC
+      y: vpcNode.position.y + 50,  // Slightly below the VPC top
+    };
+
+    const newNode: Node = {
+      id: `${control.type}-${Date.now()}`,
+      type: 'custom',
+      position: controlPosition,
+      data: {
+        type: control.type,
+        label: `${control.label} (Edge)`,
+        zone: 'Security',
+        associatedVpc: vpcId
+      },
+    };
+
+    setNodes(nds => [...nds, newNode]);
+
+    // Create a monitoring/protection connection to the VPC
+    const newEdge: Edge = {
+      id: `${newNode.id}-${vpcId}-protection`,
+      source: newNode.id,
+      target: vpcId,
+      label: 'Protects',
+      type: 'smoothstep',
+      markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15 },
+      style: { 
+        stroke: control.color, 
+        strokeWidth: 2, 
+        strokeDasharray: '5,5',
+        opacity: 0.7
+      },
+      data: { 
+        protocol: 'Protection', 
+        port: 443, 
+        encryption: 'TLS 1.3',
+        sourceLabel: `${control.label} (Edge)`,
+        targetLabel: (vpcNode.data as any)?.label,
+        description: `Edge security protection for ${control.label.toLowerCase()}`
+      }
+    };
+
+    setEdges(eds => [...eds, newEdge]);
+    
+    toast.success(`Added ${control.label} edge protection to VPC`);
+  };
+
+  // Custom node component with connection handles - defined inside App to access addSecurityControl
+  const CustomNode = ({ data, selected, id }: NodeProps) => {
+    const config = componentTypes.find(c => c.type === data.type);
+    const isHighlighted = data.isHighlighted;
+    
+    if (config?.isContainer) {
+      // Container node (VPC, Subnet, Network Segmentation)
+      return (
+        <div 
+          className={`
+            relative min-w-[200px] min-h-[150px] rounded-lg border-2 border-dashed 
+            ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
+            ${isHighlighted ? 'ring-4 ring-yellow-400/60 border-yellow-400' : ''}
+            transition-all duration-200 hover:border-primary/50
+            bg-card/10 backdrop-blur-sm
+          `}
+          style={{ 
+            borderColor: isHighlighted ? '#facc15' : (config?.color || '#666'),
+            backgroundColor: `${config?.color}10` || '#66610'
+          }}
+        >
+          {/* Node Resizer */}
+          <NodeResizer 
+            isVisible={selected}
+            minWidth={200}
+            minHeight={150}
+            handleStyle={{
+              backgroundColor: config?.color || '#666',
+              borderColor: 'white',
+              borderWidth: 2,
+              width: 8,
+              height: 8
+            }}
+          />
+          
+          {/* Container header */}
+          <div 
+            className={`absolute -top-6 left-2 px-2 py-1 bg-card border border-border rounded-md shadow-sm ${isHighlighted ? 'bg-yellow-100 border-yellow-400' : ''}`}
+            style={{ borderLeftColor: isHighlighted ? '#facc15' : (config?.color || '#666'), borderLeftWidth: '3px' }}
+          >
+            <div className="flex items-center gap-2">
+              <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
+                {config?.icon}
+              </div>
+              <div>
+                <div className="font-medium text-xs">{String((data as any).label || '')}</div>
+                <div className="text-xs text-muted-foreground">{config?.label || ''}</div>
+              </div>
+            </div>
+            {(data as any).zone && String((data as any).zone) && (
+              <Badge variant="secondary" className="mt-1 text-xs">
+                {String((data as any).zone)}
+              </Badge>
+            )}
+          </div>
+
+          {/* Security Edge Controls Panel - Only for VPC/VNet */}
+          {data.type === 'vpc-vnet' && selected && (
+            <div className="absolute -right-32 top-2 w-28 bg-card border border-border rounded-md shadow-lg p-2 z-10">
+              <div className="text-xs font-medium mb-2 text-center">Edge Security</div>
+              <div className="space-y-1">
+                {securityEdgeControls.map(control => (
+                  <Button
+                    key={control.type}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full h-7 p-1 justify-start text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addSecurityControl(control, id);
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <div style={{ color: control.color }} className="w-3 h-3">
+                        {control.icon}
+                      </div>
+                      <span className="truncate">{control.label}</span>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Container content area */}
+          <div className="w-full h-full p-4 flex items-center justify-center">
+            <div className="text-xs text-muted-foreground opacity-50">
+              Drop components here
+            </div>
+          </div>
+          
+          {/* Connection handles */}
+          <Handle
+            type="target"
+            position={Position.Left}
+            className="w-3 h-3 !bg-primary border-2 border-background"
+            style={{ left: -6 }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            className="w-3 h-3 !bg-primary border-2 border-background"
+            style={{ right: -6 }}
+          />
+          <Handle
+            type="target"
+            position={Position.Top}
+            className="w-3 h-3 !bg-primary border-2 border-background"
+            style={{ top: -6 }}
+          />
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            className="w-3 h-3 !bg-primary border-2 border-background"
+            style={{ bottom: -6 }}
+          />
+        </div>
+      );
+    }
+
+    // Regular component node
+    return (
+      <div 
+        className={`
+          px-4 py-2 shadow-lg rounded-lg bg-card border-2 min-w-[120px] relative
+          ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
+          ${isHighlighted ? 'ring-4 ring-yellow-400/60 border-yellow-400 bg-yellow-50' : ''}
+          transition-all duration-200 hover:shadow-xl hover:border-primary/50
+        `}
+        style={{ borderLeftColor: isHighlighted ? '#facc15' : (config?.color || '#666') }}
+      >
+        {/* Node Resizer for regular components */}
+        <NodeResizer 
+          isVisible={selected}
+          minWidth={120}
+          minHeight={60}
+          handleStyle={{
+            backgroundColor: config?.color || '#666',
+            borderColor: 'white',
+            borderWidth: 2,
+            width: 6,
+            height: 6
+          }}
+        />
+        
+        {/* Connection handles */}
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="w-3 h-3 !bg-primary border-2 border-background"
+          style={{ left: -6 }}
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="w-3 h-3 !bg-primary border-2 border-background"
+          style={{ right: -6 }}
+        />
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="w-3 h-3 !bg-primary border-2 border-background"
+          style={{ top: -6 }}
+        />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="w-3 h-3 !bg-primary border-2 border-background"
+          style={{ bottom: -6 }}
+        />
+        
+        <div className="flex items-center gap-2">
+          <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
+            {config?.icon}
+          </div>
+          <div>
+            <div className="font-medium text-sm">{String((data as any).label || '')}</div>
+            <div className="text-xs text-muted-foreground">{config?.label || ''}</div>
+          </div>
+        </div>
+        {(data as any).zone && String((data as any).zone) && (
+          <Badge variant="secondary" className="mt-1 text-xs">
+            {String((data as any).zone)}
+          </Badge>
+        )}
+      </div>
+    );
+  };
+
+  const nodeTypes = {
+    custom: CustomNode,
+  };
 
   // Combine built-in and custom components
   const allComponentTypes = [
