@@ -640,23 +640,39 @@ function App() {
 
   // Suppress ResizeObserver loop errors (benign browser warning)
   useEffect(() => {
-    // Suppress ResizeObserver loop errors globally
+    // Comprehensive ResizeObserver error suppression
     const originalError = console.error;
-    console.error = (...args) => {
-      if (typeof args[0] === 'string' && 
-          (args[0].includes('ResizeObserver loop') || 
-           args[0].includes('ResizeObserver loop completed with undelivered notifications'))) {
-        return; // Suppress ResizeObserver errors
+    const originalWarn = console.warn;
+    
+    const suppressResizeObserverErrors = (...args: any[]) => {
+      const message = args[0];
+      if (typeof message === 'string' && 
+          (message.includes('ResizeObserver') || 
+           message.includes('loop limit exceeded') ||
+           message.includes('undelivered notifications'))) {
+        return; // Suppress ResizeObserver related errors/warnings
       }
+      return false;
+    };
+
+    // Override console methods
+    console.error = (...args) => {
+      if (suppressResizeObserverErrors(...args) !== false) return;
       originalError.call(console, ...args);
     };
     
-    // Suppress ResizeObserver errors in window error handler
+    console.warn = (...args) => {
+      if (suppressResizeObserverErrors(...args) !== false) return;
+      originalWarn.call(console, ...args);
+    };
+    
+    // Override window error handlers
     const originalWindowError = window.onerror;
     window.onerror = (message, source, lineno, colno, error) => {
       if (typeof message === 'string' && 
-          (message.includes('ResizeObserver loop') || 
-           message.includes('ResizeObserver loop completed with undelivered notifications'))) {
+          (message.includes('ResizeObserver') || 
+           message.includes('loop limit exceeded') ||
+           message.includes('undelivered notifications'))) {
         return true; // Suppress the error
       }
       if (originalWindowError) {
@@ -665,22 +681,46 @@ function App() {
       return false;
     };
 
-    // Also handle unhandled promise rejections that might be related
+    // Handle unhandled promise rejections
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (event.reason && typeof event.reason === 'string' && 
-          (event.reason.includes('ResizeObserver loop') ||
-           event.reason.includes('ResizeObserver loop completed with undelivered notifications'))) {
+      const reason = event.reason;
+      if (reason && typeof reason === 'string' && 
+          (reason.includes('ResizeObserver') ||
+           reason.includes('loop limit exceeded') ||
+           reason.includes('undelivered notifications'))) {
+        event.preventDefault();
+        return;
+      }
+      // Also check if it's an Error object
+      if (reason instanceof Error && 
+          (reason.message.includes('ResizeObserver') ||
+           reason.message.includes('loop limit exceeded') ||
+           reason.message.includes('undelivered notifications'))) {
+        event.preventDefault();
+        return;
+      }
+    };
+
+    // Add error event listener for additional coverage
+    const handleError = (event: ErrorEvent) => {
+      if (event.message && 
+          (event.message.includes('ResizeObserver') ||
+           event.message.includes('loop limit exceeded') ||
+           event.message.includes('undelivered notifications'))) {
         event.preventDefault();
         return;
       }
     };
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
     
     return () => {
       console.error = originalError;
+      console.warn = originalWarn;
       window.onerror = originalWindowError;
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleError);
     };
   }, []);
 
