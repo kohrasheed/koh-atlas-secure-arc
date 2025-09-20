@@ -32,6 +32,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useKV } from '@github/spark/hooks';
+import ComponentLibrary, { CustomComponent } from '@/components/ComponentLibrary';
 import {
   Shield,
   Database,
@@ -61,7 +62,7 @@ interface ComponentConfig {
   type: string;
   label: string;
   icon: React.ReactElement;
-  category: 'application' | 'security' | 'network' | 'data' | 'container';
+  category: 'application' | 'security' | 'network' | 'data' | 'container' | 'custom';
   color: string;
   isContainer?: boolean;
 }
@@ -496,7 +497,32 @@ function App() {
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
   const [showConnectionDialog, setShowConnectionDialog] = useState(false);
   const [highlightedElements, setHighlightedElements] = useState<string[]>([]);
+  const [customComponents, setCustomComponents] = useState<CustomComponent[]>([]);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+
+  // Combine built-in and custom components
+  const allComponentTypes = [
+    ...componentTypes,
+    ...customComponents.map(comp => ({
+      type: comp.type,
+      label: comp.label,
+      icon: React.createElement(Shield), // Default icon for now
+      category: comp.category,
+      color: comp.color,
+      isContainer: comp.isContainer
+    }))
+  ];
+
+  // Handler for importing custom components
+  const handleImportComponents = (importedComponents: CustomComponent[]) => {
+    setCustomComponents(prev => {
+      const newComponents = importedComponents.filter(
+        imported => !prev.some(existing => existing.type === imported.type)
+      );
+      return [...prev, ...newComponents];
+    });
+    toast.success(`Imported ${importedComponents.length} components to application`);
+  };
 
   // Security findings
   const [findings, setFindings] = useState<SecurityFinding[]>([]);
@@ -1728,7 +1754,7 @@ function App() {
                   <div key={category}>
                     <h3 className="font-medium mb-2 capitalize">{category}</h3>
                     <div className="grid grid-cols-2 gap-2">
-                      {componentTypes.filter(c => c.category === category).map(component => (
+                      {allComponentTypes.filter(c => c.category === category).map(component => (
                         <Button
                           key={component.type}
                           variant="outline"
@@ -1747,6 +1773,50 @@ function App() {
                     </div>
                   </div>
                 ))}
+
+                {/* Custom Components Section */}
+                {customComponents.length > 0 && (
+                  <div>
+                    <h3 className="font-medium mb-2">Custom Components</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {customComponents.map(component => (
+                        <Button
+                          key={component.type}
+                          variant="outline"
+                          className="h-auto p-2 justify-start border-dashed"
+                          draggable
+                          onDragStart={() => {
+                            // Convert CustomComponent to ComponentConfig
+                            const config: ComponentConfig = {
+                              type: component.type,
+                              label: component.label,
+                              icon: React.createElement(Shield),
+                              category: component.category,
+                              color: component.color,
+                              isContainer: component.isContainer
+                            };
+                            setSelectedComponent(config);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div style={{ color: component.color }}>
+                              <Shield />
+                            </div>
+                            <span className="text-xs">{component.label}</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Component Library Manager */}
+                <div className="pt-4 border-t border-border">
+                  <ComponentLibrary
+                    onImportComponents={handleImportComponents}
+                    existingComponents={customComponents}
+                  />
+                </div>
               </div>
             </ScrollArea>
           </TabsContent>
