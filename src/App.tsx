@@ -65,6 +65,7 @@ import {
   Tree,
   Hexagon,
   TrashSimple,
+  ArrowsClockwise,
 } from '@phosphor-icons/react';
 
 // Protocol configurations with common ports
@@ -1239,6 +1240,135 @@ function App() {
     })));
   };
 
+  // Reorganize components using intelligent layout
+  const reorganizeComponents = () => {
+    if (nodes.length === 0) {
+      toast.info('No components to reorganize');
+      return;
+    }
+
+    // Separate container and regular components
+    const containers = nodes.filter((n: Node) => {
+      const config = componentTypes.find(c => c.type === (n.data as any)?.type);
+      return config?.isContainer;
+    });
+    
+    const regularComponents = nodes.filter((n: Node) => {
+      const config = componentTypes.find(c => c.type === (n.data as any)?.type);
+      return !config?.isContainer;
+    });
+
+    // Group components by category/type for intelligent placement
+    const componentsByCategory = regularComponents.reduce((acc: any, node: Node) => {
+      const config = componentTypes.find(c => c.type === (node.data as any)?.type);
+      const category = config?.category || 'other';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(node);
+      return acc;
+    }, {});
+
+    const updatedNodes: Node[] = [];
+    
+    // Layout configuration
+    const layoutConfig = {
+      containerWidth: 350,
+      containerHeight: 250,
+      containerSpacing: 100,
+      componentSpacing: 20,
+      margin: 80,
+      tiersY: {
+        'security': 50,
+        'network': 200,
+        'application': 350,
+        'data': 500,
+        'other': 650
+      }
+    };
+
+    // Position containers in a grid
+    containers.forEach((container: Node, index: number) => {
+      const cols = Math.ceil(Math.sqrt(containers.length));
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      
+      const x = layoutConfig.margin + col * (layoutConfig.containerWidth + layoutConfig.containerSpacing);
+      const y = layoutConfig.margin + row * (layoutConfig.containerHeight + layoutConfig.containerSpacing);
+      
+      updatedNodes.push({
+        ...container,
+        position: { x, y },
+        style: {
+          width: layoutConfig.containerWidth,
+          height: layoutConfig.containerHeight,
+        },
+      });
+    });
+
+    // Position regular components in tiers based on category
+    Object.entries(componentsByCategory).forEach(([category, components]: [string, any[]]) => {
+      const tierY = layoutConfig.tiersY[category as keyof typeof layoutConfig.tiersY] || layoutConfig.tiersY.other;
+      
+      // Calculate optimal positioning within tier
+      const componentsPerRow = Math.ceil(Math.sqrt(components.length));
+      const tierWidth = Math.max(1200, componentsPerRow * 200);
+      const startX = Math.max(layoutConfig.margin, (1400 - tierWidth) / 2);
+      
+      components.forEach((component: Node, index: number) => {
+        const col = index % componentsPerRow;
+        const row = Math.floor(index / componentsPerRow);
+        
+        const x = startX + col * (180 + layoutConfig.componentSpacing);
+        const y = tierY + row * (80 + layoutConfig.componentSpacing);
+        
+        // Add some intelligent offset based on component type
+        let offsetX = 0;
+        let offsetY = 0;
+        
+        switch ((component.data as any)?.type) {
+          case 'web-browser':
+            offsetX = -50; // Move browsers to the left
+            break;
+          case 'database':
+            offsetX = 100; // Move databases to the right
+            break;
+          case 'api-gateway':
+            offsetY = -20; // Move gateways slightly up
+            break;
+          case 'load-balancer-global':
+          case 'load-balancer-internal':
+            offsetY = -40; // Move load balancers up
+            break;
+        }
+        
+        updatedNodes.push({
+          ...component,
+          position: { 
+            x: x + offsetX, 
+            y: y + offsetY 
+          },
+        });
+      });
+    });
+
+    // Update node positions with smooth animation-like effect
+    setNodes(updatedNodes);
+    
+    // Optional: Reorganize connections to be cleaner (straighten curves)
+    setTimeout(() => {
+      setEdges((eds: Edge[]) => eds.map((edge: Edge) => ({
+        ...edge,
+        type: 'smoothstep', // Ensure consistent edge type
+        style: {
+          ...edge.style,
+          // Optionally adjust stroke width based on importance
+          strokeWidth: (edge.data as any)?.encryption === 'None' ? 3 : 2,
+        }
+      })));
+    }, 100);
+    
+    toast.success(`Reorganized ${nodes.length} components into logical tiers and zones`);
+  };
+
   // Auto-fix vulnerabilities
   const autoFixVulnerabilities = () => {
     let fixesApplied = 0;
@@ -1858,6 +1988,16 @@ function App() {
               </Button>
             </div>
             <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="secondary"
+                onClick={reorganizeComponents}
+                className="flex-1"
+                disabled={nodes.length === 0}
+              >
+                <ArrowsClockwise className="w-4 h-4 mr-1" />
+                Reorganize
+              </Button>
               {findings.length > 0 && (
                 <Button 
                   size="sm" 
@@ -1869,11 +2009,13 @@ function App() {
                   Fix Issues
                 </Button>
               )}
+            </div>
+            <div className="flex gap-2">
               <Button 
                 size="sm" 
                 variant="destructive"
                 onClick={clearAll}
-                className={findings.length > 0 ? "flex-1" : "w-full"}
+                className="w-full"
                 disabled={nodes.length === 0 && edges.length === 0}
               >
                 <TrashSimple className="w-4 h-4 mr-1" />
@@ -2404,6 +2546,7 @@ function App() {
                 <p>• Select components to resize them horizontally and vertically</p>
                 <p>• Drag corners/edges freely to scale in both dimensions</p>
                 <p>• Use the Properties panel to edit selected components</p>
+                <p>• Click <strong>Reorganize</strong> to automatically arrange components in logical tiers</p>
                 <p>• Run security analysis to identify vulnerabilities</p>
                 <p>• View attack paths to understand threat scenarios</p>
               </div>
