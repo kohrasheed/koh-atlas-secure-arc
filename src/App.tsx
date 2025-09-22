@@ -100,6 +100,8 @@ const componentTypes: ComponentConfig[] = [
   { type: 'dam', label: 'DAM', icon: <Database />, category: 'security', color: '#7c2d12' },
   { type: 'edge-dns', label: 'Edge DNS', icon: <Globe />, category: 'security', color: '#166534' },
   { type: 'edge-cdn', label: 'Edge CDN', icon: <Cloud />, category: 'security', color: '#0f766e' },
+  { type: 'bastion-host', label: 'Bastion Host', icon: <Desktop />, category: 'security', color: '#7c3aed' },
+  { type: 'sd-wan', label: 'SD-WAN', icon: <Network />, category: 'security', color: '#059669' },
 ];
 
 // Security findings types
@@ -149,6 +151,8 @@ const securityEdgeControls = [
   { type: 'ids-ips', label: 'IDS/IPS', icon: <Eye />, color: '#991b1b' },
   { type: 'edge-dns', label: 'Edge DNS', icon: <Globe />, color: '#166534' },
   { type: 'edge-cdn', label: 'Edge CDN', icon: <Cloud />, color: '#0f766e' },
+  { type: 'bastion-host', label: 'Bastion Host', icon: <Desktop />, color: '#7c3aed' },
+  { type: 'sd-wan', label: 'SD-WAN', icon: <Network />, color: '#059669' },
 ];
 
 // Custom node component with connection handles - this will be defined inside App component
@@ -1130,6 +1134,8 @@ function App() {
     const hasDAM = nodes.some((n: Node) => n.data.type === 'dam');
     const hasEdgeDNS = nodes.some((n: Node) => n.data.type === 'edge-dns');
     const hasEdgeCDN = nodes.some((n: Node) => n.data.type === 'edge-cdn');
+    const hasBastionHost = nodes.some((n: Node) => n.data.type === 'bastion-host');
+    const hasSDWAN = nodes.some((n: Node) => n.data.type === 'sd-wan');
     
     if (!hasFirewall) {
       newFindings.push({
@@ -1191,6 +1197,32 @@ function App() {
       });
     }
 
+    // Check for missing Bastion Host for secure remote access
+    if (!hasBastionHost && nodes.some((n: Node) => ['database', 'app-server'].includes((n.data as any).type))) {
+      newFindings.push({
+        id: 'missing-bastion-host',
+        title: 'Missing Bastion Host for Secure Access',
+        severity: 'Medium',
+        description: 'No bastion host detected for secure remote access to internal resources',
+        affected: nodes.filter((n: Node) => ['database', 'app-server'].includes((n.data as any).type)).map((n: Node) => n.id),
+        recommendation: 'Deploy bastion host for secure, audited administrative access',
+        standards: ['NIST 800-53 AC-3', 'CIS Controls 4', 'NIST 800-53 AU-2']
+      });
+    }
+
+    // Check for missing SD-WAN for network optimization and security
+    if (!hasSDWAN && nodes.some((n: Node) => ['vpc-vnet', 'subnet'].includes((n.data as any).type))) {
+      newFindings.push({
+        id: 'missing-sd-wan',
+        title: 'Missing SD-WAN for Network Security',
+        severity: 'Low',
+        description: 'No software-defined WAN for network optimization and security policies',
+        affected: nodes.filter((n: Node) => ['vpc-vnet', 'subnet'].includes((n.data as any).type)).map((n: Node) => n.id),
+        recommendation: 'Consider SD-WAN for enhanced network security, traffic optimization, and centralized policy management',
+        standards: ['NIST 800-53 SC-7', 'CIS Controls 12']
+      });
+    }
+
     // Generate attack paths
     if (newFindings.length > 0) {
       newAttackPaths.push({
@@ -1204,7 +1236,7 @@ function App() {
         ],
         impact: 'Data breach, compliance violations',
         likelihood: 'High',
-        mitigations: ['Implement HTTPS', 'Add WAF', 'Database access controls', 'Network segmentation', 'Deploy DAM for database monitoring', 'Add Edge DNS for DNS protection', 'Use Edge CDN for DDoS mitigation']
+        mitigations: ['Implement HTTPS', 'Add WAF', 'Database access controls', 'Network segmentation', 'Deploy DAM for database monitoring', 'Add Edge DNS for DNS protection', 'Use Edge CDN for DDoS mitigation', 'Deploy Bastion Host for secure access', 'Implement SD-WAN for network security']
       });
     }
 
