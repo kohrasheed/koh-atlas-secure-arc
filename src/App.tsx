@@ -1799,9 +1799,9 @@ function App() {
   return (
     <div className="h-screen flex bg-background text-foreground">
       {/* Sidebar */}
-      <div className="w-80 border-r border-border bg-card overflow-hidden flex flex-col">
+      <div className="w-80 border-r border-border bg-card flex flex-col h-screen">
         {/* Header */}
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-xl font-bold">Koh Atlas</h1>
@@ -1884,16 +1884,16 @@ function App() {
         </div>
 
         {/* Content Tabs */}
-        <Tabs defaultValue="components" className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 mx-4 mt-2">
+        <Tabs defaultValue="components" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-3 mx-4 mt-2 flex-shrink-0">
             <TabsTrigger value="components">Components</TabsTrigger>
             <TabsTrigger value="properties">Properties</TabsTrigger>
             <TabsTrigger value="analysis">Analysis</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="components" className="flex-1 px-4 pb-4">
+          <TabsContent value="components" className="flex-1 min-h-0 px-4 pb-4">
             <ScrollArea className="h-full">
-              <div className="space-y-4">
+              <div className="space-y-4 py-2">
                 {/* Container Components */}
                 <div>
                   <h3 className="font-medium mb-2">Containers</h3>
@@ -1989,8 +1989,9 @@ function App() {
             </ScrollArea>
           </TabsContent>
           
-          <TabsContent value="properties" className="flex-1 px-4 pb-4">
+          <TabsContent value="properties" className="flex-1 min-h-0 px-4 pb-4">
             <ScrollArea className="h-full">
+              <div className="py-2">
               {selectedNode && (
                 <div className="space-y-4">
                   <h3 className="font-medium">
@@ -2209,11 +2210,13 @@ function App() {
                   </div>
                 </div>
               )}
+              </div>
             </ScrollArea>
           </TabsContent>
           
-          <TabsContent value="analysis" className="flex-1 px-4 pb-4">
+          <TabsContent value="analysis" className="flex-1 min-h-0 px-4 pb-4">
             <ScrollArea className="h-full">
+              <div className="py-2">
               {showAttackPaths ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -2342,6 +2345,7 @@ function App() {
                   )}
                 </div>
               )}
+              </div>
             </ScrollArea>
           </TabsContent>
         </Tabs>
