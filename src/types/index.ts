@@ -1,81 +1,71 @@
-export type ComponentType = 'web' | 'app' | 'data' | 'network' | 'platform' | 'security';
+// Type definitions for Koh Atlas
 
-export type SecuritySeverity = 'critical' | 'high' | 'medium' | 'low';
-
-export interface ArchComponent {
-  id: string;
-  type: ComponentType;
-  name: string;
-  category: string;
-  icon: string;
-  zone?: string;
-  criticality?: 'critical' | 'high' | 'medium' | 'low';
-  metadata?: {
-    os?: string;
-    version?: string;
-    vendor?: string;
-  };
-}
-
-// Alias for backward compatibility
-export type Component = ArchComponent;
-
-export interface Connection {
-  id: string;
-  from: string;
-  to: string;
-  purpose: string;
-  ports: number[];
-  protocol: string;
-  encryption: string;
-  auth: string;
-  dataClass: string;
-  zoneFrom?: string;
-  zoneTo?: string;
-  egress: boolean;
-  controls: string[];
+export interface ComponentConfig {
+  type: string;
+  label: string;
+  icon: React.ReactElement;
+  category: 'application' | 'security' | 'network' | 'data' | 'container' | 'custom';
+  color: string;
+  isContainer?: boolean;
 }
 
 export interface SecurityFinding {
   id: string;
   title: string;
-  severity: SecuritySeverity;
-  category: string;
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
   description: string;
-  affectedAssets: string[];
-  evidence: string;
+  affected: string[];
+  recommendation: string;
   standards: string[];
-  suggestedFix: string;
-  autoFixAvailable: boolean;
-  residualRisk: string;
 }
 
-export interface Zone {
+export interface AttackPath {
   id: string;
   name: string;
-  type: 'external' | 'dmz' | 'internal' | 'data' | 'management';
-  description: string;
+  steps: string[];
+  impact: string;
+  likelihood: string;
+  mitigations: string[];
+}
+
+export interface CustomComponent {
+  type: string;
+  label: string;
+  category: 'application' | 'security' | 'network' | 'data' | 'container' | 'custom';
   color: string;
+  isContainer?: boolean;
+  description?: string;
 }
 
-export interface SecurityRule {
-  id: string;
-  name: string;
-  category: string;
-  severity: SecuritySeverity;
+export interface ProtocolConfig {
+  port: number;
   description: string;
-  condition: string;
-  fix: string;
-  standards: string[];
 }
 
-export interface Project {
-  id: string;
-  name: string;
-  description: string;
-  components: ArchComponent[];
-  connections: Connection[];
-  zones: Zone[];
-  findings: SecurityFinding[];
-  lastAnalysis?: Date;
+export interface ConnectionData {
+  protocol: string;
+  port: number;
+  encryption: string;
+  sourceLabel?: string;
+  targetLabel?: string;
+  description?: string;
+}
+
+export interface NodeData {
+  type: string;
+  label: string;
+  zone?: string;
+  isHighlighted?: boolean;
+  cidr?: string;
+  description?: string;
+  associatedVpc?: string;
+  width?: number;
+  height?: number;
+}
+
+export interface SecurityEdgeControl {
+  type: string;
+  label: string;
+  icon: React.ReactElement;
+  color: string;
 }

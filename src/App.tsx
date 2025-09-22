@@ -34,6 +34,15 @@ import { toast } from 'sonner';
 import { useKV } from '@github/spark/hooks';
 import ComponentLibrary, { CustomComponent } from '@/components/ComponentLibrary';
 import {
+  ComponentConfig,
+  SecurityFinding,
+  AttackPath,
+  ProtocolConfig,
+  ConnectionData,
+  NodeData,
+  SecurityEdgeControl
+} from '@/types';
+import {
   Shield,
   Database,
   Globe,
@@ -57,16 +66,6 @@ import {
   Hexagon,
   TrashSimple,
 } from '@phosphor-icons/react';
-
-// Component types and configurations
-interface ComponentConfig {
-  type: string;
-  label: string;
-  icon: React.ReactElement;
-  category: 'application' | 'security' | 'network' | 'data' | 'container' | 'custom';
-  color: string;
-  isContainer?: boolean;
-}
 
 const componentTypes: ComponentConfig[] = [
   // Container Components (can contain other components)
@@ -104,29 +103,8 @@ const componentTypes: ComponentConfig[] = [
   { type: 'sd-wan', label: 'SD-WAN', icon: <Network />, category: 'security', color: '#059669' },
 ];
 
-// Security findings types
-interface SecurityFinding {
-  id: string;
-  title: string;
-  severity: 'Critical' | 'High' | 'Medium' | 'Low';
-  description: string;
-  affected: string[];
-  recommendation: string;
-  standards: string[];
-}
-
-// Attack path types
-interface AttackPath {
-  id: string;
-  name: string;
-  steps: string[];
-  impact: string;
-  likelihood: string;
-  mitigations: string[];
-}
-
 // Protocol configurations with common ports
-const protocolConfigs = {
+const protocolConfigs: Record<string, ProtocolConfig> = {
   'HTTPS': { port: 443, description: 'Secure HTTP over TLS' },
   'HTTP': { port: 80, description: 'Unencrypted HTTP (not recommended)' },
   'gRPC': { port: 443, description: 'gRPC over TLS' },
@@ -144,8 +122,44 @@ const protocolConfigs = {
   'ELASTICSEARCH': { port: 9200, description: 'Elasticsearch REST API' }
 };
 
+const componentTypes: ComponentConfig[] = [
+  // Container Components (can contain other components)
+  { type: 'vpc-vnet', label: 'VPC / VNet', icon: <Network />, category: 'container', color: '#0ea5e9', isContainer: true },
+  { type: 'subnet', label: 'Subnet', icon: <Network />, category: 'container', color: '#0284c7', isContainer: true },
+  { type: 'network-segmentation', label: 'Network Segmentation', icon: <Tree />, category: 'container', color: '#0891b2', isContainer: true },
+  
+  // Application Components
+  { type: 'web-browser', label: 'Web Browser', icon: <Browser />, category: 'application', color: '#3b82f6' },
+  { type: 'web-server', label: 'Web Server', icon: <Desktop />, category: 'application', color: '#3b82f6' },
+  { type: 'app-server', label: 'App Server', icon: <Desktop />, category: 'application', color: '#6366f1' },
+  { type: 'api-gateway', label: 'API Gateway', icon: <Globe />, category: 'application', color: '#8b5cf6' },
+  { type: 'microservice', label: 'Microservice', icon: <Cloud />, category: 'application', color: '#06b6d4' },
+  { type: 'mobile-app', label: 'Mobile App', icon: <DeviceMobile />, category: 'application', color: '#10b981' },
+  { type: 'kubernetes-cluster', label: 'Kubernetes Cluster', icon: <Hexagon />, category: 'application', color: '#326ce5' },
+  { type: 'container', label: 'Container', icon: <Hexagon />, category: 'application', color: '#0db7ed' },
+  
+  // Network Components
+  { type: 'load-balancer-global', label: 'Global Load Balancer', icon: <Scales />, category: 'network', color: '#059669' },
+  { type: 'load-balancer-internal', label: 'Internal Load Balancer', icon: <Scales />, category: 'network', color: '#047857' },
+  
+  // Data Components
+  { type: 'database', label: 'Database', icon: <Database />, category: 'data', color: '#f59e0b' },
+  { type: 'cache', label: 'Cache', icon: <HardDrives />, category: 'data', color: '#f97316' },
+  { type: 'message-queue', label: 'Message Queue', icon: <HardDrives />, category: 'data', color: '#ef4444' },
+  
+  // Security Components
+  { type: 'firewall', label: 'Firewall', icon: <Shield />, category: 'security', color: '#dc2626' },
+  { type: 'waf', label: 'WAF', icon: <Shield />, category: 'security', color: '#b91c1c' },
+  { type: 'ids-ips', label: 'IDS/IPS', icon: <Eye />, category: 'security', color: '#991b1b' },
+  { type: 'dam', label: 'DAM', icon: <Database />, category: 'security', color: '#7c2d12' },
+  { type: 'edge-dns', label: 'Edge DNS', icon: <Globe />, category: 'security', color: '#166534' },
+  { type: 'edge-cdn', label: 'Edge CDN', icon: <Cloud />, category: 'security', color: '#0f766e' },
+  { type: 'bastion-host', label: 'Bastion Host', icon: <Desktop />, category: 'security', color: '#7c3aed' },
+  { type: 'sd-wan', label: 'SD-WAN', icon: <Network />, category: 'security', color: '#059669' },
+];
+
 // Security edge controls for VPC/VNet
-const securityEdgeControls = [
+const securityEdgeControls: SecurityEdgeControl[] = [
   { type: 'firewall', label: 'Firewall', icon: <Shield />, color: '#dc2626' },
   { type: 'waf', label: 'WAF', icon: <Shield />, color: '#b91c1c' },
   { type: 'ids-ips', label: 'IDS/IPS', icon: <Eye />, color: '#991b1b' },
@@ -644,135 +658,53 @@ function App() {
 
   // Suppress ResizeObserver loop errors (benign browser warning)
   useEffect(() => {
-    // Enhanced ResizeObserver error suppression with multiple patterns
+    // ResizeObserver error suppression - these are harmless browser optimization warnings
+    const isResizeObserverError = (message: unknown): boolean => {
+      const str = String(message || '');
+      return str.includes('ResizeObserver') && 
+             (str.includes('loop') || str.includes('undelivered'));
+    };
+
+    // Store original console methods
     const originalError = console.error;
     const originalWarn = console.warn;
-    const originalLog = console.log;
-    
-    const isResizeObserverError = (message: any): boolean => {
-      if (typeof message !== 'string') return false;
-      
-      const patterns = [
-        'ResizeObserver',
-        'resize observer',
-        'loop limit exceeded',
-        'undelivered notifications',
-        'loop completed with undelivered notifications',
-        'ResizeObserver loop limit exceeded',
-        'ResizeObserver loop completed',
-        'ResizeObserverEntry',
-        'contentRect'
-      ];
-      
-      const lowerMessage = message.toLowerCase();
-      return patterns.some(pattern => lowerMessage.includes(pattern.toLowerCase()));
-    };
 
-    // Override all console methods that might capture ResizeObserver errors
-    console.error = (...args) => {
-      if (args.some(arg => isResizeObserverError(arg))) return;
-      originalError.call(console, ...args);
+    // Override console to filter ResizeObserver errors
+    console.error = (...args: unknown[]) => {
+      if (!args.some(isResizeObserverError)) {
+        originalError.apply(console, args);
+      }
     };
     
-    console.warn = (...args) => {
-      if (args.some(arg => isResizeObserverError(arg))) return;
-      originalWarn.call(console, ...args);
+    console.warn = (...args: unknown[]) => {
+      if (!args.some(isResizeObserverError)) {
+        originalWarn.apply(console, args);
+      }
     };
     
-    console.log = (...args) => {
-      if (args.some(arg => isResizeObserverError(arg))) return;
-      originalLog.call(console, ...args);
-    };
-    
-    // Enhanced window error handler
-    const originalWindowError = window.onerror;
-    window.onerror = (message, source, lineno, colno, error) => {
-      if (isResizeObserverError(message as string)) {
-        return true; // Suppress the error
-      }
-      if (error && isResizeObserverError(error.message)) {
-        return true;
-      }
-      if (originalWindowError) {
-        return originalWindowError.call(window, message, source, lineno, colno, error);
-      }
-      return false;
-    };
-
-    // Enhanced unhandled rejection handler
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const reason = event.reason;
-      
-      if (reason && typeof reason === 'string' && isResizeObserverError(reason)) {
-        event.preventDefault();
-        return;
-      }
-      
-      if (reason instanceof Error && isResizeObserverError(reason.message)) {
-        event.preventDefault();
-        return;
-      }
-      
-      // Check stack trace for ResizeObserver
-      if (reason instanceof Error && reason.stack && isResizeObserverError(reason.stack)) {
-        event.preventDefault();
-        return;
-      }
-    };
-
-    // Enhanced error event handler
+    // Handle window errors
     const handleError = (event: ErrorEvent) => {
-      if (event.message && isResizeObserverError(event.message)) {
+      if (isResizeObserverError(event.message)) {
         event.preventDefault();
-        event.stopPropagation();
         return false;
       }
-      
-      if (event.error && isResizeObserverError(event.error.message)) {
-        event.preventDefault();
-        event.stopPropagation();
-        return false;
-      }
-      
       return true;
     };
 
-    // Add comprehensive error listeners
-    window.addEventListener('unhandledrejection', handleUnhandledRejection, true);
-    window.addEventListener('error', handleError, true);
-    
-    // Additional observer for mutation/resize events
-    let suppressTimeout: NodeJS.Timeout;
-    const suppressResizeObserverForFrame = () => {
-      if (suppressTimeout) clearTimeout(suppressTimeout);
-      suppressTimeout = setTimeout(() => {
-        // Frame-based suppression to catch async ResizeObserver errors
-      }, 16); // One frame at 60fps
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      if (isResizeObserverError(event.reason)) {
+        event.preventDefault();
+      }
     };
-    
-    // Monitor for potential ResizeObserver triggers
-    const observer = new MutationObserver(() => {
-      suppressResizeObserverForFrame();
-    });
-    
-    if (document.body) {
-      observer.observe(document.body, { 
-        childList: true, 
-        subtree: true, 
-        attributes: true,
-        attributeFilter: ['style', 'class']
-      });
-    }
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
     
     return () => {
       console.error = originalError;
       console.warn = originalWarn;
-      console.log = originalLog;
-      window.onerror = originalWindowError;
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection, true);
-      window.removeEventListener('error', handleError, true);
-      observer.disconnect();
-      if (suppressTimeout) clearTimeout(suppressTimeout);
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
     };
   }, []);
 
