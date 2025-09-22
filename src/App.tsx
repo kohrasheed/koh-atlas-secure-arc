@@ -67,42 +67,6 @@ import {
   TrashSimple,
 } from '@phosphor-icons/react';
 
-const componentTypes: ComponentConfig[] = [
-  // Container Components (can contain other components)
-  { type: 'vpc-vnet', label: 'VPC / VNet', icon: <Network />, category: 'container', color: '#0ea5e9', isContainer: true },
-  { type: 'subnet', label: 'Subnet', icon: <Network />, category: 'container', color: '#0284c7', isContainer: true },
-  { type: 'network-segmentation', label: 'Network Segmentation', icon: <Tree />, category: 'container', color: '#0891b2', isContainer: true },
-  
-  // Application Components
-  { type: 'web-browser', label: 'Web Browser', icon: <Browser />, category: 'application', color: '#3b82f6' },
-  { type: 'web-server', label: 'Web Server', icon: <Desktop />, category: 'application', color: '#3b82f6' },
-  { type: 'app-server', label: 'App Server', icon: <Desktop />, category: 'application', color: '#6366f1' },
-  { type: 'api-gateway', label: 'API Gateway', icon: <Globe />, category: 'application', color: '#8b5cf6' },
-  { type: 'microservice', label: 'Microservice', icon: <Cloud />, category: 'application', color: '#06b6d4' },
-  { type: 'mobile-app', label: 'Mobile App', icon: <DeviceMobile />, category: 'application', color: '#10b981' },
-  { type: 'kubernetes-cluster', label: 'Kubernetes Cluster', icon: <Hexagon />, category: 'application', color: '#326ce5' },
-  { type: 'container', label: 'Container', icon: <Hexagon />, category: 'application', color: '#0db7ed' },
-  
-  // Network Components
-  { type: 'load-balancer-global', label: 'Global Load Balancer', icon: <Scales />, category: 'network', color: '#059669' },
-  { type: 'load-balancer-internal', label: 'Internal Load Balancer', icon: <Scales />, category: 'network', color: '#047857' },
-  
-  // Data Components
-  { type: 'database', label: 'Database', icon: <Database />, category: 'data', color: '#f59e0b' },
-  { type: 'cache', label: 'Cache', icon: <HardDrives />, category: 'data', color: '#f97316' },
-  { type: 'message-queue', label: 'Message Queue', icon: <HardDrives />, category: 'data', color: '#ef4444' },
-  
-  // Security Components
-  { type: 'firewall', label: 'Firewall', icon: <Shield />, category: 'security', color: '#dc2626' },
-  { type: 'waf', label: 'WAF', icon: <Shield />, category: 'security', color: '#b91c1c' },
-  { type: 'ids-ips', label: 'IDS/IPS', icon: <Eye />, category: 'security', color: '#991b1b' },
-  { type: 'dam', label: 'DAM', icon: <Database />, category: 'security', color: '#7c2d12' },
-  { type: 'edge-dns', label: 'Edge DNS', icon: <Globe />, category: 'security', color: '#166534' },
-  { type: 'edge-cdn', label: 'Edge CDN', icon: <Cloud />, category: 'security', color: '#0f766e' },
-  { type: 'bastion-host', label: 'Bastion Host', icon: <Desktop />, category: 'security', color: '#7c3aed' },
-  { type: 'sd-wan', label: 'SD-WAN', icon: <Network />, category: 'security', color: '#059669' },
-];
-
 // Protocol configurations with common ports
 const protocolConfigs: Record<string, ProtocolConfig> = {
   'HTTPS': { port: 443, description: 'Secure HTTP over TLS' },
