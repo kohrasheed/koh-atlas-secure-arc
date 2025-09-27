@@ -384,10 +384,86 @@ function App() {
     toast.success(`Added ${control.label} edge protection to VPC`);
   };
 
+  // Component descriptions and connection guidance
+  const getComponentInfo = (componentType: string) => {
+    const descriptions: Record<string, { description: string; connections: string[] }> = {
+      'web-browser': {
+        description: 'Client-side application that initiates web requests',
+        connections: ['Connect to WAF or Edge CDN for security', 'Direct HTTPS to web servers', 'Through load balancers for high availability']
+      },
+      'web-server': {
+        description: 'Serves web content and handles HTTP/HTTPS requests',
+        connections: ['Receive from WAF or load balancer', 'Connect to API Gateway or App Server', 'Should not connect directly to databases']
+      },
+      'app-server': {
+        description: 'Processes business logic and application requests',
+        connections: ['Receive from Web Server or API Gateway', 'Connect to databases with encrypted protocols', 'Access cache systems for performance']
+      },
+      'api-gateway': {
+        description: 'Central entry point for API requests with routing and security',
+        connections: ['Receive from Web Server or external clients', 'Route to appropriate App Servers', 'Implement authentication and rate limiting']
+      },
+      'database': {
+        description: 'Stores and manages application data persistently',
+        connections: ['Only connect from App Servers', 'Use encrypted protocols (PostgreSQL TLS)', 'Monitor with DAM for security']
+      },
+      'cache': {
+        description: 'High-speed data storage for frequently accessed information',
+        connections: ['Connect from App Servers', 'Use Redis with TLS encryption', 'Position between app and database tiers']
+      },
+      'load-balancer-global': {
+        description: 'Distributes incoming requests across multiple servers',
+        connections: ['Receive from WAF or directly from internet', 'Distribute to Web Servers', 'Enable health checks and failover']
+      },
+      'firewall': {
+        description: 'Network security device that monitors and controls traffic',
+        connections: ['Position at network boundaries', 'Monitor traffic between zones', 'Block unauthorized connections']
+      },
+      'waf': {
+        description: 'Web Application Firewall protecting against web-based attacks',
+        connections: ['First point of contact from internet', 'Forward clean traffic to load balancer', 'Filter malicious requests']
+      },
+      'ids-ips': {
+        description: 'Intrusion Detection/Prevention System monitoring network traffic',
+        connections: ['Monitor east-west traffic between tiers', 'Detect suspicious patterns', 'Block identified threats in real-time']
+      },
+      'dam': {
+        description: 'Database Activity Monitoring for database security',
+        connections: ['Monitor database access patterns', 'Detect anomalous queries', 'Alert on policy violations']
+      },
+      'vpc-vnet': {
+        description: 'Virtual Private Cloud providing network isolation',
+        connections: ['Contains all infrastructure components', 'Implement network segmentation', 'Control traffic with security groups']
+      },
+      'subnet': {
+        description: 'Network subdivision within VPC for logical separation',
+        connections: ['Group related components by function', 'Implement tier-based architecture', 'Control access between subnets']
+      },
+      'edge-dns': {
+        description: 'DNS service with security filtering and DDoS protection',
+        connections: ['First line of defense for DNS queries', 'Filter malicious domains', 'Provide fast DNS resolution']
+      },
+      'edge-cdn': {
+        description: 'Content Delivery Network with edge security features',
+        connections: ['Cache content closer to users', 'Provide DDoS protection', 'Terminate SSL at edge']
+      },
+      'bastion-host': {
+        description: 'Secure gateway for administrative access to internal resources',
+        connections: ['Single entry point for admin access', 'Log all administrative sessions', 'Use SSH keys and MFA']
+      }
+    };
+    
+    return descriptions[componentType] || {
+      description: 'System component in the architecture',
+      connections: ['Follow security best practices', 'Use encrypted connections', 'Implement proper access controls']
+    };
+  };
+
   // Custom node component with connection handles - defined inside App to access addSecurityControl
   const CustomNode = ({ data, selected, id }: NodeProps) => {
     const config = componentTypes.find(c => c.type === data.type);
     const isHighlighted = data.isHighlighted;
+    const componentInfo = getComponentInfo(String(data.type));
     
     if (config?.isContainer) {
       // Container node (VPC, Subnet, Network Segmentation)
@@ -434,11 +510,11 @@ function App() {
           >
             <div className="flex items-center gap-2">
               <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-                {config?.icon}
+                {config?.icon || ''}
               </div>
               <div>
                 <div className="font-medium text-xs">{String((data as any).label || '')}</div>
-                <div className="text-xs text-muted-foreground">{config?.label || ''}</div>
+                <div className="text-xs text-muted-foreground">{String(config?.label || '')}</div>
               </div>
             </div>
             {(data as any).zone && String((data as any).zone) && (
@@ -472,6 +548,41 @@ function App() {
                     </div>
                   </Button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Component Info Panel - Shows when container is highlighted */}
+          {isHighlighted && (
+            <div className="absolute -bottom-32 left-0 w-72 bg-card border border-yellow-400 rounded-lg shadow-lg p-3 z-20 text-xs">
+              <div className="flex items-center gap-2 mb-2">
+                <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
+                  {config?.icon || ''}
+                </div>
+                <div className="font-medium text-yellow-600">{String(config?.label || '')}</div>
+              </div>
+              
+              <div className="space-y-2">
+                <div>
+                  <div className="font-medium text-yellow-700 mb-1">Description:</div>
+                  <div className="text-muted-foreground">{componentInfo.description}</div>
+                </div>
+                
+                <div>
+                  <div className="font-medium text-yellow-700 mb-1">Connection Best Practices:</div>
+                  <ul className="space-y-1 text-muted-foreground">
+                    {componentInfo.connections.map((connection, idx) => (
+                      <li key={idx} className="flex items-start">
+                        <span className="mr-1 text-yellow-600">•</span>
+                        <span>{connection}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="mt-2 pt-2 border-t border-yellow-400/30 text-xs text-yellow-600">
+                💡 This container is flagged in security analysis
               </div>
             </div>
           )}
@@ -571,9 +682,44 @@ function App() {
           style={{ bottom: -6 }}
         />
         
+        {/* Component Info Panel - Shows when component is highlighted */}
+        {isHighlighted && (
+          <div className="absolute -bottom-32 left-0 w-72 bg-card border border-yellow-400 rounded-lg shadow-lg p-3 z-20 text-xs">
+            <div className="flex items-center gap-2 mb-2">
+              <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
+                {config?.icon}
+              </div>
+              <div className="font-medium text-yellow-600">{config?.label}</div>
+            </div>
+            
+            <div className="space-y-2">
+              <div>
+                <div className="font-medium text-yellow-700 mb-1">Description:</div>
+                <div className="text-muted-foreground">{componentInfo.description}</div>
+              </div>
+              
+              <div>
+                <div className="font-medium text-yellow-700 mb-1">Connection Best Practices:</div>
+                <ul className="space-y-1 text-muted-foreground">
+                  {componentInfo.connections.map((connection, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <span className="mr-1 text-yellow-600">•</span>
+                      <span>{connection}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            
+            <div className="mt-2 pt-2 border-t border-yellow-400/30 text-xs text-yellow-600">
+              💡 This component is flagged in security analysis
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center gap-2">
           <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-            {config?.icon}
+            {config?.icon || ''}
           </div>
           <div>
             <div className="font-medium text-sm">{String((data as any).label || '')}</div>
