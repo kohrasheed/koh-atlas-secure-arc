@@ -623,53 +623,74 @@ function App() {
 
   // Suppress ResizeObserver loop errors (benign browser warning)
   useEffect(() => {
-    // ResizeObserver error suppression - these are harmless browser optimization warnings
+    // Create a more robust ResizeObserver error handler
     const isResizeObserverError = (message: unknown): boolean => {
-      const str = String(message || '');
-      return str.includes('ResizeObserver') && 
-             (str.includes('loop') || str.includes('undelivered'));
+      const str = String(message || '').toLowerCase();
+      return str.includes('resizeobserver') && 
+             (str.includes('loop') || str.includes('undelivered') || str.includes('completed'));
     };
 
-    // Store original console methods
+    // Store original methods
     const originalError = console.error;
     const originalWarn = console.warn;
 
-    // Override console to filter ResizeObserver errors
+    // Filter console messages
     console.error = (...args: unknown[]) => {
-      if (!args.some(isResizeObserverError)) {
+      if (!args.some(arg => isResizeObserverError(arg))) {
         originalError.apply(console, args);
       }
     };
     
     console.warn = (...args: unknown[]) => {
-      if (!args.some(isResizeObserverError)) {
+      if (!args.some(arg => isResizeObserverError(arg))) {
         originalWarn.apply(console, args);
       }
     };
     
-    // Handle window errors
+    // Handle global errors
     const handleError = (event: ErrorEvent) => {
-      if (isResizeObserverError(event.message)) {
+      if (isResizeObserverError(event.message) || isResizeObserverError(event.error?.message)) {
         event.preventDefault();
+        event.stopPropagation();
         return false;
       }
       return true;
     };
 
     const handleRejection = (event: PromiseRejectionEvent) => {
-      if (isResizeObserverError(event.reason)) {
+      if (isResizeObserverError(event.reason) || isResizeObserverError(event.reason?.message)) {
         event.preventDefault();
+        event.stopPropagation();
       }
     };
 
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleRejection);
+    // Add multiple event listeners for comprehensive coverage
+    window.addEventListener('error', handleError, true);
+    window.addEventListener('unhandledrejection', handleRejection, true);
+    
+    // Additional ResizeObserver specific handling
+    const originalResizeObserver = window.ResizeObserver;
+    window.ResizeObserver = class extends originalResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        super((entries, observer) => {
+          try {
+            callback(entries, observer);
+          } catch (error) {
+            if (!isResizeObserverError(error)) {
+              throw error;
+            }
+            // Silently ignore ResizeObserver loop errors
+          }
+        });
+      }
+    };
     
     return () => {
       console.error = originalError;
       console.warn = originalWarn;
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleRejection);
+      window.removeEventListener('error', handleError, true);
+      window.removeEventListener('unhandledrejection', handleRejection, true);
+      window.ResizeObserver = originalResizeObserver;
     };
   }, []);
 
@@ -2174,10 +2195,10 @@ function App() {
                   <div className="space-y-2">
                     <Label htmlFor="node-label">Label</Label>
                     <Input
-                      key={`node-label-${selectedNode.id}`}
                       id="node-label"
                       value={(selectedNode.data as any)?.label || ''}
                       onChange={(e) => updateNodeData(selectedNode.id, { label: e.target.value })}
+                      placeholder="Enter component label"
                     />
                   </div>
                   <div className="space-y-2">
@@ -2209,7 +2230,6 @@ function App() {
                       <div className="space-y-2">
                         <Label htmlFor="container-cidr">CIDR Block (optional)</Label>
                         <Input
-                          key={`container-cidr-${selectedNode.id}`}
                           id="container-cidr"
                           placeholder="e.g., 10.0.0.0/16"
                           value={(selectedNode.data as any)?.cidr || ''}
@@ -2219,7 +2239,6 @@ function App() {
                       <div className="space-y-2">
                         <Label htmlFor="container-description">Description</Label>
                         <Input
-                          key={`container-description-${selectedNode.id}`}
                           id="container-description"
                           placeholder="Container purpose or notes"
                           value={(selectedNode.data as any)?.description || ''}
@@ -2295,7 +2314,6 @@ function App() {
                   <div className="space-y-2">
                     <Label htmlFor="edge-port">Port</Label>
                     <Input
-                      key={`edge-port-${selectedEdge.id}`}
                       id="edge-port"
                       type="number"
                       value={((selectedEdge.data as any)?.port || 443).toString()}
@@ -2344,7 +2362,6 @@ function App() {
                   <div className="space-y-2">
                     <Label htmlFor="edge-description">Description</Label>
                     <Input
-                      key={`edge-description-${selectedEdge.id}`}
                       id="edge-description"
                       placeholder="Optional connection description"
                       value={(selectedEdge.data as any)?.description || ''}
