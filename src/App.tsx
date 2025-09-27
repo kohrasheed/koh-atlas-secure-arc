@@ -2357,8 +2357,8 @@ function App() {
           </TabsContent>
           
           <TabsContent value="analysis" className="flex-1 min-h-0 px-4 pb-4">
-            <ScrollArea className="h-full max-h-full overflow-auto">
-              <div className="py-2 space-y-4 pr-2">
+            <ScrollArea className="h-full">
+              <div className="py-2 space-y-4 pr-2 pb-4">
               {showAttackPaths ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
