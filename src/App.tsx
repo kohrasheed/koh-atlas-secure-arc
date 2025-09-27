@@ -2174,6 +2174,7 @@ function App() {
                   <div className="space-y-2">
                     <Label htmlFor="node-label">Label</Label>
                     <Input
+                      key={`node-label-${selectedNode.id}`}
                       id="node-label"
                       value={(selectedNode.data as any)?.label || ''}
                       onChange={(e) => updateNodeData(selectedNode.id, { label: e.target.value })}
@@ -2208,6 +2209,7 @@ function App() {
                       <div className="space-y-2">
                         <Label htmlFor="container-cidr">CIDR Block (optional)</Label>
                         <Input
+                          key={`container-cidr-${selectedNode.id}`}
                           id="container-cidr"
                           placeholder="e.g., 10.0.0.0/16"
                           value={(selectedNode.data as any)?.cidr || ''}
@@ -2217,6 +2219,7 @@ function App() {
                       <div className="space-y-2">
                         <Label htmlFor="container-description">Description</Label>
                         <Input
+                          key={`container-description-${selectedNode.id}`}
                           id="container-description"
                           placeholder="Container purpose or notes"
                           value={(selectedNode.data as any)?.description || ''}
@@ -2292,6 +2295,7 @@ function App() {
                   <div className="space-y-2">
                     <Label htmlFor="edge-port">Port</Label>
                     <Input
+                      key={`edge-port-${selectedEdge.id}`}
                       id="edge-port"
                       type="number"
                       value={((selectedEdge.data as any)?.port || 443).toString()}
@@ -2340,6 +2344,7 @@ function App() {
                   <div className="space-y-2">
                     <Label htmlFor="edge-description">Description</Label>
                     <Input
+                      key={`edge-description-${selectedEdge.id}`}
                       id="edge-description"
                       placeholder="Optional connection description"
                       value={(selectedEdge.data as any)?.description || ''}
