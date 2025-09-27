@@ -682,9 +682,57 @@ function App() {
     }
   }, [isDarkTheme]);
 
+  // Clear highlights
+  const clearHighlights = () => {
+    setHighlightedElements([]);
+    
+    // Reset node highlights
+    setNodes((nds: Node[]) => nds.map((node: Node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        isHighlighted: false
+      }
+    })));
+
+    // Reset edge highlights
+    setEdges((eds: Edge[]) => eds.map((edge: Edge) => ({
+      ...edge,
+      style: {
+        ...edge.style,
+        stroke: (edge.data as any)?.encryption === 'None' ? '#ef4444' : '#10b981',
+        strokeWidth: 2,
+        filter: undefined
+      }
+    })));
+  };
+
+  // Delete selected elements
+  const onDeleteSelected = useCallback(() => {
+    if (selectedNode) {
+      setNodes(nds => nds.filter((n: Node) => n.id !== selectedNode.id));
+      // Remove connected edges
+      setEdges(eds => eds.filter((e: Edge) => e.source !== selectedNode.id && e.target !== selectedNode.id));
+      setSelectedNode(null);
+      toast.success('Node deleted');
+    }
+    if (selectedEdge) {
+      setEdges(eds => eds.filter((e: Edge) => e.id !== selectedEdge.id));
+      setSelectedEdge(null);
+      toast.success('Connection deleted');
+    }
+  }, [selectedNode, selectedEdge, setNodes, setEdges]);
+
   // Keyboard shortcuts for deletion
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Prevent deletion when typing in input fields
+      if (event.target instanceof HTMLInputElement || 
+          event.target instanceof HTMLTextAreaElement || 
+          (event.target as HTMLElement)?.contentEditable === 'true') {
+        return;
+      }
+
       if (event.key === 'Delete' || event.key === 'Backspace') {
         if (selectedNode || selectedEdge) {
           event.preventDefault();
@@ -694,12 +742,14 @@ function App() {
       if (event.key === 'Escape') {
         setSelectedNode(null);
         setSelectedEdge(null);
+        // Also clear highlights
+        clearHighlights();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNode, selectedEdge]);
+  }, [selectedNode, selectedEdge, onDeleteSelected]);
 
   // Load custom design with randomized positions and variations
   const loadCustomDesign = (designKey: 'secure' | 'vulnerable') => {
@@ -954,22 +1004,6 @@ function App() {
     createConnection(protocol, port, encryption);
   };
 
-  // Delete selected elements
-  const onDeleteSelected = useCallback(() => {
-    if (selectedNode) {
-      setNodes(nds => nds.filter((n: Node) => n.id !== selectedNode.id));
-      // Remove connected edges
-      setEdges(eds => eds.filter((e: Edge) => e.source !== selectedNode.id && e.target !== selectedNode.id));
-      setSelectedNode(null);
-      toast.success('Node deleted');
-    }
-    if (selectedEdge) {
-      setEdges(eds => eds.filter((e: Edge) => e.id !== selectedEdge.id));
-      setSelectedEdge(null);
-      toast.success('Connection deleted');
-    }
-  }, [selectedNode, selectedEdge, setNodes, setEdges]);
-
   // Clear all elements from canvas
   const clearAll = useCallback(() => {
     setNodes([]);
@@ -1149,14 +1183,36 @@ function App() {
 
   // Node selection handler
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    event.stopPropagation();
     setSelectedNode(node);
     setSelectedEdge(null);
   }, []);
 
   // Edge selection handler
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.stopPropagation();
     setSelectedEdge(edge);
     setSelectedNode(null);
+  }, []);
+
+  // Selection change handler (for deselection when clicking on canvas)
+  const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[], edges: Edge[] }) => {
+    if (nodes.length === 0 && edges.length === 0) {
+      setSelectedNode(null);
+      setSelectedEdge(null);
+    } else if (nodes.length > 0) {
+      setSelectedNode(nodes[0]);
+      setSelectedEdge(null);
+    } else if (edges.length > 0) {
+      setSelectedEdge(edges[0]);
+      setSelectedNode(null);
+    }
+  }, []);
+
+  // Canvas click handler (deselect when clicking on empty canvas)
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+    setSelectedEdge(null);
   }, []);
 
   // Update node data
@@ -1213,31 +1269,6 @@ function App() {
     })));
 
     toast.success(`Highlighted components for: ${finding.title}`);
-  };
-
-  // Clear highlights
-  const clearHighlights = () => {
-    setHighlightedElements([]);
-    
-    // Reset node highlights
-    setNodes((nds: Node[]) => nds.map((node: Node) => ({
-      ...node,
-      data: {
-        ...node.data,
-        isHighlighted: false
-      }
-    })));
-
-    // Reset edge highlights
-    setEdges((eds: Edge[]) => eds.map((edge: Edge) => ({
-      ...edge,
-      style: {
-        ...edge.style,
-        stroke: (edge.data as any)?.encryption === 'None' ? '#ef4444' : '#10b981',
-        strokeWidth: 2,
-        filter: undefined
-      }
-    })));
   };
 
   // Reorganize components using intelligent layout
@@ -2507,6 +2538,8 @@ function App() {
             onDragOver={onDragOver}
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
+            onSelectionChange={onSelectionChange}
+            onPaneClick={onPaneClick}
             nodeTypes={nodeTypes}
             fitView
             className="bg-background"
