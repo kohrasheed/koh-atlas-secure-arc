@@ -29,12 +29,21 @@ export interface AttackPath {
 }
 
 export interface CustomComponent {
+  id: string;
   type: string;
   label: string;
+  icon: string; // Icon name as string
   category: 'application' | 'security' | 'network' | 'data' | 'container' | 'custom';
   color: string;
-  isContainer?: boolean;
   description?: string;
+  isContainer?: boolean;
+  ports?: number[];
+  protocols?: string[];
+  vendor?: string;
+  version?: string;
+  tags?: string[];
+  created: string;
+  author?: string;
 }
 
 export interface ProtocolConfig {
