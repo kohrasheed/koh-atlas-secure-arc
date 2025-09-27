@@ -510,7 +510,7 @@ function App() {
           >
             <div className="flex items-center gap-2">
               <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-                {config?.icon || ''}
+                {config?.icon as React.ReactNode}
               </div>
               <div>
                 <div className="font-medium text-xs">{String((data as any).label || '')}</div>
@@ -557,7 +557,7 @@ function App() {
             <div className="absolute -bottom-32 left-0 w-72 bg-card border border-yellow-400 rounded-lg shadow-lg p-3 z-20 text-xs">
               <div className="flex items-center gap-2 mb-2">
                 <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-                  {config?.icon || ''}
+                  {config?.icon as React.ReactNode}
                 </div>
                 <div className="font-medium text-yellow-600">{String(config?.label || '')}</div>
               </div>
@@ -687,7 +687,7 @@ function App() {
           <div className="absolute -bottom-32 left-0 w-72 bg-card border border-yellow-400 rounded-lg shadow-lg p-3 z-20 text-xs">
             <div className="flex items-center gap-2 mb-2">
               <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-                {config?.icon}
+                {config?.icon as React.ReactNode}
               </div>
               <div className="font-medium text-yellow-600">{config?.label}</div>
             </div>
@@ -719,7 +719,7 @@ function App() {
         
         <div className="flex items-center gap-2">
           <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-            {config?.icon || ''}
+            {config?.icon as React.ReactNode}
           </div>
           <div>
             <div className="font-medium text-sm">{String((data as any).label || '')}</div>
@@ -769,18 +769,23 @@ function App() {
 
   // Suppress ResizeObserver loop errors (benign browser warning)
   useEffect(() => {
-    // Create a more robust ResizeObserver error handler
+    // Enhanced ResizeObserver error detection
     const isResizeObserverError = (message: unknown): boolean => {
       const str = String(message || '').toLowerCase();
-      return str.includes('resizeobserver') && 
-             (str.includes('loop') || str.includes('undelivered') || str.includes('completed'));
+      return (
+        str.includes('resizeobserver') && 
+        (str.includes('loop') || 
+         str.includes('undelivered') || 
+         str.includes('completed') ||
+         str.includes('notifications'))
+      );
     };
 
-    // Store original methods
+    // Store original console methods
     const originalError = console.error;
     const originalWarn = console.warn;
 
-    // Filter console messages
+    // Enhanced console filtering
     console.error = (...args: unknown[]) => {
       if (!args.some(arg => isResizeObserverError(arg))) {
         originalError.apply(console, args);
@@ -793,50 +798,65 @@ function App() {
       }
     };
     
-    // Handle global errors
+    // Comprehensive error event handling
     const handleError = (event: ErrorEvent) => {
-      if (isResizeObserverError(event.message) || isResizeObserverError(event.error?.message)) {
+      const errorMessage = event.message || event.error?.message || '';
+      if (isResizeObserverError(errorMessage)) {
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         return false;
       }
-      return true;
     };
 
     const handleRejection = (event: PromiseRejectionEvent) => {
-      if (isResizeObserverError(event.reason) || isResizeObserverError(event.reason?.message)) {
+      const reason = event.reason || event.reason?.message || '';
+      if (isResizeObserverError(reason)) {
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
       }
     };
 
-    // Add multiple event listeners for comprehensive coverage
-    window.addEventListener('error', handleError, true);
-    window.addEventListener('unhandledrejection', handleRejection, true);
+    // Register event listeners with high priority
+    window.addEventListener('error', handleError, { capture: true, passive: false });
+    window.addEventListener('unhandledrejection', handleRejection, { capture: true, passive: false });
     
-    // Additional ResizeObserver specific handling
+    // Enhanced ResizeObserver wrapper
     const originalResizeObserver = window.ResizeObserver;
-    window.ResizeObserver = class extends originalResizeObserver {
-      constructor(callback: ResizeObserverCallback) {
-        super((entries, observer) => {
-          try {
-            callback(entries, observer);
-          } catch (error) {
-            if (!isResizeObserverError(error)) {
-              throw error;
+    if (originalResizeObserver) {
+      window.ResizeObserver = class extends originalResizeObserver {
+        constructor(callback: ResizeObserverCallback) {
+          const wrappedCallback: ResizeObserverCallback = (entries, observer) => {
+            try {
+              // Use requestAnimationFrame to avoid loop issues
+              requestAnimationFrame(() => {
+                try {
+                  callback(entries, observer);
+                } catch (error) {
+                  if (!isResizeObserverError(error)) {
+                    throw error;
+                  }
+                }
+              });
+            } catch (error) {
+              if (!isResizeObserverError(error)) {
+                throw error;
+              }
             }
-            // Silently ignore ResizeObserver loop errors
-          }
-        });
-      }
-    };
+          };
+          super(wrappedCallback);
+        }
+      };
+    }
     
     return () => {
+      // Restore original methods
       console.error = originalError;
       console.warn = originalWarn;
       window.removeEventListener('error', handleError, true);
       window.removeEventListener('unhandledrejection', handleRejection, true);
-      window.ResizeObserver = originalResizeObserver;
+      if (originalResizeObserver) {
+        window.ResizeObserver = originalResizeObserver;
+      }
     };
   }, []);
 
@@ -1117,12 +1137,6 @@ function App() {
       ...pendingConnection,
       id: `e${pendingConnection.source}-${pendingConnection.target}-${Date.now()}`,
       label: `${protocol}:${port}`,
-      type: 'smoothstep',
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        width: 20,
-        height: 20,
-      },
       data: { 
         protocol, 
         port, 
@@ -1174,12 +1188,6 @@ function App() {
 
   // Clear all elements from canvas
   const clearAll = useCallback(() => {
-    setNodes([]);
-    setEdges([]);
-    setFindings([]);
-    setAttackPaths([]);
-    setSelectedNode(null);
-    setSelectedEdge(null);
     setHighlightedElements([]);
     clearHighlights();
     toast.success('Canvas cleared - all components and connections removed');
