@@ -733,7 +733,8 @@ function App() {
         return;
       }
 
-      if (event.key === 'Delete' || event.key === 'Backspace') {
+      // Only use Delete key for component/connection deletion, not Backspace
+      if (event.key === 'Delete') {
         if (selectedNode || selectedEdge) {
           event.preventDefault();
           onDeleteSelected();
@@ -2228,7 +2229,7 @@ function App() {
                   <div className="pt-2 border-t border-border">
                     <p className="text-xs text-muted-foreground mb-2">Keyboard Shortcuts:</p>
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• <kbd>Delete</kbd> or <kbd>Backspace</kbd> to delete</p>
+                      <p>• <kbd>Delete</kbd> to delete component</p>
                       <p>• <kbd>Escape</kbd> to deselect</p>
                       <p>• Drag corners to resize horizontally and vertically</p>
                       <p>• Hold and drag any corner/edge to scale freely</p>
@@ -2352,7 +2353,7 @@ function App() {
                   <div className="pt-2 border-t border-border">
                     <p className="text-xs text-muted-foreground mb-2">Keyboard Shortcuts:</p>
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• <kbd>Delete</kbd> or <kbd>Backspace</kbd> to delete</p>
+                      <p>• <kbd>Delete</kbd> to delete connection</p>
                       <p>• <kbd>Escape</kbd> to deselect</p>
                       <p>• Click connection line to select and edit</p>
                       <p>• Drag endpoints to reconnect</p>
@@ -2379,7 +2380,8 @@ function App() {
                     <p>• Click on connections to edit protocols</p>
                     <p>• Drag corners/edges to resize horizontally & vertically</p>
                     <p>• All components scale freely in both dimensions</p>
-                    <p>• Use keyboard shortcuts for faster editing</p>
+                    <p>• Use <kbd>Delete</kbd> key to remove selected items</p>
+                    <p>• Backspace only removes letters in text fields</p>
                   </div>
                 </div>
               )}
