@@ -2378,6 +2378,49 @@ function App() {
                     </Select>
                   </div>
                   
+                  {/* Size properties */}
+                  <div className="space-y-2">
+                    <Label htmlFor="node-size">Size (Height x Width)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="node-height"
+                        type="number"
+                        placeholder="Height"
+                        value={selectedNode.style?.height || selectedNode.measured?.height || ''}
+                        onChange={(e) => {
+                          const height = parseInt(e.target.value) || undefined;
+                          setNodes(nds => nds.map(node => 
+                            node.id === selectedNode.id 
+                              ? { ...node, style: { ...node.style, height } }
+                              : node
+                          ));
+                        }}
+                        min="60"
+                        max="800"
+                      />
+                      <span className="flex items-center text-muted-foreground text-sm">×</span>
+                      <Input
+                        id="node-width"
+                        type="number"
+                        placeholder="Width"
+                        value={selectedNode.style?.width || selectedNode.measured?.width || ''}
+                        onChange={(e) => {
+                          const width = parseInt(e.target.value) || undefined;
+                          setNodes(nds => nds.map(node => 
+                            node.id === selectedNode.id 
+                              ? { ...node, style: { ...node.style, width } }
+                              : node
+                          ));
+                        }}
+                        min="120"
+                        max="1200"
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Leave empty for auto-sizing
+                    </div>
+                  </div>
+
                   {/* Container-specific properties */}
                   {componentTypes.find(c => c.type === selectedNode.data?.type)?.isContainer && (
                     <>
@@ -2403,13 +2446,13 @@ function App() {
                   )}
                   
                   <div className="pt-2 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-2">Keyboard Shortcuts:</p>
+                    <p className="text-xs text-muted-foreground mb-2">Sizing Options:</p>
                     <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• Set exact dimensions using size textboxes above</p>
+                      <p>• Drag corners to resize visually</p>
+                      <p>• Leave textboxes empty for auto-sizing</p>
                       <p>• <kbd>Delete</kbd> to delete component</p>
                       <p>• <kbd>Escape</kbd> to deselect</p>
-                      <p>• Drag corners to resize horizontally and vertically</p>
-                      <p>• Hold and drag any corner/edge to scale freely</p>
-                      <p>• Components scale independently in both dimensions</p>
                     </div>
                   </div>
                   
@@ -2554,7 +2597,8 @@ function App() {
                   <div className="mt-4 text-xs space-y-1">
                     <p>• Click on any component to select it</p>
                     <p>• Click on connections to edit protocols</p>
-                    <p>• Drag corners/edges to resize horizontally & vertically</p>
+                    <p>• Use size textboxes for exact dimensions</p>
+                    <p>• Drag corners/edges to resize visually</p>
                     <p>• All components scale freely in both dimensions</p>
                     <p>• Use <kbd>Delete</kbd> key to remove selected items</p>
                     <p>• Backspace only removes letters in text fields</p>
@@ -2754,9 +2798,8 @@ function App() {
                 <p>• Drag regular components into containers or onto the canvas</p>
                 <p>• Connect components by dragging between connection points</p>
                 <p>• Specify protocols and ports for each connection</p>
-                <p>• Select components to resize them horizontally and vertically</p>
-                <p>• Drag corners/edges freely to scale in both dimensions</p>
-                <p>• Use the Properties panel to edit selected components</p>
+                <p>• Select components to set exact size via textboxes or drag corners to resize</p>
+                <p>• Use the Properties panel to edit selected components and connections</p>
                 <p>• Click <strong>Reorganize</strong> to automatically arrange components in logical tiers</p>
                 <p>• Run security analysis to identify vulnerabilities</p>
                 <p>• View attack paths to understand threat scenarios</p>
