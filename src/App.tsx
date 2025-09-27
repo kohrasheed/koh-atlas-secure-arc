@@ -2386,14 +2386,29 @@ function App() {
                         id="node-height"
                         type="number"
                         placeholder="Height"
-                        value={selectedNode.style?.height || selectedNode.measured?.height || ''}
+                        value={String(selectedNode.style?.height || selectedNode.measured?.height || '')}
                         onChange={(e) => {
-                          const height = parseInt(e.target.value) || undefined;
+                          const value = e.target.value;
+                          const height = value === '' ? undefined : parseInt(value);
                           setNodes(nds => nds.map(node => 
                             node.id === selectedNode.id 
-                              ? { ...node, style: { ...node.style, height } }
+                              ? { 
+                                  ...node, 
+                                  style: { 
+                                    ...node.style, 
+                                    height: height 
+                                  }
+                                }
                               : node
                           ));
+                          // Update selectedNode to reflect changes immediately
+                          setSelectedNode(prev => prev ? {
+                            ...prev,
+                            style: {
+                              ...prev.style,
+                              height: height
+                            }
+                          } : null);
                         }}
                         min="60"
                         max="800"
@@ -2403,14 +2418,29 @@ function App() {
                         id="node-width"
                         type="number"
                         placeholder="Width"
-                        value={selectedNode.style?.width || selectedNode.measured?.width || ''}
+                        value={String(selectedNode.style?.width || selectedNode.measured?.width || '')}
                         onChange={(e) => {
-                          const width = parseInt(e.target.value) || undefined;
+                          const value = e.target.value;
+                          const width = value === '' ? undefined : parseInt(value);
                           setNodes(nds => nds.map(node => 
                             node.id === selectedNode.id 
-                              ? { ...node, style: { ...node.style, width } }
+                              ? { 
+                                  ...node, 
+                                  style: { 
+                                    ...node.style, 
+                                    width: width 
+                                  }
+                                }
                               : node
                           ));
+                          // Update selectedNode to reflect changes immediately
+                          setSelectedNode(prev => prev ? {
+                            ...prev,
+                            style: {
+                              ...prev.style,
+                              width: width
+                            }
+                          } : null);
                         }}
                         min="120"
                         max="1200"
