@@ -2380,48 +2380,18 @@ function App() {
                   
                   {/* Size properties */}
                   <div className="space-y-2">
-                    <Label htmlFor="node-size">Size (Height x Width)</Label>
+                    <Label htmlFor="node-size">Size (Width x Height)</Label>
                     <div className="flex gap-2">
-                      <Input
-                        id="node-height"
-                        type="number"
-                        placeholder="Height"
-                        value={String(selectedNode.style?.height || selectedNode.measured?.height || '')}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const height = value === '' ? undefined : parseInt(value);
-                          setNodes(nds => nds.map(node => 
-                            node.id === selectedNode.id 
-                              ? { 
-                                  ...node, 
-                                  style: { 
-                                    ...node.style, 
-                                    height: height 
-                                  }
-                                }
-                              : node
-                          ));
-                          // Update selectedNode to reflect changes immediately
-                          setSelectedNode(prev => prev ? {
-                            ...prev,
-                            style: {
-                              ...prev.style,
-                              height: height
-                            }
-                          } : null);
-                        }}
-                        min="60"
-                        max="800"
-                      />
-                      <span className="flex items-center text-muted-foreground text-sm">×</span>
                       <Input
                         id="node-width"
                         type="number"
                         placeholder="Width"
-                        value={String(selectedNode.style?.width || selectedNode.measured?.width || '')}
+                        value={selectedNode.style?.width || selectedNode.measured?.width || ''}
                         onChange={(e) => {
-                          const value = e.target.value;
+                          const value = e.target.value.trim();
                           const width = value === '' ? undefined : parseInt(value);
+                          
+                          // Update nodes state
                           setNodes(nds => nds.map(node => 
                             node.id === selectedNode.id 
                               ? { 
@@ -2433,6 +2403,7 @@ function App() {
                                 }
                               : node
                           ));
+                          
                           // Update selectedNode to reflect changes immediately
                           setSelectedNode(prev => prev ? {
                             ...prev,
@@ -2445,9 +2416,44 @@ function App() {
                         min="120"
                         max="1200"
                       />
+                      <span className="flex items-center text-muted-foreground text-sm">×</span>
+                      <Input
+                        id="node-height"
+                        type="number"
+                        placeholder="Height"
+                        value={selectedNode.style?.height || selectedNode.measured?.height || ''}
+                        onChange={(e) => {
+                          const value = e.target.value.trim();
+                          const height = value === '' ? undefined : parseInt(value);
+                          
+                          // Update nodes state
+                          setNodes(nds => nds.map(node => 
+                            node.id === selectedNode.id 
+                              ? { 
+                                  ...node, 
+                                  style: { 
+                                    ...node.style, 
+                                    height: height 
+                                  }
+                                }
+                              : node
+                          ));
+                          
+                          // Update selectedNode to reflect changes immediately
+                          setSelectedNode(prev => prev ? {
+                            ...prev,
+                            style: {
+                              ...prev.style,
+                              height: height
+                            }
+                          } : null);
+                        }}
+                        min="60"
+                        max="800"
+                      />
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Leave empty for auto-sizing
+                      Leave empty for auto-sizing. Values are in pixels.
                     </div>
                   </div>
 
@@ -2478,8 +2484,9 @@ function App() {
                   <div className="pt-2 border-t border-border">
                     <p className="text-xs text-muted-foreground mb-2">Sizing Options:</p>
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• Set exact dimensions using size textboxes above</p>
-                      <p>• Drag corners to resize visually</p>
+                      <p>• Set exact dimensions using Width x Height textboxes above</p>
+                      <p>• Drag corners/edges to resize visually</p>
+                      <p>• Both width and height are fully adjustable</p>
                       <p>• Leave textboxes empty for auto-sizing</p>
                       <p>• <kbd>Delete</kbd> to delete component</p>
                       <p>• <kbd>Escape</kbd> to deselect</p>
