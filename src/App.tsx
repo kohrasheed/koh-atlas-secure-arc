@@ -33,6 +33,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import { useKV } from '@github/spark/hooks';
 import ComponentLibrary, { CustomComponent } from '@/components/ComponentLibrary';
+import BackupManager, { ProjectBackup } from '@/components/BackupManager';
 import {
   ComponentConfig,
   SecurityFinding,
@@ -761,6 +762,28 @@ function App() {
       return [...prev, ...newComponents];
     });
     toast.success(`Imported ${importedComponents.length} components to application`);
+  };
+
+  // Handler for loading backup
+  const handleLoadBackup = (backup: ProjectBackup) => {
+    // Load all data from backup
+    setNodes(backup.data.nodes);
+    setEdges(backup.data.edges);
+    setCustomComponents(backup.data.customComponents);
+    setFindings(backup.data.findings);
+    setAttackPaths(backup.data.attackPaths);
+    
+    // Apply settings
+    if (backup.data.settings.darkTheme !== undefined) {
+      setIsDarkTheme(backup.data.settings.darkTheme);
+    }
+    
+    // Clear current selections
+    setSelectedNode(null);
+    setSelectedEdge(null);
+    clearHighlights();
+    
+    toast.success(`Loaded backup "${backup.name}" with ${backup.statistics.nodeCount} components`);
   };
 
   // Security findings
@@ -2263,10 +2286,11 @@ function App() {
 
         {/* Content Tabs */}
         <Tabs defaultValue="components" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-3 mx-4 mt-2 flex-shrink-0">
+          <TabsList className="grid w-full grid-cols-4 mx-4 mt-2 flex-shrink-0">
             <TabsTrigger value="components">Components</TabsTrigger>
             <TabsTrigger value="properties">Properties</TabsTrigger>
             <TabsTrigger value="analysis">Analysis</TabsTrigger>
+            <TabsTrigger value="backup">Backup</TabsTrigger>
           </TabsList>
           
           <TabsContent value="components" className="flex-1 min-h-0 px-4 pb-4">
@@ -2814,6 +2838,21 @@ function App() {
                 </div>
               </ScrollArea>
             </div>
+          </TabsContent>
+          
+          <TabsContent value="backup" className="flex-1 min-h-0 px-4 pb-4">
+            <ScrollArea className="h-full">
+              <div className="py-2">
+                <BackupManager
+                  nodes={nodes}
+                  edges={edges}
+                  customComponents={customComponents}
+                  findings={findings}
+                  attackPaths={attackPaths}
+                  onLoadBackup={handleLoadBackup}
+                />
+              </div>
+            </ScrollArea>
           </TabsContent>
         </Tabs>
       </div>
