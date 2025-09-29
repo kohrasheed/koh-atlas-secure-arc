@@ -2676,138 +2676,144 @@ function App() {
           </TabsContent>
           
           <TabsContent value="analysis" className="flex-1 min-h-0 px-4 pb-4">
-            <ScrollArea className="h-full">
-              <div className="py-2 space-y-4 pr-2 pb-4">
-              {showAttackPaths ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Attack Path Analysis</h3>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowAttackPaths(false)}
-                    >
-                      Back to Findings
-                    </Button>
-                  </div>
-                  {attackPaths.map(path => (
-                    <Card key={path.id}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">{path.name}</CardTitle>
-                        <div className="flex gap-2">
-                          <Badge variant="destructive">Impact: {path.impact}</Badge>
-                          <Badge variant="outline">Likelihood: {path.likelihood}</Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div>
-                          <h4 className="text-xs font-medium mb-1">Attack Steps:</h4>
-                          <ol className="text-xs space-y-1">
-                            {path.steps.map((step, idx) => (
-                              <li key={idx} className="flex">
-                                <span className="mr-2 text-muted-foreground">{idx + 1}.</span>
-                                <span>{step}</span>
-                              </li>
-                            ))}
-                          </ol>
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-medium mb-1">Mitigations:</h4>
-                          <ul className="text-xs space-y-1">
-                            {path.mitigations.map((mitigation, idx) => (
-                              <li key={idx} className="flex items-start">
-                                <CheckCircle className="w-3 h-3 mr-1 mt-0.5 text-green-500" />
-                                <span>{mitigation}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {attackPaths.length === 0 && (
-                    <div className="text-center text-muted-foreground py-8">
-                      <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>No attack paths identified</p>
-                      <p className="text-xs">Run security analysis first</p>
+            <div className="h-full overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="py-2 space-y-4 pr-2 pb-4">
+                {showAttackPaths ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">Attack Path Analysis</h3>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowAttackPaths(false)}
+                      >
+                        Back to Findings
+                      </Button>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Security Findings</h3>
-                    <div className="flex gap-2">
-                      {highlightedElements.length > 0 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={clearHighlights}
-                        >
-                          Clear Highlights
-                        </Button>
-                      )}
-                      {attackPaths.length > 0 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowAttackPaths(true)}
-                        >
-                          View Attack Paths
-                        </Button>
+                    <div className="space-y-4">
+                      {attackPaths.map(path => (
+                        <Card key={path.id}>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm">{path.name}</CardTitle>
+                            <div className="flex gap-2">
+                              <Badge variant="destructive">Impact: {path.impact}</Badge>
+                              <Badge variant="outline">Likelihood: {path.likelihood}</Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div>
+                              <h4 className="text-xs font-medium mb-1">Attack Steps:</h4>
+                              <ol className="text-xs space-y-1">
+                                {path.steps.map((step, idx) => (
+                                  <li key={idx} className="flex">
+                                    <span className="mr-2 text-muted-foreground">{idx + 1}.</span>
+                                    <span>{step}</span>
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-medium mb-1">Mitigations:</h4>
+                              <ul className="text-xs space-y-1">
+                                {path.mitigations.map((mitigation, idx) => (
+                                  <li key={idx} className="flex items-start">
+                                    <CheckCircle className="w-3 h-3 mr-1 mt-0.5 text-green-500" />
+                                    <span>{mitigation}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      {attackPaths.length === 0 && (
+                        <div className="text-center text-muted-foreground py-8">
+                          <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p>No attack paths identified</p>
+                          <p className="text-xs">Run security analysis first</p>
+                        </div>
                       )}
                     </div>
                   </div>
-                  {findings.map(finding => (
-                    <Card 
-                      key={finding.id}
-                      className="cursor-pointer hover:bg-accent/5 transition-colors"
-                      onClick={() => highlightFinding(finding)}
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm">{finding.title}</CardTitle>
-                          <Badge 
-                            variant={
-                              finding.severity === 'Critical' ? 'destructive' : 
-                              finding.severity === 'High' ? 'destructive' :
-                              finding.severity === 'Medium' ? 'default' : 'secondary'
-                            }
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">Security Findings</h3>
+                      <div className="flex gap-2">
+                        {highlightedElements.length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={clearHighlights}
                           >
-                            {finding.severity}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <p className="text-xs text-muted-foreground">{finding.description}</p>
-                        <div>
-                          <h4 className="text-xs font-medium">Recommendation:</h4>
-                          <p className="text-xs">{finding.recommendation}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {finding.standards.map(standard => (
-                            <Badge key={standard} variant="outline" className="text-xs">
-                              {standard}
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="text-xs text-muted-foreground pt-1 border-t border-border">
-                          Click to highlight affected components on the diagram
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {findings.length === 0 && (
-                    <div className="text-center text-muted-foreground py-8">
-                      <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>No security findings</p>
-                      <p className="text-xs">Run analysis to identify issues</p>
+                            Clear Highlights
+                          </Button>
+                        )}
+                        {attackPaths.length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowAttackPaths(true)}
+                          >
+                            View Attack Paths
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  )}
+                    <div className="space-y-4">
+                      {findings.map(finding => (
+                        <Card 
+                          key={finding.id}
+                          className="cursor-pointer hover:bg-accent/5 transition-colors"
+                          onClick={() => highlightFinding(finding)}
+                        >
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-sm">{finding.title}</CardTitle>
+                              <Badge 
+                                variant={
+                                  finding.severity === 'Critical' ? 'destructive' : 
+                                  finding.severity === 'High' ? 'destructive' :
+                                  finding.severity === 'Medium' ? 'default' : 'secondary'
+                                }
+                              >
+                                {finding.severity}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            <p className="text-xs text-muted-foreground">{finding.description}</p>
+                            <div>
+                              <h4 className="text-xs font-medium">Recommendation:</h4>
+                              <p className="text-xs">{finding.recommendation}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {finding.standards.map(standard => (
+                                <Badge key={standard} variant="outline" className="text-xs">
+                                  {standard}
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="text-xs text-muted-foreground pt-1 border-t border-border">
+                              Click to highlight affected components on the diagram
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      {findings.length === 0 && (
+                        <div className="text-center text-muted-foreground py-8">
+                          <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p>No security findings</p>
+                          <p className="text-xs">Run analysis to identify issues</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 </div>
-              )}
-              </div>
-            </ScrollArea>
+              </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
