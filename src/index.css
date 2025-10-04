@@ -100,6 +100,65 @@
   }
 }
 
+/* ReactFlow Edge Styling */
+.react-flow__edge-path {
+  stroke: hsl(var(--border));
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--primary));
+  stroke-width: 3;
+}
+
+.react-flow__edge-text {
+  fill: hsl(var(--foreground));
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.react-flow__edge-textbg {
+  fill: hsl(var(--background));
+  stroke: hsl(var(--border));
+  stroke-width: 1;
+}
+
+/* Ensure edges are visible in both themes */
+.react-flow__edge {
+  pointer-events: all;
+}
+
+.react-flow__edge .react-flow__edge-path {
+  stroke: hsl(var(--muted-foreground));
+  stroke-width: 2;
+  fill: none;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--primary));
+  stroke-width: 3;
+}
+
+/* Dark theme edge adjustments */
+[data-theme="dark"] .react-flow__edge-path {
+  stroke: hsl(var(--border));
+  stroke-width: 2;
+}
+
+[data-theme="dark"] .react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--primary));
+  stroke-width: 3;
+}
+
+[data-theme="dark"] .react-flow__edge-text {
+  fill: hsl(var(--foreground));
+}
+
+[data-theme="dark"] .react-flow__edge-textbg {
+  fill: hsl(var(--background));
+  stroke: hsl(var(--border));
+}
+
 /* Data Flow Animation */
 @keyframes flowAnimation {
   0% {

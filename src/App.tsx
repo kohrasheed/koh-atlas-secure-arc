@@ -204,6 +204,7 @@ function App() {
     const design = customDesigns[designKey];
     setNodes(design.nodes);
     setEdges(design.edges);
+    console.log('Loaded design:', designKey, 'with', design.nodes.length, 'nodes and', design.edges.length, 'edges');
     toast.success(`Loaded ${design.name}`);
   };
 
@@ -753,6 +754,24 @@ function App() {
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             nodeTypes={nodeTypes}
+            defaultEdgeOptions={{
+              type: 'smoothstep',
+              animated: false,
+              style: { 
+                stroke: 'hsl(var(--muted-foreground))', 
+                strokeWidth: 2 
+              },
+              labelStyle: { 
+                fill: 'hsl(var(--foreground))', 
+                fontSize: 10, 
+                fontWeight: 500 
+              },
+              labelBgStyle: { 
+                fill: 'hsl(var(--background))', 
+                stroke: 'hsl(var(--border))', 
+                strokeWidth: 1 
+              }
+            }}
             fitView
             className="bg-background"
           >
