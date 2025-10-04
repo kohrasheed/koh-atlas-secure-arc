@@ -14,6 +14,7 @@ import {
   ReactFlowInstance,
   Handle,
   Position,
+  ConnectionMode,
 } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -108,26 +109,68 @@ const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
       `}
       style={{ borderLeftColor: config?.color || '#666' }}
     >
-      {/* Connection handles */}
+      {/* Connection handles - multiple for better connectivity */}
       <Handle
         type="source"
         position={Position.Right}
+        id="source-right"
         style={{
           background: config?.color || '#666',
           border: '2px solid white',
-          width: 8,
-          height: 8,
+          width: 12,
+          height: 12,
+          right: -6,
+          top: '50%',
+          transform: 'translateY(-50%)',
         }}
+        className="!opacity-100 hover:scale-125 transition-transform"
       />
       <Handle
         type="target"
         position={Position.Left}
+        id="target-left"
         style={{
           background: config?.color || '#666',
           border: '2px solid white',
-          width: 8,
-          height: 8,
+          width: 12,
+          height: 12,
+          left: -6,
+          top: '50%',
+          transform: 'translateY(-50%)',
         }}
+        className="!opacity-100 hover:scale-125 transition-transform"
+      />
+      
+      {/* Additional handles for top and bottom */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="source-bottom"
+        style={{
+          background: config?.color || '#666',
+          border: '2px solid white',
+          width: 12,
+          height: 12,
+          bottom: -6,
+          left: '50%',
+          transform: 'translateX(-50%)',
+        }}
+        className="!opacity-100 hover:scale-125 transition-transform"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="target-top"
+        style={{
+          background: config?.color || '#666',
+          border: '2px solid white',
+          width: 12,
+          height: 12,
+          top: -6,
+          left: '50%',
+          transform: 'translateX(-50%)',
+        }}
+        className="!opacity-100 hover:scale-125 transition-transform"
       />
       
       <div className="flex items-center gap-2">
@@ -801,6 +844,8 @@ function App() {
                 strokeWidth: 1 
               }
             }}
+            connectOnClick={false}
+            connectionMode={ConnectionMode.Loose}
             fitView
             className="bg-background"
           >
