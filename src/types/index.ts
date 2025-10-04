@@ -1,80 +1,78 @@
-// Type definitions for Koh Atlas
+export type ComponentType = 'web' | 'app' | 'data' | 'network' | 'platform' | 'security';
 
-export interface ComponentConfig {
-  type: string;
-  label: string;
-  icon: React.ReactElement;
-  category: 'application' | 'security' | 'network' | 'data' | 'container' | 'custom';
-  color: string;
-  isContainer?: boolean;
+export type SecuritySeverity = 'critical' | 'high' | 'medium' | 'low';
+
+export interface ArchComponent {
+  id: string;
+  type: ComponentType;
+  name: string;
+  category: string;
+  icon: string;
+  zone?: string;
+  criticality?: 'critical' | 'high' | 'medium' | 'low';
+  metadata?: {
+    os?: string;
+    version?: string;
+    vendor?: string;
+  };
+}
+
+export interface Connection {
+  id: string;
+  from: string;
+  to: string;
+  purpose: string;
+  ports: number[];
+  protocol: string;
+  encryption: string;
+  auth: string;
+  dataClass: string;
+  zoneFrom?: string;
+  zoneTo?: string;
+  egress: boolean;
+  controls: string[];
 }
 
 export interface SecurityFinding {
   id: string;
   title: string;
-  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  severity: SecuritySeverity;
+  category: string;
   description: string;
-  affected: string[];
-  recommendation: string;
+  affectedAssets: string[];
+  evidence: string;
+  standards: string[];
+  suggestedFix: string;
+  autoFixAvailable: boolean;
+  residualRisk: string;
+}
+
+export interface Zone {
+  id: string;
+  name: string;
+  type: 'external' | 'dmz' | 'internal' | 'data' | 'management';
+  description: string;
+  color: string;
+}
+
+export interface SecurityRule {
+  id: string;
+  name: string;
+  category: string;
+  severity: SecuritySeverity;
+  description: string;
+  condition: string;
+  fix: string;
   standards: string[];
 }
 
-export interface AttackPath {
+export interface Project {
   id: string;
   name: string;
-  steps: string[];
-  impact: string;
-  likelihood: string;
-  mitigations: string[];
-}
-
-export interface CustomComponent {
-  id: string;
-  type: string;
-  label: string;
-  icon: string; // Icon name as string
-  category: 'application' | 'security' | 'network' | 'data' | 'container' | 'custom';
-  color: string;
-  description?: string;
-  isContainer?: boolean;
-  ports?: number[];
-  protocols?: string[];
-  vendor?: string;
-  version?: string;
-  tags?: string[];
-  created: string;
-  author?: string;
-}
-
-export interface ProtocolConfig {
-  port: number;
   description: string;
-}
-
-export interface ConnectionData {
-  protocol: string;
-  port: number;
-  encryption: string;
-  sourceLabel?: string;
-  targetLabel?: string;
-  description?: string;
-}
-
-export interface NodeData {
-  type: string;
-  label: string;
-  zone?: string;
-  isHighlighted?: boolean;
-  cidr?: string;
-  description?: string;
-  associatedVpc?: string;
-  width?: number;
-  height?: number;
-}
-
-export interface SecurityEdgeControl {
-  type: string;
-  label: string;
-  icon: React.ReactElement;
-  color: string;
+  components: ArchComponent[];
+  connections: Connection[];
+  zones: Zone[];
+  findings: SecurityFinding[];
+  lastAnalysis?: Date;
 }

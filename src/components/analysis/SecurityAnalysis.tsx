@@ -7,7 +7,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { SecurityFinding, Component, Connection } from '../../types';
 import { Icon } from '../Icon';
-// Attack path visualization temporarily disabled
+import { AttackPathVisualization } from './AttackPathVisualization';
 
 interface SecurityAnalysisProps {
   findings: SecurityFinding[];
@@ -122,9 +122,12 @@ export function SecurityAnalysis({
             </TabsContent>
 
             <TabsContent value="threats" className="mt-0">
-              <div className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">Attack path visualization temporarily disabled</p>
-              </div>
+              <AttackPathVisualization
+                components={components}
+                connections={connections}
+                onHighlightPath={onHighlightPath}
+                onClearHighlight={onClearHighlight}
+              />
             </TabsContent>
           </div>
         </Tabs>
