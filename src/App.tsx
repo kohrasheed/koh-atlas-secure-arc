@@ -67,6 +67,9 @@ import {
   Hexagon,
   TrashSimple,
   ArrowsClockwise,
+  FlowArrow,
+  CircleDashed,
+  PaperPlaneTilt,
 } from '@phosphor-icons/react';
 
 // Protocol configurations with common ports
@@ -329,6 +332,18 @@ function App() {
   const [showConnectionDialog, setShowConnectionDialog] = useState(false);
   const [highlightedElements, setHighlightedElements] = useState<string[]>([]);
   const [customComponents, setCustomComponents] = useState<CustomComponent[]>([]);
+  const [showDataFlow, setShowDataFlow] = useState(false);
+  const [dataFlowAnimation, setDataFlowAnimation] = useState(false);
+  const [selectedFlowPath, setSelectedFlowPath] = useState<string | null>(null);
+  const [dataFlowPaths, setDataFlowPaths] = useState<Array<{
+    id: string;
+    name: string;
+    path: string[];
+    description: string;
+    dataType: 'HTTP Request' | 'Database Query' | 'API Call' | 'File Transfer' | 'Authentication' | 'Custom';
+    latency: string;
+    throughput: string;
+  }>>([]);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   // Add security control near a VPC/VNet
@@ -464,6 +479,7 @@ function App() {
   const CustomNode = ({ data, selected, id }: NodeProps) => {
     const config = componentTypes.find(c => c.type === data.type);
     const isHighlighted = data.isHighlighted;
+    const isFlowHighlighted = data.isFlowHighlighted;
     const componentInfo = getComponentInfo(String(data.type));
     
     if (config?.isContainer) {
@@ -474,12 +490,13 @@ function App() {
             relative min-w-[200px] min-h-[150px] rounded-lg border-2 border-dashed 
             ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
             ${isHighlighted ? 'ring-4 ring-yellow-400/60 border-yellow-400' : ''}
+            ${isFlowHighlighted ? 'ring-4 ring-green-400/60 border-green-400 bg-green-50' : ''}
             transition-all duration-200 hover:border-primary/50
             bg-card/10 backdrop-blur-sm
           `}
           style={{ 
-            borderColor: isHighlighted ? '#facc15' : (config?.color || '#666'),
-            backgroundColor: `${config?.color}10` || '#66610'
+            borderColor: isFlowHighlighted ? '#4ade80' : (isHighlighted ? '#facc15' : (config?.color || '#666')),
+            backgroundColor: isFlowHighlighted ? '#4ade8020' : `${config?.color}10` || '#66610'
           }}
         >
           {/* Node Resizer - Enhanced for containers */}
@@ -631,9 +648,13 @@ function App() {
           px-4 py-2 shadow-lg rounded-lg bg-card border-2 min-w-[120px] relative
           ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
           ${isHighlighted ? 'ring-4 ring-yellow-400/60 border-yellow-400 bg-yellow-50' : ''}
+          ${isFlowHighlighted ? 'ring-4 ring-green-400/60 border-green-400 bg-green-50' : ''}
           transition-all duration-200 hover:shadow-xl hover:border-primary/50
         `}
-        style={{ borderLeftColor: isHighlighted ? '#facc15' : (config?.color || '#666') }}
+        style={{ 
+          borderLeftColor: isFlowHighlighted ? '#4ade80' : (isHighlighted ? '#facc15' : (config?.color || '#666')),
+          backgroundColor: isFlowHighlighted ? '#4ade8020' : (isHighlighted ? '#fef3c7' : 'var(--card)')
+        }}
       >
         {/* Node Resizer for regular components - Enhanced scaling */}
         <NodeResizer 
@@ -930,7 +951,8 @@ function App() {
       ...node,
       data: {
         ...node.data,
-        isHighlighted: false
+        isHighlighted: false,
+        isFlowHighlighted: false
       }
     })));
 
@@ -941,7 +963,8 @@ function App() {
         ...edge.style,
         stroke: (edge.data as any)?.encryption === 'None' ? '#ef4444' : '#10b981',
         strokeWidth: 2,
-        filter: undefined
+        filter: undefined,
+        animation: undefined
       }
     })));
   };
@@ -1497,6 +1520,343 @@ function App() {
     })));
 
     toast.success(`Highlighted components for: ${finding.title}`);
+  };
+
+  // Generate and analyze data flow paths
+  const generateDataFlowPaths = () => {
+    const flowPaths: Array<{
+      id: string;
+      name: string;
+      path: string[];
+      description: string;
+      dataType: 'HTTP Request' | 'Database Query' | 'API Call' | 'File Transfer' | 'Authentication' | 'Custom';
+      latency: string;
+      throughput: string;
+    }> = [];
+
+    // Find common flow patterns based on architecture
+    const browsers = nodes.filter(n => (n.data as any)?.type === 'web-browser');
+    const webServers = nodes.filter(n => (n.data as any)?.type === 'web-server');
+    const appServers = nodes.filter(n => (n.data as any)?.type === 'app-server');
+    const databases = nodes.filter(n => (n.data as any)?.type === 'database');
+    const loadBalancers = nodes.filter(n => ['load-balancer-global', 'load-balancer-internal'].includes((n.data as any)?.type));
+    const apiGateways = nodes.filter(n => (n.data as any)?.type === 'api-gateway');
+    const wafs = nodes.filter(n => (n.data as any)?.type === 'waf');
+    const cdns = nodes.filter(n => (n.data as any)?.type === 'edge-cdn');
+
+    // Pattern 1: End-to-end user request flow
+    if (browsers.length > 0 && (webServers.length > 0 || appServers.length > 0)) {
+      const browser = browsers[0];
+      let path = [browser.id];
+      let description = 'User initiates web request';
+      let currentLatency = 0;
+
+      // Through CDN if available
+      if (cdns.length > 0) {
+        const cdn = cdns[0];
+        const hasConnection = edges.some(e => 
+          (e.source === browser.id && e.target === cdn.id) ||
+          (e.source === cdn.id && e.target === browser.id)
+        );
+        if (hasConnection) {
+          path.push(cdn.id);
+          description += ' → CDN caches/serves content';
+          currentLatency += 50; // CDN adds ~50ms
+        }
+      }
+
+      // Through WAF if available
+      if (wafs.length > 0) {
+        const waf = wafs[0];
+        const hasConnection = edges.some(e => 
+          (e.source === path[path.length - 1] && e.target === waf.id) ||
+          (e.source === waf.id && e.target === path[path.length - 1])
+        );
+        if (hasConnection || path.length === 1) {
+          path.push(waf.id);
+          description += ' → WAF filters malicious requests';
+          currentLatency += 30; // WAF adds ~30ms
+        }
+      }
+
+      // Through Load Balancer if available
+      if (loadBalancers.length > 0) {
+        const lb = loadBalancers[0];
+        const hasConnection = edges.some(e => 
+          (e.source === path[path.length - 1] && e.target === lb.id) ||
+          (e.source === lb.id && e.target === path[path.length - 1])
+        );
+        if (hasConnection || wafs.length === 0) {
+          path.push(lb.id);
+          description += ' → Load Balancer distributes traffic';
+          currentLatency += 20; // LB adds ~20ms
+        }
+      }
+
+      // To Web Server
+      if (webServers.length > 0) {
+        const webServer = webServers[0];
+        path.push(webServer.id);
+        description += ' → Web Server processes request';
+        currentLatency += 100; // Web processing ~100ms
+
+        // To API Gateway if available
+        if (apiGateways.length > 0) {
+          const gateway = apiGateways[0];
+          const hasConnection = edges.some(e => 
+            (e.source === webServer.id && e.target === gateway.id)
+          );
+          if (hasConnection) {
+            path.push(gateway.id);
+            description += ' → API Gateway routes request';
+            currentLatency += 50; // Gateway adds ~50ms
+          }
+        }
+
+        // To App Server if available
+        if (appServers.length > 0) {
+          const appServer = appServers[0];
+          const hasConnection = edges.some(e => 
+            (e.source === webServer.id && e.target === appServer.id) ||
+            (apiGateways.length > 0 && e.source === apiGateways[0].id && e.target === appServer.id)
+          );
+          if (hasConnection) {
+            path.push(appServer.id);
+            description += ' → App Server executes business logic';
+            currentLatency += 150; // App processing ~150ms
+          }
+        }
+      }
+
+      // To Database if available
+      if (databases.length > 0 && (appServers.length > 0 || webServers.length > 0)) {
+        const database = databases[0];
+        const sourceNode = appServers.length > 0 ? appServers[0] : webServers[0];
+        const hasConnection = edges.some(e => 
+          (e.source === sourceNode.id && e.target === database.id)
+        );
+        if (hasConnection) {
+          path.push(database.id);
+          description += ' → Database retrieves/stores data';
+          currentLatency += 200; // DB query ~200ms
+        }
+      }
+
+      if (path.length > 1) {
+        flowPaths.push({
+          id: 'user-request-flow',
+          name: 'User Request Flow',
+          path,
+          description,
+          dataType: 'HTTP Request',
+          latency: `~${currentLatency}ms`,
+          throughput: '100-1000 req/sec'
+        });
+      }
+    }
+
+    // Pattern 2: Database query flow
+    if (appServers.length > 0 && databases.length > 0) {
+      const appServer = appServers[0];
+      const database = databases[0];
+      const hasConnection = edges.some(e => 
+        e.source === appServer.id && e.target === database.id
+      );
+      
+      if (hasConnection) {
+        flowPaths.push({
+          id: 'database-query-flow',
+          name: 'Database Query Flow',
+          path: [appServer.id, database.id],
+          description: 'App Server queries database for data → Database processes query and returns results',
+          dataType: 'Database Query',
+          latency: '~50-200ms',
+          throughput: '500-2000 queries/sec'
+        });
+      }
+    }
+
+    // Pattern 3: API call flow
+    if (apiGateways.length > 0 && appServers.length > 0) {
+      const gateway = apiGateways[0];
+      const appServer = appServers[0];
+      const hasConnection = edges.some(e => 
+        e.source === gateway.id && e.target === appServer.id
+      );
+      
+      if (hasConnection) {
+        let path = [gateway.id, appServer.id];
+        let description = 'API Gateway receives request → App Server processes API call';
+        let currentLatency = 80;
+
+        // Extend to database if connected
+        if (databases.length > 0) {
+          const database = databases[0];
+          const hasDbConnection = edges.some(e => 
+            e.source === appServer.id && e.target === database.id
+          );
+          if (hasDbConnection) {
+            path.push(database.id);
+            description += ' → Database executes query';
+            currentLatency += 150;
+          }
+        }
+
+        flowPaths.push({
+          id: 'api-call-flow',
+          name: 'API Call Flow',
+          path,
+          description,
+          dataType: 'API Call',
+          latency: `~${currentLatency}ms`,
+          throughput: '200-1000 calls/sec'
+        });
+      }
+    }
+
+    // Pattern 4: Authentication flow
+    const authComponents = nodes.filter(n => 
+      ['bastion-host', 'api-gateway', 'waf'].includes((n.data as any)?.type)
+    );
+    
+    if (authComponents.length > 0 && appServers.length > 0) {
+      const authComponent = authComponents[0];
+      const appServer = appServers[0];
+      
+      let path = [authComponent.id, appServer.id];
+      let description = `${(authComponent.data as any)?.label || 'Auth Component'} validates credentials → App Server grants access`;
+      
+      // Extend to database for user lookup
+      if (databases.length > 0) {
+        const database = databases[0];
+        path.push(database.id);
+        description += ' → Database verifies user credentials';
+      }
+
+      flowPaths.push({
+        id: 'authentication-flow',
+        name: 'Authentication Flow',
+        path,
+        description,
+        dataType: 'Authentication',
+        latency: '~100-300ms',
+        throughput: '50-200 auth/sec'
+      });
+    }
+
+    // Pattern 5: File transfer flow
+    const fileComponents = nodes.filter(n => 
+      ['cache', 'edge-cdn', 'web-server'].includes((n.data as any)?.type)
+    );
+    
+    if (fileComponents.length > 1) {
+      const source = fileComponents[0];
+      const target = fileComponents[1];
+      const hasConnection = edges.some(e => 
+        (e.source === source.id && e.target === target.id) ||
+        (e.source === target.id && e.target === source.id)
+      );
+      
+      if (hasConnection) {
+        flowPaths.push({
+          id: 'file-transfer-flow',
+          name: 'File Transfer Flow',
+          path: [source.id, target.id],
+          description: `${(source.data as any)?.label} transfers files to ${(target.data as any)?.label}`,
+          dataType: 'File Transfer',
+          latency: '~500ms-5s',
+          throughput: '10-100 MB/sec'
+        });
+      }
+    }
+
+    setDataFlowPaths(flowPaths);
+    
+    if (flowPaths.length === 0) {
+      toast.info('No data flow paths detected - add more connections between components');
+    } else {
+      toast.success(`Generated ${flowPaths.length} data flow paths`);
+    }
+  };
+
+  // Animate data flow along a specific path
+  const animateDataFlow = (pathId: string) => {
+    const flowPath = dataFlowPaths.find(p => p.id === pathId);
+    if (!flowPath) return;
+
+    setSelectedFlowPath(pathId);
+    setDataFlowAnimation(true);
+
+    // Highlight the path edges
+    const pathEdges = [];
+    for (let i = 0; i < flowPath.path.length - 1; i++) {
+      const sourceId = flowPath.path[i];
+      const targetId = flowPath.path[i + 1];
+      const edge = edges.find(e => 
+        (e.source === sourceId && e.target === targetId) ||
+        (e.source === targetId && e.target === sourceId)
+      );
+      if (edge) {
+        pathEdges.push(edge.id);
+      }
+    }
+
+    // Highlight nodes in the path
+    setNodes((nds: Node[]) => nds.map((node: Node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        isFlowHighlighted: flowPath.path.includes(node.id)
+      }
+    })));
+
+    // Highlight edges in the path with animation
+    setEdges((eds: Edge[]) => eds.map((edge: Edge) => ({
+      ...edge,
+      style: {
+        ...edge.style,
+        stroke: pathEdges.includes(edge.id!) ? '#00ff88' : edge.style?.stroke,
+        strokeWidth: pathEdges.includes(edge.id!) ? 4 : (edge.style?.strokeWidth || 2),
+        filter: pathEdges.includes(edge.id!) ? 'drop-shadow(0 0 8px #00ff88)' : undefined,
+        animation: pathEdges.includes(edge.id!) ? 'flowAnimation 2s infinite linear' : undefined
+      }
+    })));
+
+    // Clear animation after 10 seconds
+    setTimeout(() => {
+      setDataFlowAnimation(false);
+      setSelectedFlowPath(null);
+      clearFlowHighlights();
+    }, 10000);
+
+    toast.success(`Animating ${flowPath.name} - watch the green flow!`);
+  };
+
+  // Clear flow highlights
+  const clearFlowHighlights = () => {
+    setSelectedFlowPath(null);
+    setDataFlowAnimation(false);
+    
+    // Reset node highlights
+    setNodes((nds: Node[]) => nds.map((node: Node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        isFlowHighlighted: false
+      }
+    })));
+
+    // Reset edge highlights
+    setEdges((eds: Edge[]) => eds.map((edge: Edge) => ({
+      ...edge,
+      style: {
+        ...edge.style,
+        stroke: (edge.data as any)?.encryption === 'None' ? '#ef4444' : '#10b981',
+        strokeWidth: 2,
+        filter: undefined,
+        animation: undefined
+      }
+    })));
   };
 
   // Reorganize components using intelligent layout
@@ -2250,6 +2610,28 @@ function App() {
               <Button 
                 size="sm" 
                 variant="secondary"
+                onClick={generateDataFlowPaths}
+                className="flex-1"
+                disabled={nodes.length === 0}
+              >
+                <FlowArrow className="w-4 h-4 mr-1" />
+                Data Flow
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setShowDataFlow(!showDataFlow)}
+                className="flex-1"
+                disabled={dataFlowPaths.length === 0}
+              >
+                <CircleDashed className="w-4 h-4 mr-1" />
+                {showDataFlow ? 'Hide' : 'Show'} Flows
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="secondary"
                 onClick={reorganizeComponents}
                 className="flex-1"
                 disabled={nodes.length === 0}
@@ -2286,9 +2668,10 @@ function App() {
 
         {/* Content Tabs */}
         <Tabs defaultValue="components" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-4 mx-4 mt-2 flex-shrink-0">
+          <TabsList className="grid w-full grid-cols-5 mx-4 mt-2 flex-shrink-0">
             <TabsTrigger value="components">Components</TabsTrigger>
             <TabsTrigger value="properties">Properties</TabsTrigger>
+            <TabsTrigger value="dataflow">Data Flow</TabsTrigger>
             <TabsTrigger value="analysis">Analysis</TabsTrigger>
             <TabsTrigger value="backup">Backup</TabsTrigger>
           </TabsList>
@@ -2840,6 +3223,120 @@ function App() {
             </div>
           </TabsContent>
           
+          <TabsContent value="dataflow" className="flex-1 min-h-0 px-4 pb-4">
+            <ScrollArea className="h-full">
+              <div className="py-2 space-y-4 pr-2 pb-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">Data Flow Paths</h3>
+                  <div className="flex gap-2">
+                    {selectedFlowPath && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={clearFlowHighlights}
+                      >
+                        Clear Animation
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {dataFlowPaths.map(flowPath => (
+                    <Card 
+                      key={flowPath.id}
+                      className={`cursor-pointer hover:bg-accent/5 transition-colors ${
+                        selectedFlowPath === flowPath.id ? 'ring-2 ring-green-400 bg-green-50' : ''
+                      }`}
+                      onClick={() => animateDataFlow(flowPath.id)}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <PaperPlaneTilt className="w-4 h-4 text-blue-500" />
+                            {flowPath.name}
+                          </CardTitle>
+                          <Badge 
+                            variant={
+                              flowPath.dataType === 'HTTP Request' ? 'default' :
+                              flowPath.dataType === 'Database Query' ? 'secondary' :
+                              flowPath.dataType === 'API Call' ? 'outline' :
+                              'secondary'
+                            }
+                            className="text-xs"
+                          >
+                            {flowPath.dataType}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-xs text-muted-foreground">{flowPath.description}</p>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">Flow Path:</span>
+                            <span className="text-muted-foreground">{flowPath.path.length} steps</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs overflow-x-auto">
+                            {flowPath.path.map((nodeId, idx) => {
+                              const node = nodes.find(n => n.id === nodeId);
+                              const config = componentTypes.find(c => c.type === (node?.data as any)?.type);
+                              return (
+                                <React.Fragment key={nodeId}>
+                                  <div 
+                                    className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded text-xs whitespace-nowrap"
+                                    style={{ borderLeftColor: config?.color, borderLeftWidth: '2px' }}
+                                  >
+                                    <div style={{ color: config?.color }} className="w-3 h-3">
+                                      {config?.icon}
+                                    </div>
+                                    <span>{(node?.data as any)?.label || 'Unknown'}</span>
+                                  </div>
+                                  {idx < flowPath.path.length - 1 && (
+                                    <FlowArrow className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-xs">
+                          <div>
+                            <span className="font-medium text-muted-foreground">Expected Latency:</span>
+                            <div className="font-mono text-green-600">{flowPath.latency}</div>
+                          </div>
+                          <div>
+                            <span className="font-medium text-muted-foreground">Throughput:</span>
+                            <div className="font-mono text-blue-600">{flowPath.throughput}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="text-xs text-muted-foreground pt-2 border-t border-border">
+                          💡 Click to animate this data flow on the diagram
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  
+                  {dataFlowPaths.length === 0 && (
+                    <div className="text-center text-muted-foreground py-8">
+                      <FlowArrow className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No data flow paths detected</p>
+                      <p className="text-xs">Click "Data Flow" button to analyze packet transfers</p>
+                      <div className="mt-4 text-xs space-y-1">
+                        <p>• Data flows show how packets travel between components</p>
+                        <p>• Includes latency estimates and throughput metrics</p>
+                        <p>• Identifies common patterns like user requests and database queries</p>
+                        <p>• Helps optimize architecture for performance</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ScrollArea>
+          </TabsContent>
+          
           <TabsContent value="backup" className="flex-1 min-h-0 px-4 pb-4">
             <ScrollArea className="h-full">
               <div className="py-2">
@@ -2913,6 +3410,8 @@ function App() {
                 <p>• Use the Properties panel to edit selected components and connections</p>
                 <p>• Click <strong>Reorganize</strong> to automatically arrange components in logical tiers</p>
                 <p>• Run security analysis to identify vulnerabilities</p>
+                <p>• Generate <strong>Data Flow</strong> paths to understand packet transfers between components</p>
+                <p>• Click data flow paths to animate packet movement with latency estimates</p>
                 <p>• View attack paths to understand threat scenarios</p>
               </div>
             </div>

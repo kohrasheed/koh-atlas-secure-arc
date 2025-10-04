@@ -99,3 +99,19 @@
     @apply px-1.5 py-0.5 text-xs font-mono bg-muted border border-border rounded;
   }
 }
+
+/* Data Flow Animation */
+@keyframes flowAnimation {
+  0% {
+    stroke-dasharray: 8 12;
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dasharray: 8 12;
+    stroke-dashoffset: -20;
+  }
+}
+
+.flow-animated {
+  animation: flowAnimation 2s infinite linear;
+}
