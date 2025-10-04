@@ -12,6 +12,8 @@ import {
   Connection,
   ReactFlowProvider,
   ReactFlowInstance,
+  Handle,
+  Position,
 } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,12 +102,34 @@ const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
   return (
     <div 
       className={`
-        px-4 py-2 shadow-lg rounded-lg bg-card border-2 min-w-[120px]
+        px-4 py-2 shadow-lg rounded-lg bg-card border-2 min-w-[120px] relative
         ${selected ? 'border-primary' : 'border-border'}
         transition-all duration-200 hover:shadow-xl
       `}
       style={{ borderLeftColor: config?.color || '#666' }}
     >
+      {/* Connection handles */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{
+          background: config?.color || '#666',
+          border: '2px solid white',
+          width: 8,
+          height: 8,
+        }}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{
+          background: config?.color || '#666',
+          border: '2px solid white',
+          width: 8,
+          height: 8,
+        }}
+      />
+      
       <div className="flex items-center gap-2">
         <div style={{ color: config?.color || '#666' }}>
           {config?.icon}
@@ -754,6 +778,11 @@ function App() {
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             nodeTypes={nodeTypes}
+            connectionLineStyle={{
+              stroke: 'hsl(var(--primary))',
+              strokeWidth: 2,
+              strokeDasharray: '5,5'
+            }}
             defaultEdgeOptions={{
               type: 'smoothstep',
               animated: false,
