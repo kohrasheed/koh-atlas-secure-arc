@@ -21,6 +21,8 @@ export interface Connection {
   id: string;
   from: string;
   to: string;
+  source?: string; // For ReactFlow compatibility
+  target?: string; // For ReactFlow compatibility
   purpose: string;
   ports: number[];
   protocol: string;

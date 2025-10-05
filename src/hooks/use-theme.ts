@@ -22,7 +22,9 @@ export function useTheme() {
       }
     };
 
-    applyTheme(theme);
+    if (theme) {
+      applyTheme(theme);
+    }
 
     // Listen for system theme changes when using system theme
     if (theme === 'system') {

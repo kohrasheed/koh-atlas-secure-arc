@@ -5,7 +5,7 @@ import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { SecurityFinding, Component, Connection } from '../../types';
+import { SecurityFinding, ArchComponent, Connection } from '../../types';
 import { Icon } from '../Icon';
 import { AttackPathVisualization } from './AttackPathVisualization';
 
@@ -14,7 +14,7 @@ interface SecurityAnalysisProps {
   isAnalyzing: boolean;
   onApplyFix: (findingId: string) => void;
   onExportReport: () => void;
-  components: Component[];
+  components: ArchComponent[];
   connections: Connection[];
   onHighlightPath?: (componentIds: string[], connectionIds: string[]) => void;
   onClearHighlight?: () => void;
