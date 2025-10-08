@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 @import "tw-animate-css";
-@import '@xyflow/react/dist/style.css';
 
 @layer base {
   * {
@@ -94,4 +93,346 @@
   code {
     font-family: 'JetBrains Mono', monospace;
   }
+}
+
+/* ReactFlow Styles */
+.react-flow {
+  direction: ltr;
+  --xy-edge-stroke-default: hsl(var(--muted-foreground));
+  --xy-edge-stroke-width-default: 1;
+  --xy-edge-stroke-selected-default: hsl(var(--primary));
+  --xy-connectionline-stroke-default: hsl(var(--muted-foreground));
+  --xy-connectionline-stroke-width-default: 1;
+  --xy-attribution-background-color-default: rgba(255, 255, 255, 0.5);
+  --xy-minimap-background-color-default: hsl(var(--muted));
+  --xy-minimap-mask-background-color-default: rgba(240, 240, 240, 0.6);
+  --xy-minimap-mask-stroke-color-default: transparent;
+  --xy-minimap-mask-stroke-width-default: 1;
+  --xy-minimap-node-background-color-default: hsl(var(--muted));
+  --xy-minimap-node-stroke-color-default: transparent;
+  --xy-minimap-node-stroke-width-default: 2;
+  --xy-background-color-default: hsl(var(--background));
+  --xy-background-pattern-dots-color-default: hsl(var(--muted-foreground));
+  --xy-background-pattern-lines-color-default: hsl(var(--border));
+  --xy-background-pattern-cross-color-default: hsl(var(--border));
+  background-color: var(--xy-background-color, var(--xy-background-color-default));
+  --xy-node-color-default: hsl(var(--foreground));
+  --xy-node-border-default: 1px solid hsl(var(--border));
+  --xy-node-background-color-default: hsl(var(--card));
+  --xy-node-group-background-color-default: rgba(240, 240, 240, 0.25);
+  --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(0, 0, 0, 0.08);
+  --xy-node-boxshadow-selected-default: 0 0 0 0.5px hsl(var(--primary));
+  --xy-node-border-radius-default: calc(var(--radius) - 2px);
+  --xy-handle-background-color-default: hsl(var(--primary));
+  --xy-handle-border-color-default: hsl(var(--card));
+  --xy-selection-background-color-default: rgba(0, 89, 220, 0.08);
+  --xy-selection-border-default: 1px dotted rgba(0, 89, 220, 0.8);
+  --xy-controls-button-background-color-default: hsl(var(--card));
+  --xy-controls-button-background-color-hover-default: hsl(var(--accent));
+  --xy-controls-button-color-default: hsl(var(--foreground));
+  --xy-controls-button-color-hover-default: hsl(var(--accent-foreground));
+  --xy-controls-button-border-color-default: hsl(var(--border));
+  --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.08);
+  --xy-edge-label-background-color-default: hsl(var(--card));
+  --xy-edge-label-color-default: hsl(var(--foreground));
+  --xy-resize-background-color-default: hsl(var(--primary));
+}
+
+.react-flow__background {
+  background-color: var(--xy-background-color-props, var(--xy-background-color, var(--xy-background-color-default)));
+  pointer-events: none;
+}
+
+.react-flow__background-pattern {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.react-flow__background-pattern-dots {
+  fill: var(--xy-background-pattern-dots-color, var(--xy-background-pattern-dots-color-default));
+}
+
+.react-flow__background-pattern-lines {
+  stroke: var(--xy-background-pattern-lines-color, var(--xy-background-pattern-lines-color-default));
+}
+
+.react-flow__background-pattern-cross {
+  fill: var(--xy-background-pattern-cross-color, var(--xy-background-pattern-cross-color-default));
+}
+
+.react-flow__pane {
+  cursor: grab;
+}
+
+.react-flow__pane.selection {
+  cursor: default;
+}
+
+.react-flow__viewport {
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+.react-flow__container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.react-flow__edge-path {
+  stroke: var(--xy-edge-stroke, var(--xy-edge-stroke-default));
+  stroke-width: var(--xy-edge-stroke-width, var(--xy-edge-stroke-width-default));
+  fill: none;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
+}
+
+.react-flow__edge-text {
+  font-size: 10px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--xy-edge-label-color, var(--xy-edge-label-color-default));
+}
+
+.react-flow__edge-textbg {
+  fill: var(--xy-edge-label-background-color, var(--xy-edge-label-background-color-default));
+}
+
+.react-flow__connection-path {
+  stroke: var(--xy-connectionline-stroke, var(--xy-connectionline-stroke-default));
+  stroke-width: var(--xy-connectionline-stroke-width, var(--xy-connectionline-stroke-width-default));
+  fill: none;
+}
+
+.react-flow__nodes {
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+
+.react-flow__node {
+  position: absolute;
+  user-select: none;
+  pointer-events: all;
+  transform-origin: 0 0;
+  box-sizing: border-box;
+  cursor: grab;
+}
+
+.react-flow__node.dragging {
+  cursor: grabbing;
+}
+
+.react-flow__nodesselection-rect:focus,
+.react-flow__nodesselection-rect:focus-visible {
+  outline: none;
+}
+
+.react-flow__node-default,
+.react-flow__node-input,
+.react-flow__node-output,
+.react-flow__node-group {
+  padding: 10px;
+  border-radius: var(--xy-node-border-radius, var(--xy-node-border-radius-default));
+  border: var(--xy-node-border, var(--xy-node-border-default));
+  background: var(--xy-node-background-color, var(--xy-node-background-color-default));
+  color: var(--xy-node-color, var(--xy-node-color-default));
+  text-align: center;
+  font-family: inherit;
+}
+
+.react-flow__node-default.selectable:hover,
+.react-flow__node-input.selectable:hover,
+.react-flow__node-output.selectable:hover,
+.react-flow__node-group.selectable:hover {
+  box-shadow: var(--xy-node-boxshadow-hover, var(--xy-node-boxshadow-hover-default));
+}
+
+.react-flow__node-default.selected,
+.react-flow__node-input.selected,
+.react-flow__node-output.selected,
+.react-flow__node-group.selected {
+  box-shadow: var(--xy-node-boxshadow-selected, var(--xy-node-boxshadow-selected-default));
+}
+
+.react-flow__node-group.selected {
+  background: var(--xy-node-group-background-color, var(--xy-node-group-background-color-default));
+}
+
+.react-flow__handle {
+  position: absolute;
+  pointer-events: none;
+  width: 6px;
+  height: 6px;
+  background: var(--xy-handle-background-color, var(--xy-handle-background-color-default));
+  border: 1px solid var(--xy-handle-border-color, var(--xy-handle-border-color-default));
+  border-radius: 100%;
+}
+
+.react-flow__handle.connectionindicator {
+  pointer-events: all;
+  width: 8px;
+  height: 8px;
+}
+
+.react-flow__handle-bottom {
+  top: auto;
+  left: 50%;
+  bottom: -4px;
+  transform: translate(-50%, 0);
+}
+
+.react-flow__handle-top {
+  left: 50%;
+  top: -4px;
+  transform: translate(-50%, 0);
+}
+
+.react-flow__handle-left {
+  top: 50%;
+  left: -4px;
+  transform: translate(0, -50%);
+}
+
+.react-flow__handle-right {
+  right: -4px;
+  top: 50%;
+  transform: translate(0, -50%);
+}
+
+.react-flow__edges {
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+
+.react-flow__edge {
+  pointer-events: all;
+  cursor: default;
+}
+
+.react-flow__edge.updating .react-flow__edge-path {
+  stroke: #777;
+}
+
+.react-flow__edge-text {
+  pointer-events: none;
+}
+
+.react-flow__edge.selected .react-flow__edge-text {
+  fill: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
+}
+
+.react-flow__selection {
+  z-index: 4;
+}
+
+.react-flow__selection-rect {
+  position: absolute;
+  pointer-events: none;
+  cursor: default;
+  fill-opacity: 0;
+  stroke-width: 1;
+  stroke: var(--xy-selection-border, var(--xy-selection-border-default));
+  fill: var(--xy-selection-background-color, var(--xy-selection-background-color-default));
+}
+
+.react-flow__controls {
+  box-shadow: var(--xy-controls-box-shadow, var(--xy-controls-box-shadow-default));
+  border-radius: 6px;
+  bottom: 10px;
+  left: 10px;
+  z-index: 5;
+  font-size: 12px;
+  position: absolute;
+  background: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default));
+}
+
+.react-flow__controls-button {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default));
+  border: none;
+  color: var(--xy-controls-button-color, var(--xy-controls-button-color-default));
+  border-bottom: 1px solid var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default));
+}
+
+.react-flow__controls-button:hover {
+  background: var(--xy-controls-button-background-color-hover, var(--xy-controls-button-background-color-hover-default));
+  color: var(--xy-controls-button-color-hover, var(--xy-controls-button-color-hover-default));
+}
+
+.react-flow__controls-button:disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.react-flow__controls-button:first-of-type {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.react-flow__controls-button:last-of-type {
+  border-bottom: none;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.react-flow__controls-button svg {
+  width: 100%;
+  max-width: 12px;
+  max-height: 12px;
+}
+
+.react-flow__minimap {
+  position: absolute;
+  z-index: 5;
+  bottom: 10px;
+  right: 10px;
+  width: 200px;
+  height: 150px;
+  background: var(--xy-minimap-background-color, var(--xy-minimap-background-color-default));
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.08);
+}
+
+.react-flow__minimap-mask {
+  fill: var(--xy-minimap-mask-background-color, var(--xy-minimap-mask-background-color-default));
+  stroke: var(--xy-minimap-mask-stroke-color, var(--xy-minimap-mask-stroke-color-default));
+  stroke-width: var(--xy-minimap-mask-stroke-width, var(--xy-minimap-mask-stroke-width-default));
+  cursor: pointer;
+}
+
+.react-flow__minimap-node {
+  fill: var(--xy-minimap-node-background-color, var(--xy-minimap-node-background-color-default));
+  stroke: var(--xy-minimap-node-stroke-color, var(--xy-minimap-node-stroke-color-default));
+  stroke-width: var(--xy-minimap-node-stroke-width, var(--xy-minimap-node-stroke-width-default));
+  cursor: pointer;
+}
+
+.react-flow__attribution {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  font-size: 10px;
+  background: var(--xy-attribution-background-color, var(--xy-attribution-background-color-default));
+  padding: 2px 3px;
+  margin: 0;
+}
+
+.react-flow__attribution a {
+  color: inherit;
 }
