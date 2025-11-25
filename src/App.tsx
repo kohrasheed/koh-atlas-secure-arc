@@ -318,6 +318,7 @@ const customDesigns = {
 
 function App() {
   const [isDarkTheme, setIsDarkTheme] = useKV('dark-theme', 'false');
+  const [isThemeLoading, setIsThemeLoading] = useState(true);
   const [nodes, setNodes, onNodesChange] = useNodesState<any>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
@@ -912,13 +913,23 @@ function App() {
     };
   }, []);
 
-  // Update theme
+  // Update theme with loading indicator
   useEffect(() => {
-    if (isDarkTheme === 'true') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
+    setIsThemeLoading(true);
+    
+    const applyTheme = () => {
+      if (isDarkTheme === 'true') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      
+      setTimeout(() => {
+        setIsThemeLoading(false);
+      }, 300);
+    };
+    
+    applyTheme();
   }, [isDarkTheme]);
 
   // Clear highlights
@@ -2196,13 +2207,24 @@ function App() {
               <h1 className="text-xl font-bold">Koh Atlas</h1>
               <p className="text-sm text-muted-foreground">Secure Architecture Designer</p>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsDarkTheme(isDarkTheme === 'true' ? 'false' : 'true')}
-            >
-              {isDarkTheme === 'true' ? <Sun /> : <Moon />}
-            </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDarkTheme(isDarkTheme === 'true' ? 'false' : 'true')}
+                disabled={isThemeLoading}
+              >
+                {isDarkTheme === 'true' ? <Sun /> : <Moon />}
+              </Button>
+              {isThemeLoading && (
+                <div className="absolute -bottom-6 right-0 flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">
+                  <div className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="ml-1">Loading theme...</span>
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Quick Actions */}
