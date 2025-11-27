@@ -108,13 +108,18 @@ const EdgeSchema = z.object({
   markerStart: z.any().optional()
 }).passthrough();
 
-// Diagram schema
+// Diagram schema - passthrough allows additional fields like customComponents, findings, etc.
 export const DiagramSchema = z.object({
   nodes: z.array(NodeSchema).max(1000),
   edges: z.array(EdgeSchema).max(2000),
   version: z.string().optional(),
-  metadata: z.any().optional()
-}).strict();
+  metadata: z.any().optional(),
+  // Optional fields that may be present in exports
+  timestamp: z.number().optional(),
+  customComponents: z.array(z.any()).optional(),
+  findings: z.array(z.any()).optional(),
+  attackPaths: z.array(z.any()).optional()
+}).passthrough();
 
 // Backup schema
 export const BackupSchema = z.object({
@@ -174,9 +179,11 @@ export const safeParseJSON = <T>(
     throw new Error('Invalid JSON format');
   }
 
-  // Check for prototype pollution
+  // Check for prototype pollution - only direct properties, not inherited
   if (parsed && typeof parsed === 'object') {
-    if ('__proto__' in parsed || 'constructor' in parsed || 'prototype' in parsed) {
+    if (Object.prototype.hasOwnProperty.call(parsed, '__proto__') || 
+        Object.prototype.hasOwnProperty.call(parsed, 'constructor') || 
+        Object.prototype.hasOwnProperty.call(parsed, 'prototype')) {
       throw new Error('Potential security threat detected in JSON');
     }
   }

@@ -2158,49 +2158,47 @@ function App() {
     }
     
     try {
-      // SEC-001: Safe JSON parsing with validation
-      const data = safeParseJSON(pasteJsonText, DiagramSchema, MAX_FILE_SIZE);
+      // Parse JSON first (basic validation)
+      const rawData = JSON.parse(pasteJsonText);
       
-      // Check if it's a security architecture format (has components instead of nodes)
-      if (data.components && data.connections && !data.nodes) {
-        const converted = convertSecurityArchitectureToNodes(data);
-        if (converted) {
-          saveToHistory();
-          setNodes(converted.nodes);
-          setEdges(converted.edges);
-          setFindings(converted.findings);
-          
-          toast.success(`Imported security architecture: ${converted.nodes.length} components, ${converted.edges.length} connections, ${converted.findings.length} findings`);
-          setShowPasteDialog(false);
-          setPasteJsonText('');
-          return;
-        } else {
-          toast.error('Failed to convert security architecture format');
-          return;
-        }
+      // Try auto-conversion for legacy formats (components/connections)
+      const convertedData = autoConvertImportedJSON(rawData);
+      
+      if (!convertedData) {
+        throw new Error('Unsupported JSON format. Expected either {nodes, edges} or {components, connections}');
       }
       
-      // Original diagram format
-      if (!data.nodes || !Array.isArray(data.nodes)) {
-        toast.error('Invalid JSON format: Expected "nodes" array or "components" array');
-        return;
-      }
+      // SEC-001: Validate converted data against schema
+      const data = safeParseJSON(JSON.stringify(convertedData), DiagramSchema, MAX_FILE_SIZE);
       
       saveToHistory();
       setNodes(data.nodes || []);
       setEdges(data.edges || []);
-      if (data.customComponents) setCustomComponents(data.customComponents);
-      if (data.findings) setFindings(data.findings);
-      if (data.attackPaths) setAttackPaths(data.attackPaths);
+      if (data.metadata?.customComponents) setCustomComponents(data.metadata.customComponents);
+      if (data.metadata?.findings) setFindings(data.metadata.findings);
+      if (data.metadata?.attackPaths) setAttackPaths(data.metadata.attackPaths);
       
-      toast.success(`Imported ${data.nodes?.length || 0} nodes and ${data.edges?.length || 0} edges`);
+      // Show success with helpful info about legacy format
+      const wasConverted = rawData.components || rawData.connections;
+      const message = wasConverted 
+        ? `✓ Converted legacy format: ${data.nodes?.length || 0} components, ${data.edges?.length || 0} connections`
+        : `Imported ${data.nodes?.length || 0} nodes and ${data.edges?.length || 0} edges`;
+      
+      toast.success(message, { duration: 5000 });
+      
+      // Show metadata if global risks were imported
+      if (data.metadata?.globalRisks) {
+        const riskCount = data.metadata.riskCount || data.metadata.globalRisks.length;
+        toast.info(`📋 Imported ${riskCount} documented security risks`, { duration: 4000 });
+      }
+      
       setShowPasteDialog(false);
       setPasteJsonText('');
     } catch (error) {
       console.error('Import failed:', error);
-      toast.error('Failed to parse JSON. Please check the format.');
+      toast.error(sanitizeError(error, 'Paste Import'));
     }
-  }, [pasteJsonText, setNodes, setEdges, setCustomComponents, saveToHistory]);
+  }, [pasteJsonText, setNodes, setEdges, setCustomComponents, setFindings, setAttackPaths, saveToHistory]);
 
   // Keyboard shortcuts handler
   useEffect(() => {
