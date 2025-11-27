@@ -1,0 +1,45 @@
+{
+  "components": [
+    {"id": "internet", "type": "network-zone", "label": "Public Internet", "zone": "External"},
+    {"id": "edge_fw", "type": "appliance", "label": "Edge Firewall", "zone": "Perimeter"},
+    {"id": "dmz", "type": "network-zone", "label": "DMZ", "zone": "DMZ"},
+    {"id": "waf", "type": "appliance", "label": "Web Application Firewall", "zone": "DMZ"},
+    {"id": "web_frontend", "type": "application", "label": "Public Web Frontend", "zone": "DMZ"},
+    {"id": "api_gateway", "type": "service", "label": "API Gateway", "zone": "DMZ"},
+    {"id": "internal_fw", "type": "appliance", "label": "Internal Firewall", "zone": "Perimeter"},
+    {"id": "app_tier", "type": "network-zone", "label": "Application Tier", "zone": "Application"},
+    {"id": "backend_api", "type": "application", "label": "Backend API", "zone": "Application"},
+    {"id": "auth_service", "type": "service", "label": "Authentication Service", "zone": "Application"}
+  ],
+  "connections": [
+    {"from": "internet", "to": "edge_fw", "protocol": "ANY", "port": "ANY", "description": "Unrestricted inbound traffic"},
+    {"from": "edge_fw", "to": "dmz", "protocol": "HTTPS", "port": 443, "description": "Allowed HTTPS traffic"},
+    {"from": "dmz", "to": "waf", "protocol": "HTTP", "port": 80, "description": "Unencrypted HTTP to WAF"},
+    {"from": "waf", "to": "web_frontend", "protocol": "HTTPS", "port": 443, "description": "Encrypted traffic to frontend"},
+    {"from": "web_frontend", "to": "api_gateway", "protocol": "HTTPS", "port": 443, "description": "Frontend to API"},
+    {"from": "api_gateway", "to": "internal_fw", "protocol": "HTTPS", "port": 443, "description": "API to internal"},
+    {"from": "internal_fw", "to": "app_tier", "protocol": "ANY", "port": "ANY", "description": "Unrestricted internal traffic"},
+    {"from": "app_tier", "to": "backend_api", "protocol": "HTTP", "port": 8080, "description": "Unencrypted internal API"},
+    {"from": "backend_api", "to": "auth_service", "protocol": "HTTP", "port": 3000, "description": "Unencrypted auth calls"}
+  ],
+  "global_risks": [
+    {
+      "risk_id": "RISK-001",
+      "category": "Network Security",
+      "severity": "Critical",
+      "description": "Edge firewall allows ANY-ANY traffic from internet, no ingress filtering"
+    },
+    {
+      "risk_id": "RISK-002",
+      "category": "Encryption",
+      "severity": "High",
+      "description": "Multiple internal connections use HTTP instead of HTTPS"
+    },
+    {
+      "risk_id": "RISK-003",
+      "category": "Network Segmentation",
+      "severity": "Critical",
+      "description": "Internal firewall allows ANY-ANY traffic, defeating segmentation"
+    }
+  ]
+}

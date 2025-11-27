@@ -28,6 +28,18 @@ export interface AttackPath {
   mitigations: string[];
 }
 
+export interface STRIDEThreat {
+  id: string;
+  category: 'Spoofing' | 'Tampering' | 'Repudiation' | 'Information Disclosure' | 'Denial of Service' | 'Elevation of Privilege';
+  componentId: string;
+  componentType: string;
+  threat: string;
+  impact: 'Critical' | 'High' | 'Medium' | 'Low';
+  likelihood: 'High' | 'Medium' | 'Low';
+  mitigations: string[];
+  status: 'Unmitigated' | 'Partially Mitigated' | 'Mitigated';
+}
+
 export interface CustomComponent {
   id: string;
   type: string;
@@ -60,6 +72,46 @@ export interface ConnectionData {
   description?: string;
 }
 
+export interface PerformanceMetrics {
+  latency?: {
+    p50: number;
+    p95: number;
+    p99: number;
+  };
+  throughput?: {
+    current: number;
+    max: number;
+    unit: 'rps' | 'mbps' | 'tps';
+  };
+  cost?: {
+    monthly: number;
+    currency: string;
+    breakdown?: {
+      compute: number;
+      storage: number;
+      network: number;
+    };
+  };
+  resources?: {
+    cpu: number;
+    memory: number;
+    disk: number;
+  };
+  sla?: {
+    uptime: number;
+    target: number;
+    incidents: number;
+  };
+}
+
+export interface ConnectionMetrics {
+  latency: number;
+  bandwidth: number;
+  errorRate: number;
+  isBottleneck: boolean;
+  packetLoss?: number;
+}
+
 export interface NodeData {
   type: string;
   label: string;
@@ -70,6 +122,13 @@ export interface NodeData {
   associatedVpc?: string;
   width?: number;
   height?: number;
+  // Performance metrics
+  metrics?: PerformanceMetrics;
+  // Advanced styling
+  gradient?: { from: string; to: string; direction?: string };
+  shadow?: string;
+  statusBadge?: { text: string; color: 'green' | 'yellow' | 'red' | 'blue' | 'gray' };
+  environment?: 'dev' | 'staging' | 'prod';
 }
 
 export interface SecurityEdgeControl {

@@ -1,6 +1,49 @@
 import { ArchComponent, SecurityRule } from '../types';
 
 export const COMPONENT_CATALOG: ArchComponent[] = [
+  // AWS Components
+  { id: 'aws-ec2', type: 'app', name: 'AWS EC2', category: 'AWS Compute', icon: 'Cube' },
+  { id: 'aws-lambda', type: 'app', name: 'AWS Lambda', category: 'AWS Compute', icon: 'Lightning' },
+  { id: 'aws-ecs', type: 'app', name: 'AWS ECS', category: 'AWS Compute', icon: 'Package' },
+  { id: 'aws-eks', type: 'app', name: 'AWS EKS', category: 'AWS Compute', icon: 'Hexagon' },
+  { id: 'aws-s3', type: 'data', name: 'AWS S3', category: 'AWS Storage', icon: 'Archive' },
+  { id: 'aws-rds', type: 'data', name: 'AWS RDS', category: 'AWS Database', icon: 'Database' },
+  { id: 'aws-dynamodb', type: 'data', name: 'AWS DynamoDB', category: 'AWS Database', icon: 'Table' },
+  { id: 'aws-elasticache', type: 'data', name: 'AWS ElastiCache', category: 'AWS Database', icon: 'Clock' },
+  { id: 'aws-alb', type: 'network', name: 'AWS ALB', category: 'AWS Network', icon: 'Scales' },
+  { id: 'aws-cloudfront', type: 'network', name: 'AWS CloudFront', category: 'AWS Network', icon: 'CloudArrowUp' },
+  { id: 'aws-api-gateway', type: 'web', name: 'AWS API Gateway', category: 'AWS Network', icon: 'Router' },
+  { id: 'aws-waf', type: 'security', name: 'AWS WAF', category: 'AWS Security', icon: 'ShieldCheck' },
+  
+  // Azure Components
+  { id: 'azure-vm', type: 'app', name: 'Azure VM', category: 'Azure Compute', icon: 'Cube' },
+  { id: 'azure-functions', type: 'app', name: 'Azure Functions', category: 'Azure Compute', icon: 'Lightning' },
+  { id: 'azure-aks', type: 'app', name: 'Azure AKS', category: 'Azure Compute', icon: 'Hexagon' },
+  { id: 'azure-blob', type: 'data', name: 'Azure Blob Storage', category: 'Azure Storage', icon: 'Archive' },
+  { id: 'azure-sql', type: 'data', name: 'Azure SQL', category: 'Azure Database', icon: 'Database' },
+  { id: 'azure-cosmos', type: 'data', name: 'Azure Cosmos DB', category: 'Azure Database', icon: 'Table' },
+  { id: 'azure-lb', type: 'network', name: 'Azure Load Balancer', category: 'Azure Network', icon: 'Scales' },
+  { id: 'azure-appgw', type: 'web', name: 'Azure App Gateway', category: 'Azure Network', icon: 'Router' },
+  { id: 'azure-waf', type: 'security', name: 'Azure WAF', category: 'Azure Security', icon: 'ShieldCheck' },
+  
+  // GCP Components
+  { id: 'gcp-compute', type: 'app', name: 'GCP Compute Engine', category: 'GCP Compute', icon: 'Cube' },
+  { id: 'gcp-functions', type: 'app', name: 'GCP Cloud Functions', category: 'GCP Compute', icon: 'Lightning' },
+  { id: 'gcp-gke', type: 'app', name: 'GCP GKE', category: 'GCP Compute', icon: 'Hexagon' },
+  { id: 'gcp-storage', type: 'data', name: 'GCP Cloud Storage', category: 'GCP Storage', icon: 'Archive' },
+  { id: 'gcp-sql', type: 'data', name: 'GCP Cloud SQL', category: 'GCP Database', icon: 'Database' },
+  { id: 'gcp-firestore', type: 'data', name: 'GCP Firestore', category: 'GCP Database', icon: 'Table' },
+  { id: 'gcp-lb', type: 'network', name: 'GCP Load Balancer', category: 'GCP Network', icon: 'Scales' },
+  { id: 'gcp-cdn', type: 'network', name: 'GCP Cloud CDN', category: 'GCP Network', icon: 'CloudArrowUp' },
+  { id: 'gcp-armor', type: 'security', name: 'GCP Cloud Armor', category: 'GCP Security', icon: 'ShieldCheck' },
+  
+  // Container Orchestration
+  { id: 'docker', type: 'app', name: 'Docker Container', category: 'Containers', icon: 'Package' },
+  { id: 'kubernetes', type: 'platform', name: 'Kubernetes', category: 'Containers', icon: 'Hexagon' },
+  { id: 'k8s-pod', type: 'app', name: 'K8s Pod', category: 'Containers', icon: 'Cube' },
+  { id: 'k8s-service', type: 'network', name: 'K8s Service', category: 'Containers', icon: 'Scales' },
+  { id: 'k8s-ingress', type: 'network', name: 'K8s Ingress', category: 'Containers', icon: 'Router' },
+  
   // Web/App Components
   { id: 'web-server', type: 'web', name: 'Web Server', category: 'Web/App', icon: 'Globe' },
   { id: 'api-gateway', type: 'web', name: 'API Gateway', category: 'Web/App', icon: 'Router' },

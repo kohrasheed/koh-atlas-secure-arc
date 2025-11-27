@@ -20,6 +20,15 @@ import {
   Archive
 } from '@phosphor-icons/react';
 import { CustomComponent } from './ComponentLibrary';
+import { 
+  safeParseJSON, 
+  BackupSchema, 
+  generateSecureId,
+  sanitizeInput,
+  sanitizeError,
+  validateFileSize,
+  MAX_FILE_SIZE
+} from '@/lib/security-utils';
 
 export interface ProjectBackup {
   id: string;
@@ -82,9 +91,9 @@ export default function BackupManager({
     const componentTypes = [...new Set(nodes.map(n => (n.data as any)?.type).filter(Boolean) as string[])];
     
     const newBackup: ProjectBackup = {
-      id: `backup-${Date.now()}`,
-      name: backupName.trim(),
-      description: backupDescription.trim(),
+      id: generateSecureId('backup'),
+      name: sanitizeInput(backupName.trim(), 100),
+      description: sanitizeInput(backupDescription.trim(), 500),
       timestamp: Date.now(),
       version: '1.0.0',
       data: {
@@ -150,24 +159,30 @@ export default function BackupManager({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // SEC-003: Validate file size
+    try {
+      validateFileSize(file, MAX_FILE_SIZE);
+    } catch (error) {
+      toast.error(sanitizeError(error, 'File validation'));
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const importedBackup = JSON.parse(e.target?.result as string) as ProjectBackup;
+        const content = e.target?.result as string;
         
-        // Validate backup structure
-        if (!importedBackup.id || !importedBackup.data || !importedBackup.data.nodes) {
-          throw new Error('Invalid backup file format');
-        }
-
+        // SEC-001: Safe JSON parsing with validation
+        const importedBackup = safeParseJSON(content, BackupSchema, MAX_FILE_SIZE);
+        
         // Generate new ID to avoid conflicts
-        importedBackup.id = `imported-${Date.now()}`;
-        importedBackup.name = `${importedBackup.name} (Imported)`;
+        importedBackup.id = generateSecureId('imported');
+        importedBackup.name = sanitizeInput(`${importedBackup.name} (Imported)`, 100);
         
         setBackups((currentBackups = []) => [importedBackup, ...currentBackups]);
         toast.success(`Imported backup "${importedBackup.name}"`);
       } catch (error) {
-        toast.error('Failed to import backup: Invalid file format');
+        toast.error(sanitizeError(error, 'Backup import'));
       }
     };
     reader.readAsText(file);
@@ -180,8 +195,8 @@ export default function BackupManager({
   const duplicateBackup = (backup: ProjectBackup) => {
     const duplicated: ProjectBackup = {
       ...JSON.parse(JSON.stringify(backup)),
-      id: `backup-${Date.now()}`,
-      name: `${backup.name} (Copy)`,
+      id: generateSecureId('backup'),
+      name: sanitizeInput(`${backup.name} (Copy)`, 100),
       timestamp: Date.now()
     };
     

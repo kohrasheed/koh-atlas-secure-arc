@@ -19,7 +19,10 @@ import {
   XYPosition,
   NodeProps,
   NodeResizer,
+  getNodesBounds,
+  getViewportForBounds,
 } from '@xyflow/react';
+import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +37,13 @@ import { toast } from 'sonner';
 import { useKV } from '@github/spark/hooks';
 import ComponentLibrary, { CustomComponent } from '@/components/ComponentLibrary';
 import BackupManager, { ProjectBackup } from '@/components/BackupManager';
+import { 
+  SecurityAnalyzer, 
+  COMPLIANCE_FRAMEWORKS, 
+  ComplianceFramework,
+  CVEVulnerability,
+  KNOWN_CVES
+} from '@/lib/security-analyzer';
 import {
   ComponentConfig,
   SecurityFinding,
@@ -55,6 +65,9 @@ import {
   Moon,
   Sun,
   Play,
+  Pause,
+  Stop,
+  Palette,
   Bug,
   Target,
   Desktop,
@@ -67,7 +80,35 @@ import {
   Hexagon,
   TrashSimple,
   ArrowsClockwise,
+  CaretRight,
+  CaretLeft,
+  ListBullets,
+  ClipboardText,
+  Info,
+  X,
+  Upload,
+  ChartBar,
+  CurrencyDollar,
+  Gauge,
+  Warning,
+  TrendUp,
 } from '@phosphor-icons/react';
+import { 
+  sanitizeInput, 
+  sanitizeSvg, 
+  safeParseJSON, 
+  DiagramSchema,
+  generateSecureId,
+  sanitizeError,
+  validateFileSize,
+  MAX_FILE_SIZE
+} from '@/lib/security-utils';
+import { autoConvertImportedJSON } from '@/lib/import-converter';
+import { 
+  validateArchitecture, 
+  ValidationResult, 
+  ValidationIssue 
+} from '@/lib/architectural-validator';
 
 // Protocol configurations with common ports
 const protocolConfigs: Record<string, ProtocolConfig> = {
@@ -317,7 +358,7 @@ const customDesigns = {
 };
 
 function App() {
-  const [isDarkTheme, setIsDarkTheme] = useKV('dark-theme', 'false');
+  const [isDarkTheme, setIsDarkTheme] = useKV('dark-theme', 'true');
   const [isThemeLoading, setIsThemeLoading] = useState(true);
   const [nodes, setNodes, onNodesChange] = useNodesState<any>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
@@ -330,7 +371,68 @@ function App() {
   const [showConnectionDialog, setShowConnectionDialog] = useState(false);
   const [highlightedElements, setHighlightedElements] = useState<string[]>([]);
   const [customComponents, setCustomComponents] = useState<CustomComponent[]>([]);
+  const [flowingEdges, setFlowingEdges] = useState<Set<string>>(new Set());
+  const [flowingNodes, setFlowingNodes] = useState<Set<string>>(new Set());
+  const [isFlowAnimating, setIsFlowAnimating] = useState(false);
+  const [isFlowPaused, setIsFlowPaused] = useState(false);
+  const [flowSpeed, setFlowSpeed] = useState(1500); // ms per step
+  const [showFlowPanel, setShowFlowPanel] = useState(false);
+  const [flowPanelWidth, setFlowPanelWidth] = useState(400);
+  const [isResizingPanel, setIsResizingPanel] = useState(false);
+  const [flowLogs, setFlowLogs] = useState<Array<{
+    timestamp: string;
+    type: 'start' | 'node' | 'connection' | 'complete';
+    message: string;
+    details?: any;
+  }>>([]);
+  
+  // Component palette search and categories
+  const [componentSearch, setComponentSearch] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['AWS', 'Azure', 'GCP', 'Generic']));
+  
+  // Undo/Redo history
+  const [history, setHistory] = useState<Array<{ nodes: Node[]; edges: Edge[] }>>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [clipboard, setClipboard] = useState<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  
+  // Layout & Grid
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const [gridSize, setGridSize] = useState(20);
+  const [showGrid, setShowGrid] = useState(true);
+  
+  // Search & Filter
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  
+  // Node Styling
+  const [showStylingPanel, setShowStylingPanel] = useState(false);
+  
+  // Compliance & CVE
+  const [selectedFramework, setSelectedFramework] = useState<ComplianceFramework | null>(COMPLIANCE_FRAMEWORKS[0]);
+  const [complianceResults, setComplianceResults] = useState<{
+    passed: any[];
+    failed: any[];
+    notApplicable: any[];
+    score: number;
+  } | null>(null);
+  const [cveResults, setCveResults] = useState<{ component: any; cves: CVEVulnerability[] }[]>([]);
+  const [strideThreats, setStrideThreats] = useState<any[]>([]);
+  const [selectedThreatCategory, setSelectedThreatCategory] = useState<string>('All');
+  
+  // Performance Metrics
+  const [showMetricsOverlay, setShowMetricsOverlay] = useState(false);
+  const [metricsView, setMetricsView] = useState<'latency' | 'cost' | 'throughput' | 'utilization' | 'bottlenecks'>('cost');
+  const [totalMonthlyCost, setTotalMonthlyCost] = useState(0);
+  
+  // Export
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // Paste JSON Import
+  const [showPasteDialog, setShowPasteDialog] = useState(false);
+  const [pasteJsonText, setPasteJsonText] = useState('');
+  
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const flowPanelRef = useRef<HTMLDivElement>(null);
 
   // Add security control near a VPC/VNet
   const addSecurityControl = (control: any, vpcId: string) => {
@@ -473,14 +575,16 @@ function App() {
         <div 
           className={`
             relative min-w-[200px] min-h-[150px] rounded-lg border-2 border-dashed 
-            ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
+            ${selected ? 'border-primary ring-4 ring-primary/30 shadow-2xl shadow-primary/20' : 'border-border'}
             ${isHighlighted ? 'ring-4 ring-yellow-400/60 border-yellow-400' : ''}
-            transition-all duration-200 hover:border-primary/50
-            bg-card/10 backdrop-blur-sm
+            transition-all duration-300 ease-out
+            hover:border-primary/70 hover:shadow-xl hover:scale-[1.01] hover:ring-2 hover:ring-primary/20
+            bg-card/10 backdrop-blur-sm cursor-pointer
           `}
           style={{ 
-            borderColor: isHighlighted ? '#facc15' : (config?.color || '#666'),
-            backgroundColor: `${config?.color}10` || '#66610'
+            borderColor: isHighlighted ? '#facc15' : (selected ? config?.color : config?.color || '#666'),
+            backgroundColor: `${config?.color}${selected ? '20' : '10'}` || '#66610',
+            boxShadow: selected ? `0 0 30px ${config?.color}40` : 'none'
           }}
         >
           {/* Node Resizer - Enhanced for containers */}
@@ -512,7 +616,7 @@ function App() {
           >
             <div className="flex items-center gap-2">
               <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-                {config?.icon}
+                {config?.icon as React.ReactElement}
               </div>
               <div>
                 <div className="font-medium text-xs">{String((data as any).label || '')}</div>
@@ -557,14 +661,12 @@ function App() {
           {/* Component Info Panel - Shows when container is highlighted */}
           {isHighlighted && (
             <div className="absolute -bottom-32 left-0 w-72 bg-card border border-yellow-400 rounded-lg shadow-lg p-3 z-20 text-xs">
-              <div className="flex items-center gap-2 mb-2">
-                <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-                  {config?.icon}
-                </div>
-                <div className="font-medium text-yellow-600">{String(config?.label || '')}</div>
+            <div className="flex items-center gap-2 mb-2">
+              <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
+                {config?.icon as React.ReactElement}
               </div>
-              
-              <div className="space-y-2">
+              <div className="font-medium text-yellow-600">{String(config?.label || '')}</div>
+            </div>              <div className="space-y-2">
                 <div>
                   <div className="font-medium text-yellow-700 mb-1">Description:</div>
                   <div className="text-muted-foreground">{componentInfo.description}</div>
@@ -626,15 +728,42 @@ function App() {
     }
 
     // Regular component node
+    const gradient = (data as any).gradient;
+    const shadow = (data as any).shadow;
+    const statusBadge = (data as any).statusBadge;
+    const environment = (data as any).environment;
+    
+    // Build style object
+    const nodeStyle: React.CSSProperties = {
+      borderLeftColor: isHighlighted ? '#facc15' : (config?.color || '#666'),
+    };
+    
+    if (gradient) {
+      nodeStyle.background = `linear-gradient(${gradient.direction || 'to-br'}, ${gradient.from}, ${gradient.to})`;
+    }
+    
+    // Build className with shadow and environment
+    const shadowClass = shadow ? `shadow-${shadow}` : 'shadow-lg';
+    const envColor = environment === 'prod' ? 'border-red-500' : 
+                    environment === 'staging' ? 'border-yellow-500' : 
+                    environment === 'dev' ? 'border-blue-500' : '';
+    
     return (
       <div 
         className={`
-          px-4 py-2 shadow-lg rounded-lg bg-card border-2 min-w-[120px] relative
-          ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
+          px-4 py-2 rounded-lg bg-card border-2 min-w-[120px] relative
+          ${shadowClass}
+          ${envColor || (selected ? 'border-primary' : 'border-border')}
+          ${selected ? 'ring-4 ring-primary/30 shadow-2xl shadow-primary/20' : ''}
           ${isHighlighted ? 'ring-4 ring-yellow-400/60 border-yellow-400 bg-yellow-50' : ''}
-          transition-all duration-200 hover:shadow-xl hover:border-primary/50
+          transition-all duration-300 ease-out
+          hover:shadow-2xl hover:border-primary/70 hover:scale-105 hover:ring-2 hover:ring-primary/20 hover:-translate-y-0.5
+          cursor-pointer
         `}
-        style={{ borderLeftColor: isHighlighted ? '#facc15' : (config?.color || '#666') }}
+        style={{
+          ...nodeStyle,
+          boxShadow: selected ? `0 8px 30px ${config?.color}40, 0 0 20px ${config?.color}30` : undefined
+        }}
       >
         {/* Node Resizer for regular components - Enhanced scaling */}
         <NodeResizer 
@@ -689,7 +818,7 @@ function App() {
           <div className="absolute -bottom-32 left-0 w-72 bg-card border border-yellow-400 rounded-lg shadow-lg p-3 z-20 text-xs">
             <div className="flex items-center gap-2 mb-2">
               <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-                {config?.icon}
+                {config?.icon as React.ReactElement}
               </div>
               <div className="font-medium text-yellow-600">{config?.label}</div>
             </div>
@@ -721,18 +850,80 @@ function App() {
         
         <div className="flex items-center gap-2">
           <div style={{ color: isHighlighted ? '#facc15' : (config?.color || '#666') }}>
-            {config?.icon}
+            {config?.icon as React.ReactElement}
           </div>
-          <div>
+          <div className="flex-1">
             <div className="font-medium text-sm">{String((data as any).label || '')}</div>
             <div className="text-xs text-muted-foreground">{config?.label || ''}</div>
           </div>
+          {/* Status Badge */}
+          {statusBadge && (
+            <div className={`
+              text-xs px-2 py-0.5 rounded-full font-medium
+              ${statusBadge.color === 'green' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ''}
+              ${statusBadge.color === 'yellow' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' : ''}
+              ${statusBadge.color === 'red' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : ''}
+              ${statusBadge.color === 'blue' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : ''}
+              ${statusBadge.color === 'gray' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' : ''}
+            `}>
+              {statusBadge.text}
+            </div>
+          )}
         </div>
-        {(data as any).zone && String((data as any).zone) && (
-          <Badge variant="secondary" className="mt-1 text-xs">
-            {String((data as any).zone)}
-          </Badge>
-        )}
+        
+        {/* Environment & Zone Badges */}
+        <div className="flex gap-1 mt-1 flex-wrap">
+          {environment && (
+            <Badge 
+              variant="secondary" 
+              className={`text-xs ${
+                environment === 'prod' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                environment === 'staging' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+              }`}
+            >
+              {environment === 'prod' ? '🔴 Production' : environment === 'staging' ? '🟡 Staging' : '🔵 Development'}
+            </Badge>
+          )}
+          {(data as any).zone && String((data as any).zone) && (
+            <Badge variant="secondary" className="text-xs">
+              {String((data as any).zone)}
+            </Badge>
+          )}
+          
+          {/* Performance Metrics Badges */}
+          {showMetricsOverlay && (data as any).metrics && (
+            <>
+              {metricsView === 'cost' && (data as any).metrics.cost && (
+                <Badge variant="default" className="text-xs bg-green-600">
+                  💰 ${(data as any).metrics.cost.monthly}/mo
+                </Badge>
+              )}
+              {metricsView === 'latency' && (data as any).metrics.latency && (
+                <Badge variant="default" className="text-xs bg-blue-600">
+                  ⚡ {(data as any).metrics.latency.p95}ms
+                </Badge>
+              )}
+              {metricsView === 'throughput' && (data as any).metrics.throughput && (
+                <Badge variant="default" className="text-xs bg-purple-600">
+                  📊 {(data as any).metrics.throughput.current} {(data as any).metrics.throughput.unit}
+                </Badge>
+              )}
+              {metricsView === 'utilization' && (data as any).metrics.resources && (
+                <Badge 
+                  variant="default" 
+                  className={`text-xs ${
+                    (data as any).metrics.resources.cpu > 80 ? 'bg-red-600' :
+                    (data as any).metrics.resources.cpu > 60 ? 'bg-yellow-600' :
+                    'bg-green-600'
+                  }`}
+                >
+                  CPU: {(data as any).metrics.resources.cpu}%
+                </Badge>
+              )}
+            </>
+          )}
+        </div>
       </div>
     );
   };
@@ -790,6 +981,10 @@ function App() {
   // Security findings
   const [findings, setFindings] = useState<SecurityFinding[]>([]);
   const [attackPaths, setAttackPaths] = useState<AttackPath[]>([]);
+  
+  // Architectural validation
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   // Suppress ResizeObserver loop errors (benign browser warning)
   useEffect(() => {
@@ -972,35 +1167,6 @@ function App() {
       toast.success('Connection deleted');
     }
   }, [selectedNode, selectedEdge, setNodes, setEdges]);
-
-  // Keyboard shortcuts for deletion
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Prevent deletion when typing in input fields
-      if (event.target instanceof HTMLInputElement || 
-          event.target instanceof HTMLTextAreaElement || 
-          (event.target as HTMLElement)?.contentEditable === 'true') {
-        return;
-      }
-
-      // Only use Delete key for component/connection deletion, not Backspace
-      if (event.key === 'Delete') {
-        if (selectedNode || selectedEdge) {
-          event.preventDefault();
-          onDeleteSelected();
-        }
-      }
-      if (event.key === 'Escape') {
-        setSelectedNode(null);
-        setSelectedEdge(null);
-        // Also clear highlights
-        clearHighlights();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNode, selectedEdge, onDeleteSelected]);
 
   // Load custom design with randomized positions and variations
   const loadCustomDesign = (designKey: 'secure' | 'vulnerable') => {
@@ -1251,10 +1417,1101 @@ function App() {
 
   // Clear all elements from canvas
   const clearAll = useCallback(() => {
+    saveToHistory();
+    setNodes([]);
+    setEdges([]);
     setHighlightedElements([]);
     clearHighlights();
     toast.success('Canvas cleared - all components and connections removed');
   }, [setNodes, setEdges]);
+
+  // Save current state to history
+  const saveToHistory = useCallback(() => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push({ nodes: [...nodes], edges: [...edges] });
+    // Keep history limited to 50 states
+    if (newHistory.length > 50) {
+      newHistory.shift();
+    } else {
+      setHistoryIndex(historyIndex + 1);
+    }
+    setHistory(newHistory);
+  }, [nodes, edges, history, historyIndex]);
+
+  // Undo
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevState = history[historyIndex - 1];
+      setNodes(prevState.nodes);
+      setEdges(prevState.edges);
+      setHistoryIndex(historyIndex - 1);
+      toast.success('Undo');
+    } else {
+      toast.info('Nothing to undo');
+    }
+  }, [history, historyIndex, setNodes, setEdges]);
+
+  // Redo
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      setNodes(nextState.nodes);
+      setEdges(nextState.edges);
+      setHistoryIndex(historyIndex + 1);
+      toast.success('Redo');
+    } else {
+      toast.info('Nothing to redo');
+    }
+  }, [history, historyIndex, setNodes, setEdges]);
+
+  // Copy selected nodes and edges
+  const copySelected = useCallback(() => {
+    if (!selectedNode && nodes.filter(n => n.selected).length === 0) {
+      toast.info('No components selected to copy');
+      return;
+    }
+    
+    const selectedNodes = selectedNode ? [selectedNode] : nodes.filter(n => n.selected);
+    const selectedNodeIds = new Set(selectedNodes.map(n => n.id));
+    const selectedEdges = edges.filter(e => 
+      selectedNodeIds.has(e.source) && selectedNodeIds.has(e.target)
+    );
+    
+    setClipboard({ nodes: selectedNodes, edges: selectedEdges });
+    toast.success(`Copied ${selectedNodes.length} component(s)`);
+  }, [selectedNode, nodes, edges]);
+
+  // Paste copied nodes
+  const pasteSelected = useCallback(() => {
+    if (!clipboard) {
+      toast.info('Nothing to paste');
+      return;
+    }
+    
+    saveToHistory();
+    const offset = 50;
+    const idMap = new Map<string, string>();
+    
+    // Create new nodes with offset positions
+    const newNodes = clipboard.nodes.map(node => {
+      const newId = `${node.id}-copy-${Date.now()}-${Math.random()}`;
+      idMap.set(node.id, newId);
+      
+      return {
+        ...node,
+        id: newId,
+        position: {
+          x: node.position.x + offset,
+          y: node.position.y + offset,
+        },
+        selected: true,
+      };
+    });
+    
+    // Create new edges with updated source/target
+    const newEdges = clipboard.edges.map(edge => {
+      const newSource = idMap.get(edge.source);
+      const newTarget = idMap.get(edge.target);
+      
+      if (!newSource || !newTarget) return null;
+      
+      return {
+        ...edge,
+        id: `${newSource}-${newTarget}`,
+        source: newSource,
+        target: newTarget,
+      };
+    }).filter(Boolean) as Edge[];
+    
+    // Deselect existing nodes
+    setNodes(nds => nds.map(n => ({ ...n, selected: false })).concat(newNodes));
+    setEdges(eds => eds.concat(newEdges));
+    
+    toast.success(`Pasted ${newNodes.length} component(s)`);
+  }, [clipboard, setNodes, setEdges, saveToHistory]);
+
+  // Duplicate selected nodes
+  const duplicateSelected = useCallback(() => {
+    copySelected();
+    setTimeout(() => pasteSelected(), 100);
+  }, [copySelected, pasteSelected]);
+
+  // Select all nodes
+  const selectAll = useCallback(() => {
+    setNodes(nds => nds.map(n => ({ ...n, selected: true })));
+    toast.info('All components selected');
+  }, [setNodes]);
+
+  // Quick save
+  const quickSave = useCallback(() => {
+    const backup: any = {
+      id: `quicksave-${Date.now()}`,
+      name: `Quick Save - ${new Date().toLocaleString()}`,
+      timestamp: Date.now(),
+      nodes,
+      edges,
+      customComponents,
+      findings,
+      attackPaths,
+      statistics: {
+        nodeCount: nodes.length,
+        edgeCount: edges.length,
+        securityFindings: findings.length,
+        componentTypes: Array.from(new Set(nodes.map(n => n.data?.type || 'unknown'))),
+      },
+    };
+    
+    // Save to localStorage
+    const existingBackups = JSON.parse(localStorage.getItem('project-backups') || '[]');
+    existingBackups.unshift(backup);
+    // Keep only last 10 quick saves
+    if (existingBackups.length > 10) {
+      existingBackups.pop();
+    }
+    localStorage.setItem('project-backups', JSON.stringify(existingBackups));
+    
+    toast.success('Quick save successful');
+  }, [nodes, edges, customComponents, findings, attackPaths]);
+
+  // Toggle snap to grid
+  const toggleSnapToGrid = useCallback(() => {
+    setSnapToGrid(!snapToGrid);
+    toast.info(snapToGrid ? 'Snap to grid disabled' : 'Snap to grid enabled');
+  }, [snapToGrid]);
+
+  // Align selected nodes
+  const alignNodes = useCallback((direction: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => {
+    const selectedNodes = nodes.filter(n => n.selected);
+    if (selectedNodes.length < 2) {
+      toast.info('Select at least 2 components to align');
+      return;
+    }
+    
+    saveToHistory();
+    
+    let newNodes = [...nodes];
+    
+    if (direction === 'left') {
+      const minX = Math.min(...selectedNodes.map(n => n.position.x));
+      newNodes = newNodes.map(n => 
+        n.selected ? { ...n, position: { ...n.position, x: minX } } : n
+      );
+    } else if (direction === 'right') {
+      const maxX = Math.max(...selectedNodes.map(n => n.position.x + (n.measured?.width || 100)));
+      newNodes = newNodes.map(n => 
+        n.selected ? { ...n, position: { ...n.position, x: maxX - (n.measured?.width || 100) } } : n
+      );
+    } else if (direction === 'center') {
+      const avgX = selectedNodes.reduce((sum, n) => sum + n.position.x, 0) / selectedNodes.length;
+      newNodes = newNodes.map(n => 
+        n.selected ? { ...n, position: { ...n.position, x: avgX } } : n
+      );
+    } else if (direction === 'top') {
+      const minY = Math.min(...selectedNodes.map(n => n.position.y));
+      newNodes = newNodes.map(n => 
+        n.selected ? { ...n, position: { ...n.position, y: minY } } : n
+      );
+    } else if (direction === 'bottom') {
+      const maxY = Math.max(...selectedNodes.map(n => n.position.y + (n.measured?.height || 60)));
+      newNodes = newNodes.map(n => 
+        n.selected ? { ...n, position: { ...n.position, y: maxY - (n.measured?.height || 60) } } : n
+      );
+    } else if (direction === 'middle') {
+      const avgY = selectedNodes.reduce((sum, n) => sum + n.position.y, 0) / selectedNodes.length;
+      newNodes = newNodes.map(n => 
+        n.selected ? { ...n, position: { ...n.position, y: avgY } } : n
+      );
+    }
+    
+    setNodes(newNodes);
+    toast.success(`Aligned ${selectedNodes.length} components ${direction}`);
+  }, [nodes, setNodes, saveToHistory]);
+
+  // Distribute nodes evenly
+  const distributeNodes = useCallback((direction: 'horizontal' | 'vertical') => {
+    const selectedNodes = nodes.filter(n => n.selected);
+    if (selectedNodes.length < 3) {
+      toast.info('Select at least 3 components to distribute');
+      return;
+    }
+    
+    saveToHistory();
+    
+    const sorted = [...selectedNodes].sort((a, b) => 
+      direction === 'horizontal' 
+        ? a.position.x - b.position.x 
+        : a.position.y - b.position.y
+    );
+    
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const totalSpace = direction === 'horizontal'
+      ? last.position.x - first.position.x
+      : last.position.y - first.position.y;
+    const spacing = totalSpace / (sorted.length - 1);
+    
+    const newNodes = nodes.map(node => {
+      const index = sorted.findIndex(n => n.id === node.id);
+      if (index === -1 || index === 0 || index === sorted.length - 1) return node;
+      
+      const newPos = direction === 'horizontal'
+        ? { ...node.position, x: first.position.x + spacing * index }
+        : { ...node.position, y: first.position.y + spacing * index };
+      
+      return { ...node, position: newPos };
+    });
+    
+    setNodes(newNodes);
+    toast.success(`Distributed ${selectedNodes.length} components ${direction}ly`);
+  }, [nodes, setNodes, saveToHistory]);
+
+  // Update node styling
+  const updateNodeStyling = useCallback((nodeId: string, styling: Partial<{
+    gradient?: { from: string; to: string; direction?: string };
+    shadow?: string;
+    statusBadge?: { text: string; color: string };
+    environment?: 'dev' | 'staging' | 'prod';
+  }>) => {
+    setNodes(nds => 
+      nds.map(node => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              ...styling
+            }
+          };
+        }
+        return node;
+      })
+    );
+    saveToHistory();
+  }, [setNodes, saveToHistory]);
+
+  // Remove node styling
+  const removeNodeStyling = useCallback((nodeId: string, property: string) => {
+    setNodes(nds => 
+      nds.map(node => {
+        if (node.id === nodeId) {
+          const newData = { ...node.data };
+          delete newData[property];
+          return { ...node, data: newData };
+        }
+        return node;
+      })
+    );
+    saveToHistory();
+  }, [setNodes, saveToHistory]);
+
+  // Update node metrics
+  const updateNodeMetrics = useCallback((nodeId: string, metrics: any) => {
+    setNodes(nds => 
+      nds.map(node => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              metrics: {
+                ...node.data.metrics,
+                ...metrics
+              }
+            }
+          };
+        }
+        return node;
+      })
+    );
+    saveToHistory();
+    
+    // Recalculate total cost
+    const newTotal = nodes.reduce((sum, n) => {
+      if (n.id === nodeId && metrics.cost) {
+        return sum + (metrics.cost.monthly || 0);
+      }
+      return sum + (n.data.metrics?.cost?.monthly || 0);
+    }, 0);
+    setTotalMonthlyCost(newTotal);
+  }, [nodes, setNodes, saveToHistory]);
+
+  // Calculate total metrics
+  const calculateTotalMetrics = useCallback(() => {
+    let totalCost = 0;
+    let avgLatency = 0;
+    let totalThroughput = 0;
+    let bottleneckCount = 0;
+    let nodesWithMetrics = 0;
+
+    nodes.forEach(node => {
+      const metrics = node.data.metrics;
+      if (metrics) {
+        nodesWithMetrics++;
+        if (metrics.cost) totalCost += metrics.cost.monthly;
+        if (metrics.latency) avgLatency += metrics.latency.p95;
+        if (metrics.throughput) totalThroughput += metrics.throughput.current;
+      }
+    });
+
+    edges.forEach(edge => {
+      const edgeData = edge.data as any;
+      if (edgeData?.metrics?.isBottleneck) {
+        bottleneckCount++;
+      }
+    });
+
+    if (nodesWithMetrics > 0) {
+      avgLatency = avgLatency / nodesWithMetrics;
+    }
+
+    return {
+      totalCost,
+      avgLatency: Math.round(avgLatency),
+      totalThroughput,
+      bottleneckCount,
+      nodesWithMetrics
+    };
+  }, [nodes, edges]);
+
+  // Export diagram as PNG
+  const exportToPNG = useCallback(async () => {
+    console.log('exportToPNG called!');
+    if (!reactFlowWrapper.current) {
+      toast.error('Canvas not ready. Please try again.');
+      console.error('reactFlowWrapper.current is null');
+      return;
+    }
+    
+    if (nodes.length === 0) {
+      toast.error('No components to export. Add some components first.');
+      return;
+    }
+    
+    setIsExporting(true);
+    toast.info('Exporting diagram to PNG...');
+    
+    try {
+      // Find the viewport element
+      const viewport = reactFlowWrapper.current.querySelector('.react-flow__viewport');
+      if (!viewport) {
+        throw new Error('Cannot find diagram viewport');
+      }
+      
+      const canvas = await html2canvas(reactFlowWrapper.current, {
+        backgroundColor: isDarkTheme === 'true' ? '#0a0a0a' : '#ffffff',
+        scale: 2,
+        logging: false,
+        useCORS: true,
+      });
+      
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          throw new Error('Failed to create image blob');
+        }
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `koh-atlas-${Date.now()}.png`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        toast.success('Diagram exported as PNG');
+      }, 'image/png');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [reactFlowWrapper, isDarkTheme, nodes]);
+
+  // Export diagram as SVG
+  const exportToSVG = useCallback(() => {
+    console.log('exportToSVG called!');
+    if (!reactFlowInstance) {
+      toast.error('Diagram not ready. Please try again.');
+      return;
+    }
+    
+    if (nodes.length === 0) {
+      toast.error('No components to export. Add some components first.');
+      return;
+    }
+    
+    toast.info('Exporting diagram to SVG...');
+    
+    try {
+      const svgElements = reactFlowWrapper.current?.querySelector('.react-flow__viewport');
+      if (!svgElements) {
+        toast.error('Cannot find diagram viewport');
+        return;
+      }
+      
+      // Create SVG wrapper
+      const bounds = getNodesBounds(nodes);
+      const width = Math.max(bounds.width + 200, 800);
+      const height = Math.max(bounds.height + 200, 600);
+      
+      // SEC-004: Sanitize SVG content to prevent XSS
+      const sanitizedSvgContent = sanitizeSvg(svgElements.innerHTML);
+      
+      const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${bounds.x - 100} ${bounds.y - 100} ${width} ${height}">
+  <rect width="100%" height="100%" fill="${isDarkTheme === 'true' ? '#0a0a0a' : '#ffffff'}"/>
+  <g>${sanitizedSvgContent}</g>
+</svg>`;
+      
+      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `koh-atlas-${Date.now()}.svg`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Diagram exported as SVG');
+    } catch (error) {
+      console.error('SVG export failed:', error);
+      toast.error(`SVG export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [reactFlowInstance, reactFlowWrapper, nodes, isDarkTheme]);
+
+  // Export diagram data as JSON
+  const exportToJSON = useCallback(() => {
+    console.log('exportToJSON called!');
+    if (nodes.length === 0) {
+      toast.error('No components to export. Add some components first.');
+      return;
+    }
+    
+    try {
+      const data = {
+        version: '0.2.0',
+        timestamp: Date.now(),
+        nodes,
+        edges,
+        customComponents,
+        findings,
+        attackPaths,
+        metadata: {
+          nodeCount: nodes.length,
+          edgeCount: edges.length,
+          theme: isDarkTheme,
+        },
+      };
+      
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `koh-atlas-${Date.now()}.json`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Diagram exported as JSON');
+    } catch (error) {
+      console.error('JSON export failed:', error);
+      toast.error(`JSON export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [nodes, edges, customComponents, findings, attackPaths, isDarkTheme]);
+
+  // Import diagram from JSON
+  const importFromJSON = useCallback((event?: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event) {
+      // Trigger file upload
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e) => importFromJSON(e as any);
+      input.click();
+      return;
+    }
+    
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // SEC-003: Validate file size
+    try {
+      validateFileSize(file, MAX_FILE_SIZE);
+    } catch (error) {
+      toast.error(sanitizeError(error, 'File validation'));
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        
+        // Parse JSON first (basic validation)
+        const rawData = JSON.parse(content);
+        
+        // Try auto-conversion for legacy formats (components/connections)
+        const convertedData = autoConvertImportedJSON(rawData);
+        
+        if (!convertedData) {
+          throw new Error('Unsupported JSON format. Expected either {nodes, edges} or {components, connections}');
+        }
+        
+        // SEC-001: Validate converted data against schema
+        const data = safeParseJSON(JSON.stringify(convertedData), DiagramSchema, MAX_FILE_SIZE);
+        
+        saveToHistory();
+        setNodes(data.nodes || []);
+        setEdges(data.edges || []);
+        if (data.metadata?.customComponents) setCustomComponents(data.metadata.customComponents);
+        if (data.metadata?.findings) setFindings(data.metadata.findings);
+        if (data.metadata?.attackPaths) setAttackPaths(data.metadata.attackPaths);
+        
+        // Show success with helpful info about legacy format
+        const wasConverted = rawData.components || rawData.connections;
+        const message = wasConverted 
+          ? `✓ Converted legacy format: ${data.nodes?.length || 0} components, ${data.edges?.length || 0} connections`
+          : `Imported diagram with ${data.nodes?.length || 0} components`;
+        
+        toast.success(message, { duration: 5000 });
+        
+        // Show metadata if global risks were imported
+        if (data.metadata?.globalRisks) {
+          const riskCount = data.metadata.riskCount || data.metadata.globalRisks.length;
+          toast.info(`📋 Imported ${riskCount} documented security risks`, { duration: 4000 });
+        }
+      } catch (error) {
+        console.error('Import failed:', error);
+        toast.error(sanitizeError(error, 'Import'));
+      }
+    };
+    reader.readAsText(file);
+  }, [setNodes, setEdges, setCustomComponents, saveToHistory]);
+
+  // Convert security architecture format to diagram nodes/edges
+  const convertSecurityArchitectureToNodes = useCallback((securityData: any) => {
+    try {
+      const convertedNodes: Node[] = [];
+      const convertedEdges: Edge[] = [];
+      const convertedFindings: SecurityFinding[] = [];
+      
+      // Map component types to our diagram types
+      const typeMapping: Record<string, string> = {
+        'external_network': 'web-browser',
+        'firewall': 'firewall',
+        'web_server': 'web-server',
+        'application_server': 'app-server',
+        'database': 'postgresql',
+        'active_directory': 'idp',
+        'logging': 'monitoring',
+        'load_balancer': 'load-balancer',
+        'api_gateway': 'api-gateway'
+      };
+      
+      // Convert components to nodes
+      if (securityData.components && Array.isArray(securityData.components)) {
+        securityData.components.forEach((component: any, index: number) => {
+          // Position nodes in a grid (4 columns)
+          const col = index % 4;
+          const row = Math.floor(index / 4);
+          const nodeX = 150 + col * 350;
+          const nodeY = 150 + row * 250;
+          
+          // Map component type
+          const mappedType = typeMapping[component.type] || 'app-server';
+          
+          // Determine environment
+          let environment: 'dev' | 'staging' | 'prod' | undefined;
+          if (securityData.environment === 'production') environment = 'prod';
+          else if (securityData.environment === 'staging') environment = 'staging';
+          else if (securityData.environment === 'development') environment = 'dev';
+          
+          // Determine status based on vulnerabilities
+          let statusBadge: { text: string; color: 'green' | 'yellow' | 'red' | 'blue' | 'gray' } | undefined;
+          if (component.vulnerabilities && component.vulnerabilities.length > 0) {
+            const highSev = component.vulnerabilities.some((v: any) => v.severity === 'high' || v.severity === 'critical');
+            const mediumSev = component.vulnerabilities.some((v: any) => v.severity === 'medium');
+            
+            if (highSev) {
+              statusBadge = { text: `${component.vulnerabilities.length} Critical`, color: 'red' };
+            } else if (mediumSev) {
+              statusBadge = { text: `${component.vulnerabilities.length} Warnings`, color: 'yellow' };
+            }
+          } else if (component.exposed_to_internet) {
+            statusBadge = { text: 'Internet Facing', color: 'blue' };
+          }
+          
+          const node: Node = {
+            id: component.id,
+            type: 'custom',
+            position: { x: nodeX, y: nodeY },
+            data: {
+              type: mappedType,
+              label: component.name,
+              zone: component.zone || 'internal',
+              environment,
+              statusBadge,
+              description: component.notes || component.technology || ''
+            }
+          };
+          
+          convertedNodes.push(node);
+          
+          // Convert vulnerabilities to findings
+          if (component.vulnerabilities) {
+            component.vulnerabilities.forEach((vuln: any) => {
+              convertedFindings.push({
+                id: vuln.id,
+                title: vuln.title,
+                severity: vuln.severity.charAt(0).toUpperCase() + vuln.severity.slice(1) as 'Critical' | 'High' | 'Medium' | 'Low',
+                description: vuln.description,
+                affected: [component.id],
+                recommendation: vuln.impact || '',
+                standards: []
+              });
+            });
+          }
+        });
+      }
+      
+      // Convert connections to edges
+      if (securityData.connections && Array.isArray(securityData.connections)) {
+        securityData.connections.forEach((connection: any) => {
+          // Check if both source and target nodes exist
+          const sourceExists = convertedNodes.some(n => n.id === connection.from);
+          const targetExists = convertedNodes.some(n => n.id === connection.to);
+          
+          if (sourceExists && targetExists) {
+            const hasIssues = connection.issues && connection.issues.length > 0;
+            const hasVulns = connection.vulnerabilities && connection.vulnerabilities.length > 0;
+            
+            const edge: Edge = {
+              id: connection.id,
+              source: connection.from,
+              target: connection.to,
+              label: connection.port !== 'any' ? `${connection.protocol}:${connection.port}` : connection.protocol,
+              animated: hasIssues || hasVulns,
+              style: {
+                stroke: hasVulns ? '#ef4444' : hasIssues ? '#f59e0b' : '#64748b',
+                strokeWidth: hasVulns ? 3 : 2
+              },
+              data: {
+                protocol: connection.protocol,
+                port: connection.port,
+                encryption: connection.issues?.includes('unencrypted_http') ? 'None' : 'TLS',
+                sourceLabel: convertedNodes.find(n => n.id === connection.from)?.data.label,
+                targetLabel: convertedNodes.find(n => n.id === connection.to)?.data.label
+              }
+            };
+            
+            convertedEdges.push(edge);
+            
+            // Convert connection vulnerabilities to findings
+            if (connection.vulnerabilities) {
+              connection.vulnerabilities.forEach((vuln: any) => {
+                convertedFindings.push({
+                  id: vuln.id,
+                  title: vuln.title,
+                  severity: vuln.severity.charAt(0).toUpperCase() + vuln.severity.slice(1) as 'Critical' | 'High' | 'Medium' | 'Low',
+                  description: vuln.description,
+                  affected: [connection.from, connection.to],
+                  recommendation: vuln.impact || '',
+                  standards: []
+                });
+              });
+            }
+          }
+        });
+      }
+      
+      // Convert global risks to findings
+      if (securityData.global_risks && Array.isArray(securityData.global_risks)) {
+        securityData.global_risks.forEach((risk: any) => {
+          convertedFindings.push({
+            id: risk.id,
+            title: risk.title,
+            severity: risk.severity.charAt(0).toUpperCase() + risk.severity.slice(1) as 'Critical' | 'High' | 'Medium' | 'Low',
+            description: risk.description,
+            affected: ['architecture'],
+            recommendation: risk.impact || '',
+            standards: []
+          });
+        });
+      }
+      
+      return { nodes: convertedNodes, edges: convertedEdges, findings: convertedFindings };
+    } catch (error) {
+      console.error('Conversion error:', error);
+      return null;
+    }
+  }, []);
+
+  // Handle paste import from JSON text
+  const handlePasteImport = useCallback(() => {
+    if (!pasteJsonText.trim()) {
+      toast.error('Please paste valid JSON');
+      return;
+    }
+    
+    try {
+      // SEC-001: Safe JSON parsing with validation
+      const data = safeParseJSON(pasteJsonText, DiagramSchema, MAX_FILE_SIZE);
+      
+      // Check if it's a security architecture format (has components instead of nodes)
+      if (data.components && data.connections && !data.nodes) {
+        const converted = convertSecurityArchitectureToNodes(data);
+        if (converted) {
+          saveToHistory();
+          setNodes(converted.nodes);
+          setEdges(converted.edges);
+          setFindings(converted.findings);
+          
+          toast.success(`Imported security architecture: ${converted.nodes.length} components, ${converted.edges.length} connections, ${converted.findings.length} findings`);
+          setShowPasteDialog(false);
+          setPasteJsonText('');
+          return;
+        } else {
+          toast.error('Failed to convert security architecture format');
+          return;
+        }
+      }
+      
+      // Original diagram format
+      if (!data.nodes || !Array.isArray(data.nodes)) {
+        toast.error('Invalid JSON format: Expected "nodes" array or "components" array');
+        return;
+      }
+      
+      saveToHistory();
+      setNodes(data.nodes || []);
+      setEdges(data.edges || []);
+      if (data.customComponents) setCustomComponents(data.customComponents);
+      if (data.findings) setFindings(data.findings);
+      if (data.attackPaths) setAttackPaths(data.attackPaths);
+      
+      toast.success(`Imported ${data.nodes?.length || 0} nodes and ${data.edges?.length || 0} edges`);
+      setShowPasteDialog(false);
+      setPasteJsonText('');
+    } catch (error) {
+      console.error('Import failed:', error);
+      toast.error('Failed to parse JSON. Please check the format.');
+    }
+  }, [pasteJsonText, setNodes, setEdges, setCustomComponents, saveToHistory]);
+
+  // Keyboard shortcuts handler
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Prevent actions when typing in input fields
+      if (event.target instanceof HTMLInputElement || 
+          event.target instanceof HTMLTextAreaElement || 
+          (event.target as HTMLElement)?.contentEditable === 'true') {
+        return;
+      }
+
+      // Delete key - Remove selected component/connection
+      if (event.key === 'Delete') {
+        if (selectedNode || selectedEdge) {
+          event.preventDefault();
+          onDeleteSelected();
+        }
+      }
+      
+      // Escape - Clear selection
+      if (event.key === 'Escape') {
+        setSelectedNode(null);
+        setSelectedEdge(null);
+        setShowSearch(false);
+        clearHighlights();
+      }
+      
+      // Keyboard shortcuts with Ctrl/Cmd
+      const modifier = event.ctrlKey || event.metaKey;
+      
+      if (modifier) {
+        // Ctrl+Z - Undo
+        if (event.key === 'z' && !event.shiftKey) {
+          event.preventDefault();
+          undo();
+        }
+        
+        // Ctrl+Y or Ctrl+Shift+Z - Redo
+        if (event.key === 'y' || (event.key === 'z' && event.shiftKey)) {
+          event.preventDefault();
+          redo();
+        }
+        
+        // Ctrl+C - Copy
+        if (event.key === 'c') {
+          event.preventDefault();
+          copySelected();
+        }
+        
+        // Ctrl+V - Paste
+        if (event.key === 'v') {
+          event.preventDefault();
+          pasteSelected();
+        }
+        
+        // Ctrl+D - Duplicate
+        if (event.key === 'd') {
+          event.preventDefault();
+          duplicateSelected();
+        }
+        
+        // Ctrl+A - Select All
+        if (event.key === 'a') {
+          event.preventDefault();
+          selectAll();
+        }
+        
+        // Ctrl+S - Quick Save
+        if (event.key === 's') {
+          event.preventDefault();
+          quickSave();
+        }
+        
+        // Ctrl+F - Search
+        if (event.key === 'f') {
+          event.preventDefault();
+          setShowSearch(!showSearch);
+        }
+        
+        // Ctrl+G - Toggle Grid
+        if (event.key === 'g') {
+          event.preventDefault();
+          setShowGrid(!showGrid);
+        }
+        
+        // Ctrl+Shift+G - Toggle Snap to Grid
+        if (event.key === 'G' && event.shiftKey) {
+          event.preventDefault();
+          toggleSnapToGrid();
+        }
+        
+        // Ctrl+Shift+I - Open paste JSON dialog
+        if (event.key === 'I' && event.shiftKey) {
+          event.preventDefault();
+          setShowPasteDialog(true);
+        }
+      }
+      
+      // Arrow keys - Move selected nodes
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        const selectedNodes = nodes.filter(n => n.selected);
+        if (selectedNodes.length > 0) {
+          event.preventDefault();
+          const step = event.shiftKey ? 10 : 1;
+          const delta = {
+            ArrowUp: { x: 0, y: -step },
+            ArrowDown: { x: 0, y: step },
+            ArrowLeft: { x: -step, y: 0 },
+            ArrowRight: { x: step, y: 0 },
+          }[event.key]!;
+          
+          setNodes(nds => nds.map(n => 
+            n.selected 
+              ? { ...n, position: { x: n.position.x + delta.x, y: n.position.y + delta.y } }
+              : n
+          ));
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNode, selectedEdge, onDeleteSelected, undo, redo, copySelected, pasteSelected, 
+      duplicateSelected, selectAll, quickSave, showSearch, showGrid, toggleSnapToGrid, nodes, setNodes, clearHighlights]);
+
+  // Flow visualization function with detailed logging
+  const visualizeFlow = useCallback((startNodeId: string, direction: 'forward' | 'backward' | 'both' = 'both') => {
+    console.log('🚀 visualizeFlow called with:', { startNodeId, direction, isFlowAnimating });
+    
+    if (isFlowAnimating) {
+      toast.info('Flow animation already in progress');
+      return;
+    }
+
+    // Open flow panel and clear previous logs
+    setShowFlowPanel(true);
+    setFlowLogs([]);
+    setIsFlowAnimating(true);
+    
+    console.log('✅ Flow panel opened, animation started');
+    
+    const visited = new Set<string>();
+    const edgesToAnimate = new Set<string>();
+    const nodesToHighlight = new Set<string>();
+    const logs: typeof flowLogs = [];
+
+    let maxDelay = 0;
+    const ANIMATION_STEP_DELAY = flowSpeed; // Use configurable flow speed
+
+    const getNodeLabel = (nodeId: string) => {
+      const node = nodes.find(n => n.id === nodeId);
+      return node?.data?.label || nodeId;
+    };
+    
+    const addLog = (type: 'start' | 'node' | 'connection' | 'complete', message: string, details?: any) => {
+      const log = {
+        timestamp: new Date().toLocaleTimeString(),
+        type,
+        message,
+        details
+      };
+      logs.push(log);
+      setFlowLogs(prev => [...prev, log]);
+    };
+
+    const traverse = (nodeId: string, isForward: boolean, depth: number = 0, fromNodeId?: string) => {
+      if (visited.has(`${nodeId}-${isForward}`)) return;
+      visited.add(`${nodeId}-${isForward}`);
+      
+      const delay = depth * ANIMATION_STEP_DELAY;
+      maxDelay = Math.max(maxDelay, delay);
+      
+      setTimeout(() => {
+        nodesToHighlight.add(nodeId);
+        setFlowingNodes(new Set(nodesToHighlight));
+        
+        const nodeLabel = getNodeLabel(nodeId);
+        // Log node activation
+        if (depth === 0) {
+          console.log(`🎯 Flow Start: ${nodeLabel} (depth: ${depth})`);
+          addLog('start', `Starting from: ${nodeLabel}`, { nodeId, depth });
+        } else {
+          console.log(`✓ Reached: ${nodeLabel} (depth: ${depth})`);
+          addLog('node', `Reached: ${nodeLabel}`, { nodeId, depth });
+        }
+      }, delay);
+
+      edges.forEach(edge => {
+        if (isForward && edge.source === nodeId) {
+          const edgeData = edge.data as ConnectionData;
+          const protocol = edgeData?.protocol || 'Unknown';
+          const port = edgeData?.port || 'N/A';
+          
+          setTimeout(() => {
+            edgesToAnimate.add(edge.id);
+            setFlowingEdges(new Set(edgesToAnimate));
+            
+            // Detailed connection log
+            const fromLabel = getNodeLabel(edge.source);
+            const toLabel = getNodeLabel(edge.target);
+            console.log(`  → Connection: ${fromLabel} → ${toLabel}`);
+            console.log(`    Protocol: ${protocol}, Port: ${port}, Encryption: ${edgeData?.encryption || 'N/A'}`);
+            
+            toast.info(`→ ${fromLabel} → ${toLabel} (${protocol}:${port})`, {
+              duration: 2000,
+            });
+            
+            addLog('connection', `${fromLabel} → ${toLabel}`, {
+              protocol,
+              port,
+              encryption: edgeData?.encryption,
+              direction: 'forward',
+              depth
+            });
+          }, delay + 200); // Slight delay after node highlight
+          
+          traverse(edge.target, isForward, depth + 1, nodeId);
+        } else if (!isForward && edge.target === nodeId) {
+          const edgeData = edge.data as ConnectionData;
+          const protocol = edgeData?.protocol || 'Unknown';
+          const port = edgeData?.port || 'N/A';
+          
+          setTimeout(() => {
+            edgesToAnimate.add(edge.id);
+            setFlowingEdges(new Set(edgesToAnimate));
+            
+            // Detailed connection log
+            const fromLabel = getNodeLabel(edge.source);
+            const toLabel = getNodeLabel(edge.target);
+            console.log(`  ← Connection: ${toLabel} ← ${fromLabel}`);
+            console.log(`    Protocol: ${protocol}, Port: ${port}, Encryption: ${edgeData?.encryption || 'N/A'}`);
+            
+            toast.info(`← ${toLabel} ← ${fromLabel} (${protocol}:${port})`, {
+              duration: 2000,
+            });
+            
+            addLog('connection', `${toLabel} ← ${fromLabel}`, {
+              protocol,
+              port,
+              encryption: edgeData?.encryption,
+              direction: 'backward',
+              depth
+            });
+          }, delay + 200);
+          
+          traverse(edge.source, isForward, depth + 1, nodeId);
+        }
+      });
+    };
+
+    // Start traversal
+    const startNode = nodes.find(n => n.id === startNodeId);
+    const startLabel = startNode?.data?.label || 'component';
+    
+    console.log('═══════════════════════════════════════');
+    console.log(`🚀 Flow Visualization Started`);
+    console.log(`   Start Node: ${startLabel}`);
+    console.log(`   Direction: ${direction}`);
+    console.log(`   Animation Speed: ${ANIMATION_STEP_DELAY}ms per level`);
+    console.log(`   Total Nodes: ${nodes.length}`);
+    console.log(`   Total Edges: ${edges.length}`);
+    console.log('═══════════════════════════════════════');
+    
+    if (edges.length === 0) {
+      toast.info('No connections found. Add connections between components first.');
+    }
+    
+    addLog('start', '🚀 Flow Visualization Started', {
+      startNode: startLabel,
+      direction,
+      animationSpeed: ANIMATION_STEP_DELAY
+    });
+    
+    nodesToHighlight.add(startNodeId);
+    setFlowingNodes(new Set([startNodeId]));
+
+    if (direction === 'forward' || direction === 'both') {
+      traverse(startNodeId, true, 0);
+    }
+    if (direction === 'backward' || direction === 'both') {
+      traverse(startNodeId, false, 0);
+    }
+
+    // Clear animation after completion and show summary
+    setTimeout(() => {
+      setFlowingEdges(new Set());
+      setFlowingNodes(new Set());
+      setIsFlowAnimating(false);
+      
+      const totalConnections = logs.filter(l => l.type === 'connection').length;
+      
+      console.log('═══════════════════════════════════════');
+      console.log(`✅ Flow Visualization Completed`);
+      console.log(`   Total Connections Traced: ${totalConnections}`);
+      console.log(`   Total Nodes Visited: ${nodesToHighlight.size}`);
+      console.log(`   Max Depth: ${Math.floor(maxDelay / ANIMATION_STEP_DELAY)}`);
+      console.log('═══════════════════════════════════════');
+      
+      addLog('complete', '✅ Flow Visualization Completed', {
+        totalConnections,
+        totalNodes: nodesToHighlight.size,
+        maxDepth: Math.floor(maxDelay / ANIMATION_STEP_DELAY)
+      });
+      
+      toast.success(`Flow completed: ${nodesToHighlight.size} nodes, ${totalConnections} connections`, {
+        duration: 4000,
+      });
+    }, maxDelay + 4000);
+
+    toast.success(`Visualizing flow from: ${startLabel}`);
+  }, [edges, nodes, isFlowAnimating]);
 
   // Security analysis
   const runSecurityAnalysis = async () => {
@@ -1420,6 +2677,24 @@ function App() {
     }
   };
 
+  // Architectural validation
+  const runArchitecturalValidation = () => {
+    if (nodes.length === 0) {
+      toast.error('Add components to validate architecture');
+      return;
+    }
+
+    const result = validateArchitecture(nodes, edges);
+    setValidationResult(result);
+    setShowValidation(true);
+
+    if (result.valid) {
+      toast.success(`Architecture valid! Score: ${result.score}/100`);
+    } else {
+      toast.warning(`Found ${result.summary.errors} errors, ${result.summary.warnings} warnings`);
+    }
+  };
+
   // Node selection handler
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     event.stopPropagation();
@@ -1433,6 +2708,27 @@ function App() {
     setSelectedEdge(edge);
     setSelectedNode(null);
   }, []);
+
+  // Wrapped nodes change handler with snap-to-grid support
+  const handleNodesChange = useCallback((changes: any[]) => {
+    if (snapToGrid) {
+      const snappedChanges = changes.map((change) => {
+        if (change.type === 'position' && change.position) {
+          return {
+            ...change,
+            position: {
+              x: Math.round(change.position.x / gridSize) * gridSize,
+              y: Math.round(change.position.y / gridSize) * gridSize,
+            },
+          };
+        }
+        return change;
+      });
+      onNodesChange(snappedChanges);
+    } else {
+      onNodesChange(changes);
+    }
+  }, [snapToGrid, gridSize, onNodesChange]);
 
   // Selection change handler (for deselection when clicking on canvas)
   const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[], edges: Edge[] }) => {
@@ -2303,112 +3599,612 @@ function App() {
                 Clear All
               </Button>
             </div>
+            
+            {/* Quick Actions */}
+            <div className="pt-2 border-t border-border space-y-2">
+              <div className="text-xs font-medium text-muted-foreground mb-1">Quick Actions</div>
+              
+              {/* Undo/Redo */}
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={undo}
+                  className="flex-1"
+                  disabled={historyIndex <= 0}
+                  title="Undo (Ctrl+Z)"
+                >
+                  <ArrowsClockwise className="w-4 h-4 rotate-180" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={redo}
+                  className="flex-1"
+                  disabled={historyIndex >= history.length - 1}
+                  title="Redo (Ctrl+Y)"
+                >
+                  <ArrowsClockwise className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* Layout Tools */}
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={toggleSnapToGrid}
+                  className={`flex-1 ${snapToGrid ? 'bg-primary/10' : ''}`}
+                  title="Snap to Grid (Ctrl+Shift+G)"
+                >
+                  <Network className="w-4 h-4" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setShowGrid(!showGrid)}
+                  className={`flex-1 ${showGrid ? 'bg-primary/10' : ''}`}
+                  title="Toggle Grid (Ctrl+G)"
+                >
+                  <Hexagon className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* Export */}
+              <details className="group">
+                <summary className="cursor-pointer list-none flex">
+                  <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md w-full transition-colors">
+                    <Plus className="w-4 h-4 group-open:rotate-45 transition-transform" />
+                    <span>Export</span>
+                  </div>
+                </summary>
+                <div className="mt-2 space-y-1 pl-2">
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      exportToPNG();
+                    }}
+                    className="w-full justify-start"
+                    disabled={isExporting || nodes.length === 0}
+                  >
+                    PNG Image
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      exportToSVG();
+                    }}
+                    className="w-full justify-start"
+                    disabled={nodes.length === 0}
+                  >
+                    SVG Vector
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      exportToJSON();
+                    }}
+                    className="w-full justify-start"
+                    disabled={nodes.length === 0}
+                  >
+                    JSON Data
+                  </Button>
+                </div>
+              </details>
+              
+              {/* Import */}
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="flex-1 relative"
+                  asChild
+                >
+                  <label className="cursor-pointer">
+                    <Upload className="w-4 h-4 mr-1" />
+                    Import File
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={importFromJSON}
+                      className="hidden"
+                    />
+                  </label>
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setShowPasteDialog(true)}
+                  title="Paste JSON (Ctrl+Shift+I)"
+                >
+                  <ClipboardText className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            {selectedNode && (
+              <>
+                <div className="flex gap-2 pt-2 border-t border-border">
+                  <Button 
+                    size="sm" 
+                    variant="default"
+                    onClick={() => visualizeFlow(selectedNode.id, 'both')}
+                    className="w-full"
+                    disabled={isFlowAnimating}
+                  >
+                    <ArrowsClockwise className="w-4 h-4 mr-1" />
+                    {isFlowAnimating ? 'Animating...' : 'Show Flow'}
+                  </Button>
+                </div>
+
+                {/* Flow Controls */}
+                {isFlowAnimating && (
+                  <div className="pt-2 space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground">Flow Controls</div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsFlowPaused(!isFlowPaused)}
+                        className="flex-1"
+                      >
+                        {isFlowPaused ? (
+                          <>
+                            <Play className="w-4 h-4 mr-1" />
+                            Resume
+                          </>
+                        ) : (
+                          <>
+                            <Pause className="w-4 h-4 mr-1" />
+                            Pause
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setIsFlowAnimating(false);
+                          setFlowingEdges(new Set());
+                          setFlowingNodes(new Set());
+                          setFlowLogs([]);
+                        }}
+                        className="flex-1"
+                      >
+                        <Stop className="w-4 h-4 mr-1" />
+                        Stop
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Animation Speed</Label>
+                      <div className="flex gap-2 items-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => setFlowSpeed(3000)}
+                        >
+                          Slow
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => setFlowSpeed(1500)}
+                        >
+                          Normal
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => setFlowSpeed(500)}
+                        >
+                          Fast
+                        </Button>
+                      </div>
+                      <div className="text-xs text-muted-foreground text-center">
+                        {flowSpeed}ms per step
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Node Styling Panel */}
+                <div className="pt-2 border-t border-border">
+                  <details className="group" open={showStylingPanel} onToggle={(e) => setShowStylingPanel((e.target as HTMLDetailsElement).open)}>
+                    <summary className="cursor-pointer list-none flex">
+                      <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md w-full transition-colors">
+                        <Palette className="w-4 h-4 group-open:rotate-45 transition-transform" />
+                        <span>Node Styling</span>
+                      </div>
+                    </summary>
+                    <div className="mt-2 space-y-3 pl-1">
+                      {/* Gradient */}
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-muted-foreground">Gradient</div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 h-8"
+                            onClick={() => updateNodeStyling(selectedNode.id, {
+                              gradient: { from: '#3b82f6', to: '#8b5cf6', direction: 'to-br' }
+                            })}
+                            style={{ background: 'linear-gradient(to bottom right, #3b82f6, #8b5cf6)' }}
+                          >
+                            <span className="text-white text-xs">Blue</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 h-8"
+                            onClick={() => updateNodeStyling(selectedNode.id, {
+                              gradient: { from: '#10b981', to: '#06b6d4', direction: 'to-br' }
+                            })}
+                            style={{ background: 'linear-gradient(to bottom right, #10b981, #06b6d4)' }}
+                          >
+                            <span className="text-white text-xs">Green</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 h-8"
+                            onClick={() => updateNodeStyling(selectedNode.id, {
+                              gradient: { from: '#f59e0b', to: '#ef4444', direction: 'to-br' }
+                            })}
+                            style={{ background: 'linear-gradient(to bottom right, #f59e0b, #ef4444)' }}
+                          >
+                            <span className="text-white text-xs">Warm</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2"
+                            onClick={() => removeNodeStyling(selectedNode.id, 'gradient')}
+                            title="Remove gradient"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Shadow */}
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-muted-foreground">Shadow</div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-xs"
+                            onClick={() => updateNodeStyling(selectedNode.id, { shadow: 'sm' })}
+                          >
+                            Small
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-xs"
+                            onClick={() => updateNodeStyling(selectedNode.id, { shadow: 'lg' })}
+                          >
+                            Large
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-xs"
+                            onClick={() => updateNodeStyling(selectedNode.id, { shadow: '2xl' })}
+                          >
+                            XL
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2"
+                            onClick={() => removeNodeStyling(selectedNode.id, 'shadow')}
+                            title="Remove shadow"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Environment */}
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-muted-foreground">Environment</div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-xs border-blue-500 text-blue-600"
+                            onClick={() => updateNodeStyling(selectedNode.id, { environment: 'dev' })}
+                          >
+                            🔵 Dev
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-xs border-yellow-500 text-yellow-600"
+                            onClick={() => updateNodeStyling(selectedNode.id, { environment: 'staging' })}
+                          >
+                            🟡 Staging
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-xs border-red-500 text-red-600"
+                            onClick={() => updateNodeStyling(selectedNode.id, { environment: 'prod' })}
+                          >
+                            🔴 Prod
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2"
+                            onClick={() => removeNodeStyling(selectedNode.id, 'environment')}
+                            title="Remove environment"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-muted-foreground">Status Badge</div>
+                        <div className="grid grid-cols-2 gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => updateNodeStyling(selectedNode.id, { 
+                              statusBadge: { text: 'Active', color: 'green' }
+                            })}
+                          >
+                            ✓ Active
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => updateNodeStyling(selectedNode.id, { 
+                              statusBadge: { text: 'Warning', color: 'yellow' }
+                            })}
+                          >
+                            ⚠ Warning
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => updateNodeStyling(selectedNode.id, { 
+                              statusBadge: { text: 'Error', color: 'red' }
+                            })}
+                          >
+                            ✕ Error
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => updateNodeStyling(selectedNode.id, { 
+                              statusBadge: { text: 'Offline', color: 'gray' }
+                            })}
+                          >
+                            ● Offline
+                          </Button>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="w-full text-xs"
+                          onClick={() => removeNodeStyling(selectedNode.id, 'statusBadge')}
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Remove Badge
+                        </Button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </>
+            )}
+            
+            {/* Keyboard Shortcuts Help */}
+            <div className="pt-2 border-t border-border">
+              <details className="group">
+                <summary className="cursor-pointer list-none text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  ⌨️ Keyboard Shortcuts
+                </summary>
+                <div className="mt-2 text-xs space-y-1 text-muted-foreground">
+                  <div className="flex justify-between"><kbd>Ctrl+Z</kbd><span>Undo</span></div>
+                  <div className="flex justify-between"><kbd>Ctrl+Y</kbd><span>Redo</span></div>
+                  <div className="flex justify-between"><kbd>Ctrl+C</kbd><span>Copy</span></div>
+                  <div className="flex justify-between"><kbd>Ctrl+V</kbd><span>Paste</span></div>
+                  <div className="flex justify-between"><kbd>Ctrl+D</kbd><span>Duplicate</span></div>
+                  <div className="flex justify-between"><kbd>Ctrl+A</kbd><span>Select All</span></div>
+                  <div className="flex justify-between"><kbd>Ctrl+S</kbd><span>Quick Save</span></div>
+                  <div className="flex justify-between"><kbd>Ctrl+F</kbd><span>Search</span></div>
+                  <div className="flex justify-between"><kbd>Delete</kbd><span>Remove</span></div>
+                  <div className="flex justify-between"><kbd>Arrows</kbd><span>Move (+Shift=10px)</span></div>
+                  <div className="flex justify-between"><kbd>Esc</kbd><span>Clear Selection</span></div>
+                </div>
+              </details>
+            </div>
           </div>
         </div>
 
         {/* Content Tabs */}
         <Tabs defaultValue="components" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-4 mx-4 mt-2 flex-shrink-0">
-            <TabsTrigger value="components">Components</TabsTrigger>
-            <TabsTrigger value="properties">Properties</TabsTrigger>
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
-            <TabsTrigger value="backup">Backup</TabsTrigger>
+          <TabsList className="flex flex-wrap w-full mx-4 mt-2 mb-2 flex-shrink-0 p-1 bg-muted/30 h-auto">
+            <TabsTrigger value="components" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Palette className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="hidden lg:inline truncate">Components</span>
+            </TabsTrigger>
+            <TabsTrigger value="properties" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <ListBullets className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="hidden lg:inline truncate">Properties</span>
+            </TabsTrigger>
+            <TabsTrigger value="analysis" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Shield className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="hidden lg:inline truncate">Analysis</span>
+            </TabsTrigger>
+            <TabsTrigger value="validation" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="hidden lg:inline truncate">Validation</span>
+            </TabsTrigger>
+            <TabsTrigger value="compliance" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Scales className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="hidden lg:inline truncate">Compliance</span>
+            </TabsTrigger>
+            <TabsTrigger value="metrics" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <ChartBar className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="hidden lg:inline truncate">Metrics</span>
+            </TabsTrigger>
+            <TabsTrigger value="backup" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <HardDrives className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="hidden lg:inline truncate">Backup</span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="components" className="flex-1 min-h-0 px-4 pb-4">
             <ScrollArea className="h-full">
-              <div className="space-y-4 py-2">
-                {/* Container Components */}
-                <div>
-                  <h3 className="font-medium mb-2">Containers</h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    {componentTypes.filter(c => c.category === 'container').map(component => (
-                      <Button
-                        key={component.type}
-                        variant="outline"
-                        className="h-auto p-2 justify-start border-dashed"
-                        draggable
-                        onDragStart={() => setSelectedComponent(component)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div style={{ color: component.color }}>
-                            {component.icon}
-                          </div>
-                          <span className="text-xs">{component.label}</span>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Regular Components */}
-                {(['application', 'network', 'data', 'security'] as const).map(category => (
-                  <div key={category}>
-                    <h3 className="font-medium mb-2 capitalize">{category}</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {allComponentTypes.filter(c => c.category === category).map(component => (
-                        <Button
-                          key={component.type}
-                          variant="outline"
-                          className="h-auto p-2 justify-start"
-                          draggable
-                          onDragStart={() => setSelectedComponent(component)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div style={{ color: component.color }}>
-                              {component.icon}
-                            </div>
-                            <span className="text-xs">{component.label}</span>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Custom Components Section */}
-                {customComponents.length > 0 && (
-                  <div>
-                    <h3 className="font-medium mb-2">Custom Components</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {customComponents.map(component => (
-                        <Button
-                          key={component.type}
-                          variant="outline"
-                          className="h-auto p-2 justify-start border-dashed"
-                          draggable
-                          onDragStart={() => {
-                            // Convert CustomComponent to ComponentConfig
-                            const config: ComponentConfig = {
-                              type: component.type,
-                              label: component.label,
-                              icon: React.createElement(Shield),
-                              category: component.category,
-                              color: component.color,
-                              isContainer: component.isContainer
-                            };
-                            setSelectedComponent(config);
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div style={{ color: component.color }}>
-                              <Shield />
-                            </div>
-                            <span className="text-xs">{component.label}</span>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Component Library Manager */}
-                <div className="pt-4 border-t border-border">
-                  <ComponentLibrary
-                    onImportComponents={handleImportComponents}
-                    existingComponents={customComponents}
+              <div className="space-y-3 py-2">
+                {/* Search Bar */}
+                <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 pb-2">
+                  <Input
+                    placeholder="Search components..."
+                    value={componentSearch}
+                    onChange={(e) => setComponentSearch(e.target.value)}
+                    className="h-9"
                   />
                 </div>
+
+                {(() => {
+                  const searchLower = componentSearch.toLowerCase();
+                  
+                  const matchesSearch = (c: ComponentConfig | { type: string; label: string; category: string }) => 
+                    !searchLower ||
+                    c.label.toLowerCase().includes(searchLower) ||
+                    c.type.toLowerCase().includes(searchLower) ||
+                    c.category.toLowerCase().includes(searchLower);
+
+                  const awsComponents = allComponentTypes.filter(c => 
+                    (c.type.startsWith('aws-') || c.label.includes('AWS')) && matchesSearch(c)
+                  );
+                  const azureComponents = allComponentTypes.filter(c => 
+                    (c.type.startsWith('azure-') || c.label.includes('Azure')) && matchesSearch(c)
+                  );
+                  const gcpComponents = allComponentTypes.filter(c => 
+                    (c.type.startsWith('gcp-') || c.label.includes('GCP')) && matchesSearch(c)
+                  );
+                  const genericComponents = allComponentTypes.filter(c => 
+                    !c.type.startsWith('aws-') && !c.type.startsWith('azure-') && !c.type.startsWith('gcp-') &&
+                    !c.label.includes('AWS') && !c.label.includes('Azure') && !c.label.includes('GCP') &&
+                    matchesSearch(c)
+                  );
+                  const customFiltered = customComponents.filter(c => matchesSearch(c));
+
+                  const toggleCategory = (cat: string) => {
+                    const newExpanded = new Set(expandedCategories);
+                    if (newExpanded.has(cat)) {
+                      newExpanded.delete(cat);
+                    } else {
+                      newExpanded.add(cat);
+                    }
+                    setExpandedCategories(newExpanded);
+                  };
+
+                  const renderComponentButton = (component: ComponentConfig) => (
+                    <Button
+                      key={component.type}
+                      variant="outline"
+                      className="h-auto p-3 justify-start hover:bg-accent hover:shadow-sm transition-all"
+                      draggable
+                      onDragStart={() => setSelectedComponent(component)}
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <div style={{ color: component.color }} className="flex-shrink-0">
+                          {component.icon}
+                        </div>
+                        <span className="text-xs truncate">{component.label}</span>
+                      </div>
+                    </Button>
+                  );
+
+                  const renderCategory = (title: string, components: ComponentConfig[], key: string, icon: React.ReactNode) => {
+                    if (components.length === 0) return null;
+                    const isExpanded = expandedCategories.has(key);
+                    return (
+                      <div key={key} className="border border-border rounded-lg overflow-hidden">
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-between p-3 h-auto hover:bg-accent/50"
+                          onClick={() => toggleCategory(key)}
+                        >
+                          <div className="flex items-center gap-2">
+                            {icon}
+                            <span className="font-medium">{title}</span>
+                            <Badge variant="secondary" className="ml-2">{components.length}</Badge>
+                          </div>
+                          {isExpanded ? <CaretLeft className="w-4 h-4 rotate-90" /> : <CaretRight className="w-4 h-4" />}
+                        </Button>
+                        {isExpanded && (
+                          <div className="grid grid-cols-2 gap-2 p-3 bg-muted/30">
+                            {components.map(c => renderComponentButton(c))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <>
+                      {renderCategory('AWS Components', awsComponents, 'AWS', <Cloud className="w-4 h-4" />)}
+                      {renderCategory('Azure Components', azureComponents, 'Azure', <Cloud className="w-4 h-4" />)}
+                      {renderCategory('GCP Components', gcpComponents, 'GCP', <Cloud className="w-4 h-4" />)}
+                      {renderCategory('Generic Components', genericComponents, 'Generic', <Hexagon className="w-4 h-4" />)}
+                      
+                      {customFiltered.length > 0 && renderCategory(
+                        'Custom Components',
+                        customFiltered.map(c => ({
+                          type: c.type,
+                          label: c.label,
+                          icon: React.createElement(Shield),
+                          category: c.category,
+                          color: c.color,
+                          isContainer: c.isContainer
+                        })),
+                        'Custom',
+                        <Shield className="w-4 h-4" />
+                      )}
+                      
+                      {searchLower && 
+                       awsComponents.length === 0 && 
+                       azureComponents.length === 0 && 
+                       gcpComponents.length === 0 && 
+                       genericComponents.length === 0 && 
+                       customFiltered.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p>No components found for "{componentSearch}"</p>
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-border">
+                        <ComponentLibrary
+                          onImportComponents={handleImportComponents}
+                          existingComponents={customComponents}
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -2532,6 +4328,155 @@ function App() {
                     </div>
                   </div>
 
+                  {/* Advanced Styling */}
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <h4 className="font-medium text-sm">Advanced Styling</h4>
+                    
+                    {/* Environment */}
+                    <div className="space-y-2">
+                      <Label htmlFor="node-environment">Environment</Label>
+                      <Select
+                        value={(selectedNode.data as any)?.environment || ''}
+                        onValueChange={(value) => updateNodeData(selectedNode.id, { environment: value || undefined })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="None" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dev">Development</SelectItem>
+                          <SelectItem value="staging">Staging</SelectItem>
+                          <SelectItem value="prod">Production</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Status Badge */}
+                    <div className="space-y-2">
+                      <Label htmlFor="node-status">Status Badge</Label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={(selectedNode.data as any)?.statusBadge?.color || ''}
+                          onValueChange={(value) => {
+                            const current = (selectedNode.data as any)?.statusBadge;
+                            updateNodeData(selectedNode.id, { 
+                              statusBadge: value ? { 
+                                text: current?.text || 'Status', 
+                                color: value 
+                              } : undefined 
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="None" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="green">✓ Healthy</SelectItem>
+                            <SelectItem value="yellow">⚠ Warning</SelectItem>
+                            <SelectItem value="red">✗ Error</SelectItem>
+                            <SelectItem value="blue">ℹ Info</SelectItem>
+                            <SelectItem value="gray">◯ Unknown</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {(selectedNode.data as any)?.statusBadge && (
+                          <Input
+                            placeholder="Badge text"
+                            value={(selectedNode.data as any)?.statusBadge?.text || ''}
+                            onChange={(e) => {
+                              const current = (selectedNode.data as any)?.statusBadge;
+                              updateNodeData(selectedNode.id, { 
+                                statusBadge: { ...current, text: e.target.value } 
+                              });
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Gradient Background */}
+                    <div className="space-y-2">
+                      <Label>Gradient Background</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="From color"
+                          value={(selectedNode.data as any)?.gradient?.from || ''}
+                          onChange={(e) => {
+                            const current = (selectedNode.data as any)?.gradient;
+                            if (e.target.value) {
+                              updateNodeData(selectedNode.id, { 
+                                gradient: { 
+                                  from: e.target.value, 
+                                  to: current?.to || '#ffffff',
+                                  direction: current?.direction || 'to-br'
+                                } 
+                              });
+                            } else {
+                              updateNodeData(selectedNode.id, { gradient: undefined });
+                            }
+                          }}
+                        />
+                        <Input
+                          placeholder="To color"
+                          value={(selectedNode.data as any)?.gradient?.to || ''}
+                          onChange={(e) => {
+                            const current = (selectedNode.data as any)?.gradient;
+                            if (current) {
+                              updateNodeData(selectedNode.id, { 
+                                gradient: { ...current, to: e.target.value } 
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                      <Select
+                        value={(selectedNode.data as any)?.gradient?.direction || 'to-br'}
+                        onValueChange={(value) => {
+                          const current = (selectedNode.data as any)?.gradient;
+                          if (current) {
+                            updateNodeData(selectedNode.id, { 
+                              gradient: { ...current, direction: value } 
+                            });
+                          }
+                        }}
+                        disabled={!(selectedNode.data as any)?.gradient}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Direction" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="to-r">→ Right</SelectItem>
+                          <SelectItem value="to-br">↘ Bottom Right</SelectItem>
+                          <SelectItem value="to-b">↓ Bottom</SelectItem>
+                          <SelectItem value="to-bl">↙ Bottom Left</SelectItem>
+                          <SelectItem value="to-l">← Left</SelectItem>
+                          <SelectItem value="to-tl">↖ Top Left</SelectItem>
+                          <SelectItem value="to-t">↑ Top</SelectItem>
+                          <SelectItem value="to-tr">↗ Top Right</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Custom Shadow */}
+                    <div className="space-y-2">
+                      <Label htmlFor="node-shadow">Custom Shadow</Label>
+                      <Select
+                        value={(selectedNode.data as any)?.shadow || ''}
+                        onValueChange={(value) => updateNodeData(selectedNode.id, { shadow: value || undefined })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="None" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sm">Small</SelectItem>
+                          <SelectItem value="md">Medium</SelectItem>
+                          <SelectItem value="lg">Large</SelectItem>
+                          <SelectItem value="xl">Extra Large</SelectItem>
+                          <SelectItem value="2xl">2X Large</SelectItem>
+                          <SelectItem value="inner">Inner</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   {/* Container-specific properties */}
                   {componentTypes.find(c => c.type === selectedNode.data?.type)?.isContainer && (
                     <>
@@ -2568,15 +4513,27 @@ function App() {
                     </div>
                   </div>
                   
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={onDeleteSelected}
-                    className="w-full"
-                  >
-                    <Trash className="w-4 h-4 mr-2" />
-                    Delete {componentTypes.find(c => c.type === selectedNode.data?.type)?.isContainer ? 'Container' : 'Node'}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => visualizeFlow(selectedNode.id, 'both')}
+                      className="flex-1"
+                      disabled={isFlowAnimating}
+                    >
+                      <ArrowsClockwise className="w-4 h-4 mr-2" />
+                      Visualize Flow
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={onDeleteSelected}
+                      className="flex-1"
+                    >
+                      <Trash className="w-4 h-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               )}
               
@@ -2862,6 +4819,919 @@ function App() {
             </div>
           </TabsContent>
           
+          <TabsContent value="validation" className="flex-1 min-h-0 px-4 pb-4">
+            <ScrollArea className="h-full">
+              <div className="space-y-4 py-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Architecture Validation</h3>
+                  <Button
+                    onClick={runArchitecturalValidation}
+                    disabled={nodes.length === 0}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Validate
+                  </Button>
+                </div>
+
+                {validationResult && (
+                  <div className="space-y-4">
+                    {/* Score Card */}
+                    <Card className={
+                      validationResult.score >= 90 ? 'bg-green-900/20 border-green-500' :
+                      validationResult.score >= 70 ? 'bg-yellow-900/20 border-yellow-500' :
+                      'bg-red-900/20 border-red-500'
+                    }>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-2xl font-bold">
+                            Score: {validationResult.score}/100
+                          </CardTitle>
+                          {validationResult.valid ? (
+                            <CheckCircle className="w-8 h-8 text-green-500" />
+                          ) : (
+                            <Warning className="w-8 h-8 text-red-500" />
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex gap-4 text-sm">
+                          <span className="text-red-500 font-semibold">
+                            {validationResult.summary.errors} Errors
+                          </span>
+                          <span className="text-yellow-500 font-semibold">
+                            {validationResult.summary.warnings} Warnings
+                          </span>
+                          <span className="text-blue-500 font-semibold">
+                            {validationResult.summary.infos} Info
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Issue List */}
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">Issues Found:</h4>
+                      
+                      {validationResult.issues.length === 0 ? (
+                        <Card className="bg-green-900/20 border-green-500">
+                          <CardContent className="py-8 text-center">
+                            <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-500" />
+                            <p className="text-green-500 font-semibold">
+                              No issues found! Architecture follows best practices.
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        validationResult.issues.map((issue) => (
+                          <Card
+                            key={issue.id}
+                            className={
+                              issue.severity === 'error' ? 'bg-red-900/20 border-red-500' :
+                              issue.severity === 'warning' ? 'bg-yellow-900/20 border-yellow-500' :
+                              'bg-blue-900/20 border-blue-500'
+                            }
+                          >
+                            <CardHeader className="pb-2">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-2">
+                                  {issue.severity === 'error' && <X className="w-5 h-5 text-red-500" />}
+                                  {issue.severity === 'warning' && <Warning className="w-5 h-5 text-yellow-500" />}
+                                  {issue.severity === 'info' && <Info className="w-5 h-5 text-blue-500" />}
+                                  <CardTitle className="text-sm">{issue.title}</CardTitle>
+                                </div>
+                                <Badge 
+                                  variant="outline"
+                                  className={
+                                    issue.severity === 'error' ? 'border-red-500 text-red-500' :
+                                    issue.severity === 'warning' ? 'border-yellow-500 text-yellow-500' :
+                                    'border-blue-500 text-blue-500'
+                                  }
+                                >
+                                  {issue.category}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                              <p className="text-xs text-muted-foreground">{issue.description}</p>
+                              <div className="bg-card/50 p-2 rounded text-xs">
+                                <strong>Recommendation:</strong> {issue.recommendation}
+                              </div>
+                              {issue.affectedComponents.length > 0 && (
+                                <div className="text-xs text-muted-foreground">
+                                  Affects: {issue.affectedComponents.length} component(s)
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Export Validation Report */}
+                    <Button
+                      onClick={() => {
+                        const report = `# Architecture Validation Report
+Generated: ${new Date().toISOString()}
+
+## Score: ${validationResult.score}/100
+
+## Summary
+- Errors: ${validationResult.summary.errors}
+- Warnings: ${validationResult.summary.warnings}
+- Info: ${validationResult.summary.infos}
+
+## Issues
+${validationResult.issues.map(issue => `
+### ${issue.title} [${issue.severity.toUpperCase()}]
+**Category:** ${issue.category}
+**Description:** ${issue.description}
+**Recommendation:** ${issue.recommendation}
+**Affected Components:** ${issue.affectedComponents.join(', ')}
+`).join('\n')}
+`;
+                        const blob = new Blob([report], { type: 'text/markdown' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `architecture-validation-${Date.now()}.md`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        toast.success('Validation report exported');
+                      }}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Export Validation Report
+                    </Button>
+                  </div>
+                )}
+
+                {!validationResult && (
+                  <div className="text-center text-muted-foreground py-8">
+                    <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No validation results yet</p>
+                    <p className="text-xs">Click "Validate" to check your architecture</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+          
+          <TabsContent value="compliance" className="flex-1 min-h-0 px-4 pb-4">
+            <ScrollArea className="h-full">
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label>Select Framework</Label>
+                  <Select 
+                    value={selectedFramework?.id} 
+                    onValueChange={(value) => {
+                      const framework = COMPLIANCE_FRAMEWORKS.find(f => f.id === value);
+                      setSelectedFramework(framework || null);
+                      setComplianceResults(null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select compliance framework" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMPLIANCE_FRAMEWORKS.map(framework => (
+                        <SelectItem key={framework.id} value={framework.id}>
+                          {framework.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedFramework && (
+                    <p className="text-xs text-muted-foreground">{selectedFramework.description}</p>
+                  )}
+                </div>
+
+                <Button
+                  onClick={() => {
+                    if (!selectedFramework) return;
+                    const analyzer = new SecurityAnalyzer();
+                    const results = analyzer.checkCompliance(
+                      selectedFramework,
+                      [],
+                      edges.map(e => ({
+                        id: e.id,
+                        from: e.source!,
+                        to: e.target!,
+                        protocol: e.data?.protocol || 'Unknown',
+                        ports: [e.data?.port || 0],
+                        encryption: e.data?.encryption || 'None',
+                        auth: e.data?.auth || 'None',
+                        purpose: e.label as string || '',
+                        dataClass: 'Unknown',
+                        egress: false,
+                        controls: []
+                      }))
+                    );
+                    setComplianceResults(results);
+                    
+                    const cves = analyzer.checkCVEs([]);
+                    setCveResults(cves);
+                    
+                    toast.success(`Compliance check complete: ${results.score.toFixed(0)}% compliant`);
+                  }}
+                  className="w-full"
+                  disabled={!selectedFramework}
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Run Compliance Check
+                </Button>
+
+                {complianceResults && (
+                  <div className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center justify-between">
+                          <span>Compliance Score</span>
+                          <Badge 
+                            variant={complianceResults.score >= 80 ? 'default' : complianceResults.score >= 60 ? 'secondary' : 'destructive'}
+                            className="text-lg px-3 py-1"
+                          >
+                            {complianceResults.score.toFixed(0)}%
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div>
+                            <div className="text-2xl font-bold text-green-600">{complianceResults.passed.length}</div>
+                            <div className="text-xs text-muted-foreground">Passed</div>
+                          </div>
+                          <div>
+                            <div className="text-2xl font-bold text-red-600">{complianceResults.failed.length}</div>
+                            <div className="text-xs text-muted-foreground">Failed</div>
+                          </div>
+                          <div>
+                            <div className="text-2xl font-bold text-gray-600">{complianceResults.notApplicable.length}</div>
+                            <div className="text-xs text-muted-foreground">N/A</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {complianceResults.failed.length > 0 && (
+                      <div>
+                        <h3 className="font-medium mb-2 text-red-600">Failed Requirements</h3>
+                        <div className="space-y-2">
+                          {complianceResults.failed.map((req: any) => (
+                            <Card key={req.id} className="border-red-200">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm flex items-center justify-between">
+                                  <span>{req.control}</span>
+                                  <Badge variant="outline" className="text-xs">{req.id}</Badge>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-xs text-muted-foreground">{req.description}</p>
+                                <Badge variant="secondary" className="mt-2 text-xs">{req.category}</Badge>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {complianceResults.passed.length > 0 && (
+                      <details className="group">
+                        <summary className="cursor-pointer font-medium text-green-600">
+                          ✓ Passed Requirements ({complianceResults.passed.length})
+                        </summary>
+                        <div className="space-y-2 mt-2">
+                          {complianceResults.passed.map((req: any) => (
+                            <Card key={req.id} className="border-green-200">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm flex items-center justify-between">
+                                  <span>{req.control}</span>
+                                  <Badge variant="outline" className="text-xs">{req.id}</Badge>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-xs text-muted-foreground">{req.description}</p>
+                                <Badge variant="secondary" className="mt-2 text-xs">{req.category}</Badge>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-border">
+                  <h3 className="font-medium mb-2 flex items-center gap-2">
+                    <Bug className="w-4 h-4" />
+                    Known CVEs
+                  </h3>
+                  <div className="space-y-2">
+                    {KNOWN_CVES.slice(0, 5).map(cve => (
+                      <Card key={cve.id} className={`${cve.severity === 'critical' ? 'border-red-500' : ''}`}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center justify-between">
+                            <span className="font-mono">{cve.id}</span>
+                            <Badge 
+                              variant={cve.severity === 'critical' ? 'destructive' : 'default'}
+                            >
+                              {cve.severity.toUpperCase()}
+                            </Badge>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-1">
+                          <p className="text-xs font-medium">{cve.component}</p>
+                          <p className="text-xs text-muted-foreground">{cve.description}</p>
+                          <div className="flex gap-2 items-center text-xs">
+                            {cve.cvssScore && (
+                              <Badge variant="outline" className="text-xs">
+                                CVSS: {cve.cvssScore}
+                              </Badge>
+                            )}
+                            {cve.fixedVersion && (
+                              <Badge variant="secondary" className="text-xs">
+                                Fixed: {cve.fixedVersion}
+                              </Badge>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-border">
+                  <h3 className="font-medium mb-2 flex items-center gap-2">
+                    <Target className="w-4 h-4" />
+                    STRIDE Threat Modeling
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Analyze threats using Microsoft's STRIDE methodology: Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, and Elevation of Privilege
+                  </p>
+                  
+                  <Button
+                    onClick={() => {
+                      const analyzer = new SecurityAnalyzer();
+                      const threats = analyzer.generateSTRIDEThreats(
+                        nodes.map(n => ({
+                          id: n.id,
+                          name: (n.data as any).label || n.id,
+                          type: (n.data as any).component || (n.data as any).type || 'unknown',
+                          category: (n.data as any).category || 'unknown',
+                          properties: {},
+                          controls: []
+                        })),
+                        edges.map(e => ({
+                          id: e.id,
+                          from: e.source!,
+                          to: e.target!,
+                          protocol: (e.data as any)?.protocol || 'Unknown',
+                          ports: [(e.data as any)?.port || 0],
+                          encryption: (e.data as any)?.encryption || 'None',
+                          auth: (e.data as any)?.auth || 'None',
+                          purpose: e.label as string || '',
+                          dataClass: 'Unknown',
+                          egress: false,
+                          controls: []
+                        }))
+                      );
+                      setStrideThreats(threats);
+                      toast.success(`Generated ${threats.length} STRIDE threats for ${nodes.length} components`);
+                    }}
+                    className="w-full mb-3"
+                    disabled={nodes.length === 0}
+                  >
+                    <Target className="w-4 h-4 mr-2" />
+                    Generate STRIDE Analysis
+                  </Button>
+
+                  {strideThreats.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex gap-1 flex-wrap">
+                        {['All', 'Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'].map(category => (
+                          <Button
+                            key={category}
+                            size="sm"
+                            variant={selectedThreatCategory === category ? 'default' : 'outline'}
+                            onClick={() => setSelectedThreatCategory(category)}
+                            className="text-xs"
+                          >
+                            {category === 'All' ? `All (${strideThreats.length})` : 
+                             `${category.charAt(0)} (${strideThreats.filter(t => t.category === category).length})`}
+                          </Button>
+                        ))}
+                      </div>
+
+                      <div className="space-y-2">
+                        {strideThreats
+                          .filter(t => selectedThreatCategory === 'All' || t.category === selectedThreatCategory)
+                          .map(threat => (
+                            <Card key={threat.id} className="hover:bg-accent/5 transition-colors">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm flex items-center justify-between">
+                                  <span>{threat.category}</span>
+                                  <div className="flex gap-1">
+                                    <Badge variant={threat.impact === 'Critical' ? 'destructive' : 'default'}>
+                                      {threat.impact}
+                                    </Badge>
+                                    <Badge 
+                                      variant={
+                                        threat.status === 'Mitigated' ? 'default' :
+                                        threat.status === 'Partially Mitigated' ? 'secondary' : 'destructive'
+                                      }
+                                    >
+                                      {threat.status}
+                                    </Badge>
+                                  </div>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-2">
+                                <p className="text-xs">{threat.threat}</p>
+                                <div>
+                                  <div className="text-xs font-medium mb-1">Mitigations:</div>
+                                  <ul className="space-y-1">
+                                    {threat.mitigations.map((mit: string, idx: number) => (
+                                      <li key={idx} className="text-xs text-muted-foreground flex items-start">
+                                        <span className="mr-1">•</span>
+                                        <span>{mit}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  Likelihood: {threat.likelihood}
+                                </Badge>
+                              </CardContent>
+                            </Card>
+                          ))}
+                      </div>
+
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-sm">Threat Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-xs">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <div className="font-medium">Total Threats:</div>
+                              <div className="text-2xl font-bold">{strideThreats.length}</div>
+                            </div>
+                            <div>
+                              <div className="font-medium">Unmitigated:</div>
+                              <div className="text-2xl font-bold text-red-600">
+                                {strideThreats.filter(t => t.status === 'Unmitigated').length}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1 pt-2 border-t">
+                            {['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'].map(cat => (
+                              <Badge key={cat} variant="secondary" className="text-xs">
+                                {cat.split(' ').map(w => w[0]).join('')}: {strideThreats.filter(t => t.category === cat).length}
+                              </Badge>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ScrollArea>
+          </TabsContent>
+          
+          <TabsContent value="metrics" className="flex-1 min-h-0 px-4 pb-4">
+            <ScrollArea className="h-full">
+              <div className="space-y-4 py-2">
+                {selectedNode ? (
+                  <>
+                    {(() => {
+                      const nodeData = selectedNode.data as any;
+                      return (
+                        <div className="space-y-2">
+                          <h3 className="font-medium flex items-center gap-2">
+                            <ChartBar className="w-4 h-4" />
+                            Node Metrics: {String(selectedNode.data.label)}
+                          </h3>
+                          
+                          {/* Cost Metrics */}
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-sm flex items-center gap-2">
+                                <CurrencyDollar className="w-4 h-4" />
+                                Cost
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs">Monthly Cost ($)</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="0"
+                                    value={nodeData.metrics?.cost?.monthly || ''}
+                                onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                  cost: {
+                                    ...nodeData.metrics?.cost,
+                                    monthly: parseFloat(e.target.value) || 0,
+                                    currency: 'USD'
+                                  }
+                                })}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Currency</Label>
+                              <Select
+                                value={nodeData.metrics?.cost?.currency || 'USD'}
+                                onValueChange={(value) => updateNodeMetrics(selectedNode.id, {
+                                  cost: { ...nodeData.metrics?.cost, currency: value }
+                                })}
+                              >
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="USD">USD</SelectItem>
+                                  <SelectItem value="EUR">EUR</SelectItem>
+                                  <SelectItem value="GBP">GBP</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          {nodeData.metrics?.cost?.monthly && (
+                            <div className="text-sm font-medium text-green-600">
+                              ${nodeData.metrics.cost.monthly}/month
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Latency Metrics */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Gauge className="w-4 h-4" />
+                            Latency
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-xs">p50 (ms)</Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={nodeData.metrics?.latency?.p50 || ''}
+                                onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                  latency: {
+                                    ...nodeData.metrics?.latency,
+                                    p50: parseFloat(e.target.value) || 0
+                                  }
+                                })}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">p95 (ms)</Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={nodeData.metrics?.latency?.p95 || ''}
+                                onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                  latency: {
+                                    ...nodeData.metrics?.latency,
+                                    p95: parseFloat(e.target.value) || 0
+                                  }
+                                })}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">p99 (ms)</Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={nodeData.metrics?.latency?.p99 || ''}
+                                onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                  latency: {
+                                    ...nodeData.metrics?.latency,
+                                    p99: parseFloat(e.target.value) || 0
+                                  }
+                                })}
+                                className="mt-1"
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Throughput Metrics */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <TrendUp className="w-4 h-4" />
+                            Throughput
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-xs">Current</Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={nodeData.metrics?.throughput?.current || ''}
+                                onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                  throughput: {
+                                    ...nodeData.metrics?.throughput,
+                                    current: parseFloat(e.target.value) || 0
+                                  }
+                                })}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Max</Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={nodeData.metrics?.throughput?.max || ''}
+                                onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                  throughput: {
+                                    ...nodeData.metrics?.throughput,
+                                    max: parseFloat(e.target.value) || 0
+                                  }
+                                })}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Unit</Label>
+                              <Select
+                                value={nodeData.metrics?.throughput?.unit || 'rps'}
+                                onValueChange={(value: any) => updateNodeMetrics(selectedNode.id, {
+                                  throughput: { ...nodeData.metrics?.throughput, unit: value }
+                                })}
+                              >
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="rps">req/s</SelectItem>
+                                  <SelectItem value="mbps">MB/s</SelectItem>
+                                  <SelectItem value="tps">tx/s</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          {nodeData.metrics?.throughput?.current && nodeData.metrics?.throughput?.max && (
+                            <div className="mt-2">
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Capacity</span>
+                                <span>{Math.round((nodeData.metrics.throughput.current / nodeData.metrics.throughput.max) * 100)}%</span>
+                              </div>
+                              <div className="w-full bg-secondary rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full ${
+                                    (nodeData.metrics.throughput.current / nodeData.metrics.throughput.max) > 0.8 ? 'bg-red-500' :
+                                    (nodeData.metrics.throughput.current / nodeData.metrics.throughput.max) > 0.6 ? 'bg-yellow-500' :
+                                    'bg-green-500'
+                                  }`}
+                                  style={{ width: `${Math.min((nodeData.metrics.throughput.current / nodeData.metrics.throughput.max) * 100, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Resource Utilization */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Resource Utilization</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <Label>CPU (%)</Label>
+                              <span>{nodeData.metrics?.resources?.cpu || 0}%</span>
+                            </div>
+                            <Input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={nodeData.metrics?.resources?.cpu || 0}
+                              onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                resources: {
+                                  ...nodeData.metrics?.resources,
+                                  cpu: parseInt(e.target.value)
+                                }
+                              })}
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <Label>Memory (%)</Label>
+                              <span>{nodeData.metrics?.resources?.memory || 0}%</span>
+                            </div>
+                            <Input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={nodeData.metrics?.resources?.memory || 0}
+                              onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                resources: {
+                                  ...nodeData.metrics?.resources,
+                                  memory: parseInt(e.target.value)
+                                }
+                              })}
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <Label>Disk (%)</Label>
+                              <span>{nodeData.metrics?.resources?.disk || 0}%</span>
+                            </div>
+                            <Input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={nodeData.metrics?.resources?.disk || 0}
+                              onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                resources: {
+                                  ...nodeData.metrics?.resources,
+                                  disk: parseInt(e.target.value)
+                                }
+                              })}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <ChartBar className="w-5 h-5" />
+                          Architecture Analytics
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {(() => {
+                          const metrics = calculateTotalMetrics();
+                          return (
+                            <>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <div className="text-xs text-muted-foreground">Total Cost</div>
+                                  <div className="text-2xl font-bold text-green-600">
+                                    ${metrics.totalCost.toFixed(0)}/mo
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-xs text-muted-foreground">Avg Latency</div>
+                                  <div className="text-2xl font-bold">
+                                    {metrics.avgLatency}ms
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-xs text-muted-foreground">Total Throughput</div>
+                                  <div className="text-2xl font-bold">
+                                    {metrics.totalThroughput.toLocaleString()}
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-xs text-muted-foreground">Bottlenecks</div>
+                                  <div className="text-2xl font-bold text-red-600">
+                                    {metrics.bottleneckCount}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {metrics.nodesWithMetrics === 0 && (
+                                <div className="text-center text-muted-foreground py-4">
+                                  <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                  <p className="text-sm">No metrics data available</p>
+                                  <p className="text-xs">Select a component and add performance metrics</p>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm">Metrics Overlay</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Show on Canvas</Label>
+                          <Switch
+                            checked={showMetricsOverlay}
+                            onCheckedChange={setShowMetricsOverlay}
+                          />
+                        </div>
+                        {showMetricsOverlay && (
+                          <div className="space-y-2">
+                            <Label className="text-xs">Display Mode</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                size="sm"
+                                variant={metricsView === 'cost' ? 'default' : 'outline'}
+                                onClick={() => setMetricsView('cost')}
+                                className="text-xs"
+                              >
+                                <CurrencyDollar className="w-3 h-3 mr-1" />
+                                Cost
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={metricsView === 'latency' ? 'default' : 'outline'}
+                                onClick={() => setMetricsView('latency')}
+                                className="text-xs"
+                              >
+                                <Gauge className="w-3 h-3 mr-1" />
+                                Latency
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={metricsView === 'throughput' ? 'default' : 'outline'}
+                                onClick={() => setMetricsView('throughput')}
+                                className="text-xs"
+                              >
+                                <TrendUp className="w-3 h-3 mr-1" />
+                                Throughput
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={metricsView === 'utilization' ? 'default' : 'outline'}
+                                onClick={() => setMetricsView('utilization')}
+                                className="text-xs"
+                              >
+                                <ChartBar className="w-3 h-3 mr-1" />
+                                Resources
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Warning className="w-4 h-4" />
+                          Quick Actions
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={() => {
+                            toast.info('Feature coming soon: Auto-populate metrics from monitoring systems');
+                          }}
+                        >
+                          Import from Monitoring
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={() => {
+                            toast.info('Feature coming soon: Generate cost optimization report');
+                          }}
+                        >
+                          Generate Cost Report
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={() => {
+                            toast.info('Feature coming soon: Run capacity simulation');
+                          }}
+                        >
+                          Simulate Load (2x, 5x, 10x)
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+          
           <TabsContent value="backup" className="flex-1 min-h-0 px-4 pb-4">
             <ScrollArea className="h-full">
               <div className="py-2">
@@ -2881,11 +5751,71 @@ function App() {
 
       {/* Main Canvas */}
       <div className="flex-1 relative" ref={reactFlowWrapper}>
+        {/* Empty State Guidance */}
+        {nodes.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+            <Card className="w-96 shadow-xl pointer-events-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="w-5 h-5 text-primary" />
+                  Get Started with Koh Atlas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Start designing your secure architecture by adding components to the canvas.
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex gap-2">
+                    <span className="font-medium text-primary">1.</span>
+                    <span>Drag components from the left sidebar onto the canvas</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-medium text-primary">2.</span>
+                    <span>Connect components by dragging between connection points</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-medium text-primary">3.</span>
+                    <span>Run security analysis to identify vulnerabilities</span>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-border">
+                  <p className="text-xs font-medium mb-2">💡 Pro Tips:</p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• Use Ctrl+F to search for components</li>
+                    <li>• Delete key removes selected items</li>
+                    <li>• Ctrl+Z/Y for undo/redo</li>
+                    <li>• Select presets from the toolbar above</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        
         <ReactFlowProvider>
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
+            nodes={nodes.map(node => ({
+              ...node,
+              style: {
+                ...node.style,
+                opacity: flowingNodes.size > 0 ? (flowingNodes.has(node.id) ? 1 : 0.3) : 1,
+                boxShadow: flowingNodes.has(node.id) ? '0 0 20px rgba(59, 130, 246, 0.8)' : node.style?.boxShadow,
+                transition: 'opacity 0.3s ease, box-shadow 0.3s ease',
+              }
+            }))}
+            edges={edges.map(edge => ({
+              ...edge,
+              animated: flowingEdges.has(edge.id),
+              style: {
+                ...edge.style,
+                stroke: flowingEdges.has(edge.id) ? '#3b82f6' : edge.style?.stroke,
+                strokeWidth: flowingEdges.has(edge.id) ? 3 : edge.style?.strokeWidth || 2,
+                opacity: flowingEdges.size > 0 ? (flowingEdges.has(edge.id) ? 1 : 0.3) : 1,
+                transition: 'all 0.3s ease',
+              }
+            }))}
+            onNodesChange={handleNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onInit={(reactFlowInstance) => setReactFlowInstance(reactFlowInstance)}
@@ -2908,14 +5838,120 @@ function App() {
               },
             }}
           >
-            <Background />
+            {showGrid && <Background gap={gridSize} />}
             <MiniMap />
             <Controls />
           </ReactFlow>
         </ReactFlowProvider>
         
+        {/* Floating Toolbar */}
+        {nodes.length > 0 && (
+          <div className="absolute top-4 right-4 z-40">
+            <Card className="shadow-lg">
+              <CardContent className="p-2 flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={undo}
+                  disabled={historyIndex <= 0}
+                  title="Undo (Ctrl+Z)"
+                  className="h-8 w-8 p-0"
+                >
+                  <ArrowsClockwise className="w-4 h-4 rotate-180" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={redo}
+                  disabled={historyIndex >= history.length - 1}
+                  title="Redo (Ctrl+Y)"
+                  className="h-8 w-8 p-0"
+                >
+                  <ArrowsClockwise className="w-4 h-4" />
+                </Button>
+                <div className="w-px bg-border mx-1" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => alignNodes('top')}
+                  title="Align Top"
+                  className="h-8 w-8 p-0"
+                >
+                  <ListBullets className="w-4 h-4 rotate-90" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => alignNodes('left')}
+                  title="Align Left"
+                  className="h-8 w-8 p-0"
+                >
+                  <ListBullets className="w-4 h-4" />
+                </Button>
+                <div className="w-px bg-border mx-1" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAll}
+                  title="Clear All"
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                >
+                  <TrashSimple className="w-4 h-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        
         {/* Connection Dialog */}
         <ConnectionDialog />
+        
+        {/* Search Bar */}
+        {showSearch && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-96">
+            <Card className="shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Search components... (Ctrl+F)"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      const query = e.target.value.toLowerCase();
+                      if (query) {
+                        setNodes(nds => nds.map(n => ({
+                          ...n,
+                          selected: n.data?.label?.toLowerCase().includes(query) || 
+                                    n.data?.type?.toLowerCase().includes(query)
+                        })));
+                      } else {
+                        setNodes(nds => nds.map(n => ({ ...n, selected: false })));
+                      }
+                    }}
+                    autoFocus
+                    className="flex-1"
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => {
+                      setShowSearch(false);
+                      setSearchQuery('');
+                      setNodes(nds => nds.map(n => ({ ...n, selected: false })));
+                    }}
+                  >
+                    <CaretRight className="w-4 h-4" />
+                  </Button>
+                </div>
+                {searchQuery && (
+                  <div className="text-xs text-muted-foreground mt-2">
+                    {nodes.filter(n => n.selected).length} component(s) found
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
         
         {/* Instructions overlay */}
         {nodes.length === 0 && (
@@ -2941,6 +5977,221 @@ function App() {
           </div>
         )}
       </div>
+
+      {/* Flow Visualization Panel */}
+      {showFlowPanel && (
+        <div 
+          ref={flowPanelRef}
+          className="relative h-screen border-l border-border bg-card flex flex-col"
+          style={{ width: flowPanelWidth }}
+        >
+          {/* Resize Handle */}
+          <div
+            className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsResizingPanel(true);
+              
+              const handleMouseMove = (e: MouseEvent) => {
+                const newWidth = window.innerWidth - e.clientX;
+                if (newWidth >= 300 && newWidth <= 800) {
+                  setFlowPanelWidth(newWidth);
+                }
+              };
+              
+              const handleMouseUp = () => {
+                setIsResizingPanel(false);
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+              };
+              
+              document.addEventListener('mousemove', handleMouseMove);
+              document.addEventListener('mouseup', handleMouseUp);
+            }}
+          />
+          
+          {/* Header */}
+          <div className="p-4 border-b border-border flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <ListBullets className="w-5 h-5" />
+              <h3 className="font-semibold">Flow Visualization Log</h3>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFlowLogs([])}
+                disabled={flowLogs.length === 0}
+              >
+                Clear
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFlowPanel(false)}
+              >
+                <CaretRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Log Content */}
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-2">
+              {flowLogs.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  <ListBullets className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>No flow logs yet</p>
+                  <p className="text-xs">Select a component and click 'Show Flow'</p>
+                </div>
+              ) : (
+                flowLogs.map((log, index) => (
+                  <div 
+                    key={index}
+                    className={`p-3 rounded-lg border text-sm ${
+                      log.type === 'start' ? 'bg-primary/10 border-primary/20' :
+                      log.type === 'complete' ? 'bg-green-500/10 border-green-500/20' :
+                      log.type === 'node' ? 'bg-blue-500/10 border-blue-500/20' :
+                      'bg-muted border-border'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-1">
+                      <span className="font-mono text-xs text-muted-foreground">{log.timestamp}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {log.type}
+                      </Badge>
+                    </div>
+                    <div className="font-medium mb-1">{log.message}</div>
+                    {log.details && (
+                      <div className="text-xs text-muted-foreground space-y-0.5 mt-2 pt-2 border-t border-border/50">
+                        {log.details.protocol && (
+                          <div>Protocol: <span className="font-mono">{log.details.protocol}</span></div>
+                        )}
+                        {log.details.port && (
+                          <div>Port: <span className="font-mono">{log.details.port}</span></div>
+                        )}
+                        {log.details.encryption && (
+                          <div>Encryption: <span className="font-mono">{log.details.encryption}</span></div>
+                        )}
+                        {log.details.direction && (
+                          <div>Direction: <span className="font-mono">{log.details.direction}</span></div>
+                        )}
+                        {log.details.depth !== undefined && (
+                          <div>Depth: <span className="font-mono">{log.details.depth}</span></div>
+                        )}
+                        {log.details.totalNodes && (
+                          <div>Total Nodes: <span className="font-mono">{log.details.totalNodes}</span></div>
+                        )}
+                        {log.details.totalConnections !== undefined && (
+                          <div>Total Connections: <span className="font-mono">{log.details.totalConnections}</span></div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+          
+          {/* Footer Stats */}
+          {flowLogs.length > 0 && (
+            <div className="p-3 border-t border-border flex-shrink-0 text-xs text-muted-foreground">
+              <div className="flex justify-between">
+                <span>Total Logs: {flowLogs.length}</span>
+                <span>
+                  {isFlowAnimating ? (
+                    <span className="text-primary animate-pulse">● Animating...</span>
+                  ) : (
+                    <span className="text-green-500">● Complete</span>
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Flow Panel Toggle Button (when panel is hidden) */}
+      {!showFlowPanel && flowLogs.length > 0 && (
+        <Button
+          variant="default"
+          size="sm"
+          className="fixed right-4 top-4 z-50 shadow-lg"
+          onClick={() => setShowFlowPanel(true)}
+        >
+          <CaretLeft className="w-4 h-4 mr-1" />
+          Flow Log ({flowLogs.length})
+        </Button>
+      )}
+
+      {/* Paste JSON Dialog */}
+      {showPasteDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <ClipboardText className="w-5 h-5" />
+                Paste JSON Diagram
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowPasteDialog(false);
+                  setPasteJsonText('');
+                }}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="p-4 flex-1 overflow-auto">
+              <Label htmlFor="paste-json" className="text-sm font-medium mb-2 block">
+                Paste your diagram JSON here:
+              </Label>
+              <textarea
+                id="paste-json"
+                value={pasteJsonText}
+                onChange={(e) => setPasteJsonText(e.target.value)}
+                className="w-full h-96 px-3 py-2 rounded-md border border-border bg-background text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                placeholder='{"nodes": [...], "edges": [...]}'
+              />
+              
+              <div className="flex items-start gap-2 mt-3 text-sm text-muted-foreground">
+                <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Supported JSON formats:</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li><strong>Diagram format:</strong> {"{"}"nodes": [...], "edges": [...]{"}"}</li>
+                    <li><strong>Security architecture:</strong> {"{"}"components": [...], "connections": [...], "global_risks": [...]{"}"}</li>
+                    <li>Both formats auto-detected and converted automatically</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 p-4 border-t border-border">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPasteDialog(false);
+                  setPasteJsonText('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                onClick={handlePasteImport}
+                disabled={!pasteJsonText.trim()}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Import
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

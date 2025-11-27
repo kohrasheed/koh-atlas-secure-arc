@@ -32,3 +32,15 @@ pids
 .devcontainer/
 
 .spark-workbench-id
+
+# Backup directories
+backup-*/
+*.backup/
+kohArch-*/
+thisISPoint/
+
+# Broken/temp files
+*.broken
+*.tmp
+
+# Review documents (keep only essential ones)

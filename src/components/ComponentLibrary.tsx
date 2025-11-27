@@ -21,6 +21,15 @@ import {
   ArrowDown,
   ArrowUp
 } from '@phosphor-icons/react';
+import { 
+  safeParseJSON, 
+  ComponentLibrarySchema,
+  generateSecureId,
+  sanitizeInput,
+  sanitizeError,
+  validateFileSize,
+  MAX_FILE_SIZE
+} from '@/lib/security-utils';
 
 // Component library types
 export interface CustomComponent {
@@ -124,9 +133,9 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
     }
 
     const component: CustomComponent = {
-      id: `custom-${Date.now()}`,
-      type: newComponent.type,
-      label: newComponent.label,
+      id: generateSecureId('custom'),
+      type: sanitizeInput(newComponent.type, 50),
+      label: sanitizeInput(newComponent.label, 100),
       icon: newComponent.icon || 'Shield',
       category: newComponent.category || 'custom',
       color: newComponent.color || '#3b82f6',
@@ -162,9 +171,9 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
     const components = customComponents.filter(c => selectedComponents.includes(c.id));
     
     const library: ComponentLibrary = {
-      id: `lib-${Date.now()}`,
-      name: newLibrary.name,
-      description: newLibrary.description || '',
+      id: generateSecureId('lib'),
+      name: sanitizeInput(newLibrary.name, 100),
+      description: sanitizeInput(newLibrary.description || '', 500),
       version: newLibrary.version || '1.0.0',
       author: newLibrary.author || 'User',
       components,
@@ -197,21 +206,26 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // SEC-003: Validate file size
+    try {
+      validateFileSize(file, MAX_FILE_SIZE);
+    } catch (error) {
+      toast.error(sanitizeError(error, 'File validation'));
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const libraryData = JSON.parse(e.target?.result as string) as ComponentLibrary;
+        const content = e.target?.result as string;
         
-        // Validate library structure
-        if (!libraryData.name || !libraryData.components || !Array.isArray(libraryData.components)) {
-          toast.error('Invalid library format');
-          return;
-        }
+        // SEC-001: Safe JSON parsing with validation
+        const libraryData = safeParseJSON(content, ComponentLibrarySchema, MAX_FILE_SIZE);
 
         // Add imported library
         const importedLibrary: ComponentLibrary = {
           ...libraryData,
-          id: `imported-${Date.now()}`,
+          id: generateSecureId('imported'),
           updated: new Date().toISOString()
         };
 
@@ -219,7 +233,7 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
         toast.success(`Imported library: ${libraryData.name}`);
         
       } catch (error) {
-        toast.error('Failed to parse library file');
+        toast.error(sanitizeError(error, 'Library import'));
       }
     };
     
