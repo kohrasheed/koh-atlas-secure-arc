@@ -7,6 +7,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+console.log('🔍 Environment check:');
+console.log('  PORT from env:', process.env.PORT);
+console.log('  Using PORT:', PORT);
+
 app.use(cors());
 app.use(express.json());
 
