@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koh Visitors Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        .visitor-list {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .visitor-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .visitor-item:last-child {
+            border-bottom: none;
+        }
+        .visitor-ip {
+            font-weight: bold;
+            color: #333;
+        }
+        .visitor-location {
+            color: #666;
+            margin: 5px 0;
+        }
+        .visitor-time {
+            color: #999;
+            font-size: 14px;
+        }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #5568d3;
+        }
+        .button-group {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌍 Koh Visitors Dashboard</h1>
+        <p>Real-time visitor analytics for your website</p>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-value" id="totalVisits">0</div>
+            <div class="stat-label">Total Visits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="uniqueIPs">0</div>
+            <div class="stat-label">Unique IPs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="countries">0</div>
+            <div class="stat-label">Countries</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="lastVisit">-</div>
+            <div class="stat-label">Last Visit</div>
+        </div>
+    </div>
+
+    <div class="button-group">
+        <button class="button" onclick="downloadKohVisitors()">📥 Download kohVisitors.txt</button>
+        <button class="button" onclick="downloadJSON()">📄 Download JSON</button>
+        <button class="button" onclick="clearData()">🗑️ Clear Data</button>
+        <button class="button" onclick="refreshData()">🔄 Refresh</button>
+    </div>
+
+    <div class="visitor-list">
+        <h2>Recent Visitors</h2>
+        <div id="visitorsList"></div>
+    </div>
+
+    <script>
+        function loadVisitors() {
+            const visitors = JSON.parse(localStorage.getItem('kohVisitors') || '[]');
+            return visitors;
+        }
+
+        function updateStats() {
+            const visitors = loadVisitors();
+            
+            document.getElementById('totalVisits').textContent = visitors.length;
+            
+            const uniqueIPs = new Set(visitors.map(v => v.ip)).size;
+            document.getElementById('uniqueIPs').textContent = uniqueIPs;
+            
+            const countries = new Set(visitors.map(v => v.country)).size;
+            document.getElementById('countries').textContent = countries;
+            
+            if (visitors.length > 0) {
+                const lastVisit = new Date(visitors[visitors.length - 1].timestamp);
+                document.getElementById('lastVisit').textContent = lastVisit.toLocaleTimeString();
+            }
+        }
+
+        function displayVisitors() {
+            const visitors = loadVisitors();
+            const list = document.getElementById('visitorsList');
+            
+            if (visitors.length === 0) {
+                list.innerHTML = '<p style="color: #999;">No visitors yet. Visit your site to start tracking!</p>';
+                return;
+            }
+            
+            list.innerHTML = visitors.slice().reverse().map((visitor, index) => `
+                <div class="visitor-item">
+                    <div class="visitor-ip">🌐 ${visitor.ip}</div>
+                    <div class="visitor-location">📍 ${visitor.city}, ${visitor.region}, ${visitor.country}</div>
+                    <div class="visitor-time">🕐 ${new Date(visitor.timestamp).toLocaleString()}</div>
+                    <div class="visitor-time">💻 ${visitor.userAgent.substring(0, 80)}...</div>
+                    <div class="visitor-time">🔗 From: ${visitor.referrer}</div>
+                </div>
+            `).join('');
+        }
+
+        function downloadKohVisitors() {
+            const visitors = loadVisitors();
+            
+            let content = '=== KOH VISITORS LOG ===\n';
+            content += `Generated: ${new Date().toISOString()}\n`;
+            content += `Total Visits: ${visitors.length}\n`;
+            content += '='.repeat(70) + '\n\n';
+            
+            visitors.forEach((visit, index) => {
+                content += `\n--- Visit #${index + 1} ---\n`;
+                content += `Timestamp: ${visit.timestamp}\n`;
+                content += `IP Address: ${visit.ip}\n`;
+                content += `Location: ${visit.city}, ${visit.region}, ${visit.country} (${visit.countryCode})\n`;
+                content += `Coordinates: ${visit.latitude}, ${visit.longitude}\n`;
+                content += `Organization: ${visit.org}\n`;
+                content += `Browser: ${visit.userAgent}\n`;
+                content += `Screen Resolution: ${visit.screenResolution}\n`;
+                content += `Language: ${visit.language}\n`;
+                content += `Timezone: ${visit.timezone}\n`;
+                content += `Referrer: ${visit.referrer}\n`;
+                content += `Page: ${visit.page}\n`;
+                content += '-'.repeat(70) + '\n';
+            });
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kohVisitors.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            alert('kohVisitors.txt downloaded!');
+        }
+
+        function downloadJSON() {
+            const visitors = loadVisitors();
+            const blob = new Blob([JSON.stringify(visitors, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kohVisitors.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearData() {
+            if (confirm('Are you sure you want to clear all visitor data?')) {
+                localStorage.removeItem('kohVisitors');
+                refreshData();
+                alert('Data cleared!');
+            }
+        }
+
+        function refreshData() {
+            updateStats();
+            displayVisitors();
+        }
+
+        // Initial load
+        refreshData();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(refreshData, 30000);
+    </script>
+</body>
+</html>

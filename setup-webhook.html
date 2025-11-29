@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Visitor Logger Webhook</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #667eea; }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #5568d3;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Setup Central Visitor Logging</h1>
+        <p>Follow these steps to collect visitors from ALL devices in one place:</p>
+
+        <div class="step">
+            <h3>Option 1: Using Google Apps Script (Recommended - Free Forever)</h3>
+            <ol>
+                <li>Go to <a href="https://script.google.com/home/start" target="_blank">Google Apps Script</a></li>
+                <li>Click "+ New project"</li>
+                <li>Replace the code with this:</li>
+            </ol>
+            <pre><code>function doPost(e) {
+  var ss = SpreadsheetApp.openById('YOUR_SHEET_ID');
+  var sheet = ss.getSheetByName('Visitors') || ss.insertSheet('Visitors');
+  
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['Timestamp', 'IP', 'Country', 'Region', 'City', 'Lat', 'Lng', 'Org', 'Browser', 'Page', 'Referrer']);
+  }
+  
+  var data = JSON.parse(e.postData.contents);
+  
+  sheet.appendRow([
+    data.timestamp,
+    data.ip,
+    data.country,
+    data.region,
+    data.city,
+    data.latitude,
+    data.longitude,
+    data.org,
+    data.userAgent,
+    data.page,
+    data.referrer
+  ]);
+  
+  return ContentService.createTextOutput(JSON.stringify({success: true}));
+}
+
+function doGet(e) {
+  return doPost(e);
+}</code></pre>
+            <ol start="4">
+                <li>Click "Deploy" → "New deployment"</li>
+                <li>Type: "Web app", Execute as: "Me", Access: "Anyone"</li>
+                <li>Click "Deploy" and copy the Web App URL</li>
+                <li>Create a Google Sheet and copy its ID from the URL</li>
+                <li>Replace 'YOUR_SHEET_ID' in the script above</li>
+                <li>Give me the Web App URL and I'll update the analytics</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>Option 2: Using Webhook.site (Quick Test - 7 days storage)</h3>
+            <ol>
+                <li><a href="https://webhook.site" target="_blank" class="button">Open Webhook.site</a></li>
+                <li>Copy your unique URL (shown at the top)</li>
+                <li>Give me that URL and I'll update the analytics</li>
+                <li>Visit webhook.site to see all visitor data in real-time</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>Option 3: Using RequestBin (Free - 48 hours)</h3>
+            <ol>
+                <li><a href="https://requestbin.com/r" target="_blank" class="button">Create a RequestBin</a></li>
+                <li>Copy the endpoint URL</li>
+                <li>Give me that URL and I'll update the analytics</li>
+            </ol>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong> Once you give me the webhook URL, I'll update the analytics script to send ALL visitor data to your centralized endpoint. You'll be able to see visitors from all devices!
+        </div>
+
+        <h3>📊 What You'll Get:</h3>
+        <ul>
+            <li>✅ All visitors from all devices in one place</li>
+            <li>✅ Real-time tracking</li>
+            <li>✅ IP addresses and locations</li>
+            <li>✅ Visit history and analytics</li>
+            <li>✅ Export as CSV/JSON</li>
+        </ul>
+    </div>
+</body>
+</html>
