@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: koh-atlas-proxy
+    env: node
+    buildCommand: npm install
+    startCommand: node proxy-server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ANTHROPIC_API_KEY
+        sync: false
