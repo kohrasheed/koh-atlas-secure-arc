@@ -92,7 +92,10 @@ import {
   Gauge,
   Warning,
   TrendUp,
+  Sparkle as Sparkles,
 } from '@phosphor-icons/react';
+import { AIRecommendationsPanel } from '@/components/analysis/AIRecommendationsPanel';
+import { getAIRecommendations } from '@/lib/ai-recommendations';
 import { 
   sanitizeInput, 
   sanitizeSvg, 
@@ -406,6 +409,19 @@ function App() {
   
   // Node Styling
   const [showStylingPanel, setShowStylingPanel] = useState(false);
+  
+  // AI Recommendations
+  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
+  
+  // Multi-select Connection Analysis
+  const [selectedMultipleNodes, setSelectedMultipleNodes] = useState<Node[]>([]);
+  const [showAnalyzeButton, setShowAnalyzeButton] = useState(false);
+  const [analyzeButtonPosition, setAnalyzeButtonPosition] = useState({ x: 0, y: 0 });
+  const [showAnalysisResult, setShowAnalysisResult] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [isAnalyzingConnection, setIsAnalyzingConnection] = useState(false);
+  const [isAIAnalyzing, setIsAIAnalyzing] = useState(false);
   
   // Compliance & CVE
   const [selectedFramework, setSelectedFramework] = useState<ComplianceFramework | null>(COMPLIANCE_FRAMEWORKS[0]);
@@ -2511,6 +2527,45 @@ function App() {
     toast.success(`Visualizing flow from: ${startLabel}`);
   }, [edges, nodes, isFlowAnimating]);
 
+  // AI Analysis
+  const runAIAnalysis = useCallback(async () => {
+    console.log('🔵 runAIAnalysis called!');
+    console.log('🔵 Nodes count:', nodes.length);
+    console.log('🔵 Edges count:', edges.length);
+    
+    if (nodes.length === 0) {
+      toast.error('No components to analyze');
+      return;
+    }
+
+    setIsAIAnalyzing(true);
+    setShowAIPanel(true);
+    console.log('🔵 State updated: isAIAnalyzing=true, showAIPanel=true');
+
+    try {
+      console.log('🔵 Calling getAIRecommendations...');
+      const result = await getAIRecommendations(nodes, edges);
+      console.log('🔵 getAIRecommendations returned:', result);
+      setAiAnalysisResult(result);
+      
+      if (result.cacheHit) {
+        toast.success('Analysis retrieved from cache (instant, $0.00)', {
+          duration: 3000,
+        });
+      } else {
+        toast.success(`AI analysis complete! Cost: $${result.tokenUsage?.cost.toFixed(4) || '0.00'}`, {
+          duration: 5000,
+        });
+      }
+    } catch (error: any) {
+      console.error('AI analysis failed:', error);
+      toast.error(error.message || 'Failed to get AI recommendations');
+      setShowAIPanel(false);
+    } finally {
+      setIsAIAnalyzing(false);
+    }
+  }, [nodes, edges]);
+
   // Security analysis
   const runSecurityAnalysis = async () => {
     // Clear any existing highlights first
@@ -2665,14 +2720,88 @@ function App() {
       });
     }
 
-    setFindings(newFindings);
-    setAttackPaths(newAttackPaths);
-    
-    if (newFindings.length === 0) {
-      toast.success('No security issues found!');
+    // Run AI analysis to enhance findings with intelligent recommendations
+    if (nodes.length > 0) {
+      setIsAIAnalyzing(true);
+      getAIRecommendations(nodes, edges)
+        .then(result => {
+          setAiAnalysisResult(result);
+          
+          // Convert AI security recommendations to SecurityFinding format and merge
+          const aiSecurityFindings: SecurityFinding[] = result.recommendations
+            .filter(rec => rec.category === 'security')
+            .map(rec => {
+              // Map affected components from AI recommendation to actual node IDs
+              let affectedIds: string[] = [];
+              
+              if (rec.affectedComponents && rec.affectedComponents.length > 0) {
+                // For each affected component ID or type from AI
+                rec.affectedComponents.forEach(componentRef => {
+                  // Check if it's an exact node ID match
+                  const exactMatch = nodes.find(n => n.id === componentRef);
+                  if (exactMatch) {
+                    affectedIds.push(componentRef);
+                  } else {
+                    // Otherwise, treat it as a component type and find all matching nodes
+                    const typeMatches = nodes.filter(n => 
+                      n.data?.type === componentRef || 
+                      n.data?.type?.includes(componentRef) ||
+                      n.data?.label?.toLowerCase().includes(componentRef.toLowerCase())
+                    );
+                    affectedIds.push(...typeMatches.map(n => n.id));
+                  }
+                });
+              }
+              
+              // If no specific components identified, use 'architecture' as fallback
+              if (affectedIds.length === 0) {
+                affectedIds = ['architecture'];
+              }
+              
+              return {
+                id: `ai-${rec.id}`,
+                title: rec.title,
+                severity: rec.severity === 'critical' ? 'High' : rec.severity === 'high' ? 'High' : 'Medium',
+                description: rec.description,
+                affected: affectedIds,
+                recommendation: rec.solution,
+                standards: ['AI-Powered Analysis', 'AWS Well-Architected Framework']
+              };
+            });
+          
+          // Merge rule-based and AI findings
+          const mergedFindings = [...newFindings, ...aiSecurityFindings];
+          setFindings(mergedFindings);
+          
+          if (result.cacheHit) {
+            toast.success(`Found ${mergedFindings.length} issues (${aiSecurityFindings.length} from AI analysis, cached, $0.00)`);
+          } else {
+            toast.success(`Found ${mergedFindings.length} issues (${aiSecurityFindings.length} from AI analysis, cost: $${result.tokenUsage?.cost.toFixed(4) || '0.00'})`);
+          }
+        })
+        .catch(error => {
+          console.error('AI analysis failed:', error);
+          // Fall back to rule-based findings only
+          setFindings(newFindings);
+          if (newFindings.length === 0) {
+            toast.success('No security issues found!');
+          } else {
+            toast.warning(`Found ${newFindings.length} security issues`);
+          }
+        })
+        .finally(() => {
+          setIsAIAnalyzing(false);
+        });
     } else {
-      toast.warning(`Found ${newFindings.length} security issues`);
+      setFindings(newFindings);
+      if (newFindings.length === 0) {
+        toast.success('No security issues found!');
+      } else {
+        toast.warning(`Found ${newFindings.length} security issues`);
+      }
     }
+    
+    setAttackPaths(newAttackPaths);
   };
 
   // Architectural validation
@@ -2686,11 +2815,37 @@ function App() {
     setValidationResult(result);
     setShowValidation(true);
 
-    if (result.valid) {
-      toast.success(`Architecture valid! Score: ${result.score}/100`);
-    } else {
-      toast.warning(`Found ${result.summary.errors} errors, ${result.summary.warnings} warnings`);
-    }
+    // Run AI analysis for architecture-specific insights
+    setIsAIAnalyzing(true);
+    setShowAIPanel(true);
+    getAIRecommendations(nodes, edges)
+      .then(aiResult => {
+        setAiAnalysisResult(aiResult);
+        if (aiResult.cacheHit) {
+          if (result.valid) {
+            toast.success(`Architecture valid! Score: ${result.score}/100. Insights from cache (instant, $0.00)`);
+          } else {
+            toast.warning(`Found ${result.summary.errors} errors, ${result.summary.warnings} warnings. Insights from cache`);
+          }
+        } else {
+          if (result.valid) {
+            toast.success(`Architecture valid! Score: ${result.score}/100. Analysis cost: $${aiResult.tokenUsage?.cost.toFixed(4) || '0.00'}`);
+          } else {
+            toast.warning(`Found ${result.summary.errors} errors, ${result.summary.warnings} warnings. Analysis cost: $${aiResult.tokenUsage?.cost.toFixed(4) || '0.00'}`);
+          }
+        }
+      })
+      .catch(error => {
+        console.error('AI analysis failed:', error);
+        if (result.valid) {
+          toast.success(`Architecture valid! Score: ${result.score}/100`);
+        } else {
+          toast.warning(`Found ${result.summary.errors} errors, ${result.summary.warnings} warnings`);
+        }
+      })
+      .finally(() => {
+        setIsAIAnalyzing(false);
+      });
   };
 
   // Node selection handler
@@ -2733,12 +2888,30 @@ function App() {
     if (nodes.length === 0 && edges.length === 0) {
       setSelectedNode(null);
       setSelectedEdge(null);
-    } else if (nodes.length > 0) {
+      setSelectedMultipleNodes([]);
+      setShowAnalyzeButton(false);
+    } else if (nodes.length > 1) {
+      // Multiple nodes selected
+      setSelectedMultipleNodes(nodes);
+      setSelectedNode(null);
+      setSelectedEdge(null);
+      
+      // Calculate center position for the analyze button
+      const avgX = nodes.reduce((sum, n) => sum + (n.position.x + ((n.measured?.width || n.style?.width || 180) / 2)), 0) / nodes.length;
+      const avgY = nodes.reduce((sum, n) => sum + (n.position.y + ((n.measured?.height || n.style?.height || 80) / 2)), 0) / nodes.length;
+      
+      setAnalyzeButtonPosition({ x: avgX, y: avgY });
+      setShowAnalyzeButton(true);
+    } else if (nodes.length === 1) {
       setSelectedNode(nodes[0]);
       setSelectedEdge(null);
+      setSelectedMultipleNodes([]);
+      setShowAnalyzeButton(false);
     } else if (edges.length > 0) {
       setSelectedEdge(edges[0]);
       setSelectedNode(null);
+      setSelectedMultipleNodes([]);
+      setShowAnalyzeButton(false);
     }
   }, []);
 
@@ -2747,6 +2920,142 @@ function App() {
     setSelectedNode(null);
     setSelectedEdge(null);
   }, []);
+
+  // Analyze connection between multiple selected nodes
+  const analyzeConnection = useCallback(async () => {
+    console.log('🔍 Starting connection analysis...');
+    
+    if (selectedMultipleNodes.length < 2) {
+      toast.error('Select at least 2 nodes to analyze their connection');
+      return;
+    }
+
+    setIsAnalyzingConnection(true);
+    setShowAnalyzeButton(false);
+    
+    try {
+      console.log('📊 Selected nodes:', selectedMultipleNodes.length);
+      // Find edges between the selected nodes
+      const selectedNodeIds = new Set(selectedMultipleNodes.map(n => n.id));
+      const connectionEdges = edges.filter(e => 
+        selectedNodeIds.has(e.source) && selectedNodeIds.has(e.target)
+      );
+
+      // Prepare node details for AI analysis
+      const nodeDetails = selectedMultipleNodes.map(node => ({
+        id: node.id,
+        label: node.data?.label || 'Unnamed',
+        type: node.data?.type || 'unknown',
+        zone: node.data?.zone || 'Unspecified',
+        description: node.data?.description || ''
+      }));
+
+      const connectionDetails = connectionEdges.map(edge => ({
+        from: nodes.find(n => n.id === edge.source)?.data?.label || edge.source,
+        to: nodes.find(n => n.id === edge.target)?.data?.label || edge.target,
+        protocol: edge.data?.protocol || 'Unspecified',
+        ports: edge.data?.ports || 'Any',
+        encryption: edge.data?.encrypted ? 'Yes' : 'No'
+      }));
+
+      // Try to call AI API via proxy server, fall back to mock if unavailable
+      const proxyUrl = 'https://koh-atlas-secure-arca.vercel.app/api/anthropic';
+      let analysisText = '';
+      
+      try {
+        const response = await fetch(proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 2048,
+            messages: [{
+              role: 'user',
+              content: `Analyze the security implications of these connected components in an architecture diagram:
+
+Selected Components:
+${JSON.stringify(nodeDetails, null, 2)}
+
+Connections Between Them:
+${JSON.stringify(connectionDetails, null, 2)}
+
+Please provide a comprehensive analysis covering:
+1. **Purpose**: What is the intended purpose of these connections?
+2. **Security Issues**: What are the potential security vulnerabilities and risks?
+3. **Best Practices**: What are the industry best practices for these types of connections?
+4. **How to Secure**: Specific recommendations to improve security
+
+Format your response in a clear, structured way with markdown headers.`
+            }]
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          analysisText = result.content[0].text;
+          toast.success('AI analysis complete!');
+        } else {
+          throw new Error('Proxy not available');
+        }
+      } catch (proxyError) {
+        // Fallback to mock analysis if proxy server is not running
+        console.log('Proxy server not available, using mock analysis');
+        analysisText = `## Purpose
+The connection between ${nodeDetails[0]?.label || 'Component 1'} and ${nodeDetails[1]?.label || 'Component 2'} serves to enable communication and data flow in the architecture.
+
+## Security Issues
+⚠️ **Potential Vulnerabilities:**
+- Unencrypted traffic may expose sensitive data
+- Missing authentication between components
+- Lack of network segmentation
+- No rate limiting or DDoS protection
+
+## Best Practices
+✅ **Recommended Practices:**
+- Implement TLS 1.3 for all communications
+- Use mutual TLS (mTLS) for service-to-service authentication
+- Apply principle of least privilege
+- Implement proper logging and monitoring
+- Use network policies to restrict traffic
+
+## How to Secure
+🔒 **Security Recommendations:**
+1. Enable encryption (TLS 1.3 minimum)
+2. Implement authentication (API keys, OAuth, mTLS)
+3. Add Web Application Firewall (WAF)
+4. Enable comprehensive logging
+5. Regular security audits and updates
+6. Implement rate limiting
+7. Use network segmentation
+
+*Note: Running in demo mode. Start the proxy server for real AI analysis.*`;
+        toast.success('Analysis complete! (Demo mode)');
+      }
+
+      console.log('✅ Setting analysis result...');
+      setAnalysisResult({
+        nodes: nodeDetails,
+        connections: connectionDetails,
+        analysis: analysisText
+      });
+      
+      console.log('📖 Showing analysis dialog...');
+      setShowAnalysisResult(true);
+      console.log('🎉 Analysis complete!');
+    } catch (error) {
+      console.error('❌ Analysis error:', error);
+      toast.error(`Failed to analyze connection: ${error.message || 'Unknown error'}`);
+      
+      // Reset states on error
+      setIsAnalyzingConnection(false);
+      setShowAnalyzeButton(true);
+    } finally {
+      console.log('🏁 Finalizing analysis...');
+      setIsAnalyzingConnection(false);
+    }
+  }, [selectedMultipleNodes, nodes, edges]);
 
   // Update node data
   const updateNodeData = (nodeId: string, newData: any) => {
@@ -2779,12 +3088,16 @@ function App() {
     // Clear previous highlights
     setHighlightedElements([]);
     
+    // Check if this is an AI finding (affects entire architecture)
+    const isAIFinding = finding.affected.includes('architecture');
+    
     // Update nodes with highlight status
     setNodes((nds: Node[]) => nds.map((node: Node) => ({
       ...node,
       data: {
         ...node.data,
-        isHighlighted: finding.affected.includes(node.id)
+        // If AI finding, highlight all nodes; otherwise highlight specific affected nodes
+        isHighlighted: isAIFinding || finding.affected.includes(node.id)
       }
     })));
 
@@ -2793,11 +3106,12 @@ function App() {
       ...edge,
       style: {
         ...edge.style,
-        stroke: finding.affected.includes(edge.id!) ? '#facc15' : (
+        // If AI finding, highlight all edges; otherwise highlight specific affected edges
+        stroke: (isAIFinding || finding.affected.includes(edge.id!)) ? '#a855f7' : (
           (edge.data as any)?.encryption === 'None' ? '#ef4444' : '#10b981'
         ),
-        strokeWidth: finding.affected.includes(edge.id!) ? 4 : 2,
-        filter: finding.affected.includes(edge.id!) ? 'drop-shadow(0 0 8px #facc15)' : undefined
+        strokeWidth: (isAIFinding || finding.affected.includes(edge.id!)) ? 3 : 2,
+        filter: (isAIFinding || finding.affected.includes(edge.id!)) ? 'drop-shadow(0 0 8px #a855f7)' : undefined
       }
     })));
 
@@ -3364,14 +3678,14 @@ function App() {
         return true;
       }));
       
-      // Re-run analysis to update findings
+      // Re-run analysis to update findings (which will also run AI analysis)
       setTimeout(() => {
         runSecurityAnalysis();
       }, 200);
     }, 100);
     
     if (fixesApplied > 0) {
-      toast.success(`Applied ${fixesApplied} security fixes with proper connections`);
+      toast.success(`Applied ${fixesApplied} security fixes. Re-analyzing...`);
     } else {
       toast.info('No automatic fixes available');
     }
@@ -3490,8 +3804,91 @@ function App() {
     );
   };
 
+  // Analysis Result Dialog Component
+  const AnalysisResultDialog = () => (
+    <Dialog open={showAnalysisResult} onOpenChange={setShowAnalysisResult}>
+      <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Connection Analysis Results
+          </DialogTitle>
+        </DialogHeader>
+        
+        {analysisResult && (
+          <div className="space-y-6">
+            {/* Selected Components */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Analyzed Components</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {analysisResult.nodes.map((node: any) => (
+                    <Badge key={node.id} variant="secondary">
+                      {node.label} ({node.type})
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Connections */}
+            {analysisResult.connections.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Connections Found</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {analysisResult.connections.map((conn: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm">
+                        <Badge variant="outline">{conn.from}</Badge>
+                        <span>→</span>
+                        <Badge variant="outline">{conn.to}</Badge>
+                        <span className="text-muted-foreground">
+                          ({conn.protocol} : {conn.ports})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* AI Analysis */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  AI Security Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <div className="whitespace-pre-wrap text-sm">
+                    {analysisResult.analysis}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        
+        <DialogFooter>
+          <Button onClick={() => setShowAnalysisResult(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <div className="h-screen flex bg-background text-foreground">
+      {/* Analysis Result Dialog */}
+      <AnalysisResultDialog />
+      
       {/* Sidebar */}
       <div className="w-80 border-r border-border bg-card flex flex-col h-screen">
         {/* Header */}
@@ -3520,6 +3917,14 @@ function App() {
               )}
             </div>
           </div>
+
+          {/* Cache Info Banner */}
+          {aiAnalysisResult && aiAnalysisResult.cacheHit && (
+            <div className="mb-3 p-2 bg-green-500/10 border border-green-500/30 rounded-md text-xs flex items-center gap-2">
+              <Sparkles className="w-3 h-3 text-green-500 flex-shrink-0" />
+              <span className="text-green-500">Enhanced findings from cache - Instant, $0.00 cost</span>
+            </div>
+          )}
           
           {/* Quick Actions */}
           <div className="flex gap-2 mb-4">
@@ -3547,10 +3952,20 @@ function App() {
               <Button 
                 size="sm" 
                 onClick={runSecurityAnalysis}
-                className="flex-1"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                disabled={isAIAnalyzing}
               >
-                <Play className="w-4 h-4 mr-1" />
-                Analyze
+                {isAIAnalyzing ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-1 animate-pulse" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-1" />
+                    Analyze
+                  </>
+                )}
               </Button>
               <Button 
                 size="sm" 
@@ -3562,6 +3977,7 @@ function App() {
                 Attacks
               </Button>
             </div>
+
             <div className="flex gap-2">
               <Button 
                 size="sm" 
@@ -4740,7 +5156,15 @@ function App() {
                 ) : (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-medium">Security Findings</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">Security Findings</h3>
+                        {isAIAnalyzing && (
+                          <Badge variant="outline" className="text-xs animate-pulse">
+                            <Sparkles className="w-3 h-3 mr-1 animate-spin" />
+                            Analyzing...
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         {highlightedElements.length > 0 && (
                           <Button
@@ -4770,8 +5194,16 @@ function App() {
                           onClick={() => highlightFinding(finding)}
                         >
                           <CardHeader className="pb-2">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-sm">{finding.title}</CardTitle>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-1">
+                                <CardTitle className="text-sm">{finding.title}</CardTitle>
+                                {finding.id.startsWith('ai-') && (
+                                  <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/30">
+                                    <Sparkles className="w-3 h-3 mr-1" />
+                                    Enhanced
+                                  </Badge>
+                                )}
+                              </div>
                               <Badge 
                                 variant={
                                   finding.severity === 'Critical' ? 'destructive' : 
@@ -4824,12 +5256,21 @@ function App() {
                   <h3 className="text-lg font-semibold">Architecture Validation</h3>
                   <Button
                     onClick={runArchitecturalValidation}
-                    disabled={nodes.length === 0}
+                    disabled={nodes.length === 0 || isAIAnalyzing}
                     size="sm"
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Validate
+                    {isAIAnalyzing ? (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+                        Validating...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Validate
+                      </>
+                    )}
                   </Button>
                 </div>
 
@@ -5033,13 +5474,44 @@ ${validationResult.issues.map(issue => `
                     const cves = analyzer.checkCVEs([]);
                     setCveResults(cves);
                     
-                    toast.success(`Compliance check complete: ${results.score.toFixed(0)}% compliant`);
+                    // Run AI analysis for compliance-specific recommendations
+                    if (nodes.length > 0) {
+                      setIsAIAnalyzing(true);
+                      setShowAIPanel(true);
+                      getAIRecommendations(nodes, edges)
+                        .then(result => {
+                          setAiAnalysisResult(result);
+                          if (result.cacheHit) {
+                            toast.success(`Compliance: ${results.score.toFixed(0)}% compliant. Insights from cache (instant, $0.00)`);
+                          } else {
+                            toast.success(`Compliance: ${results.score.toFixed(0)}% compliant. Analysis cost: $${result.tokenUsage?.cost.toFixed(4) || '0.00'}`);
+                          }
+                        })
+                        .catch(error => {
+                          console.error('AI analysis failed:', error);
+                          toast.success(`Compliance check complete: ${results.score.toFixed(0)}% compliant`);
+                        })
+                        .finally(() => {
+                          setIsAIAnalyzing(false);
+                        });
+                    } else {
+                      toast.success(`Compliance check complete: ${results.score.toFixed(0)}% compliant`);
+                    }
                   }}
                   className="w-full"
-                  disabled={!selectedFramework}
+                  disabled={!selectedFramework || isAIAnalyzing}
                 >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Run Compliance Check
+                  {isAIAnalyzing ? (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Run Compliance Check
+                    </>
+                  )}
                 </Button>
 
                 {complianceResults && (
@@ -5197,13 +5669,45 @@ ${validationResult.issues.map(issue => `
                         }))
                       );
                       setStrideThreats(threats);
-                      toast.success(`Generated ${threats.length} STRIDE threats for ${nodes.length} components`);
+                      
+                      // Run AI analysis for enhanced threat insights
+                      if (nodes.length > 0) {
+                        setIsAIAnalyzing(true);
+                        setShowAIPanel(true);
+                        getAIRecommendations(nodes, edges)
+                          .then(result => {
+                            setAiAnalysisResult(result);
+                            if (result.cacheHit) {
+                              toast.success(`Generated ${threats.length} STRIDE threats. Insights from cache (instant, $0.00)`);
+                            } else {
+                              toast.success(`Generated ${threats.length} STRIDE threats. Analysis cost: $${result.tokenUsage?.cost.toFixed(4) || '0.00'}`);
+                            }
+                          })
+                          .catch(error => {
+                            console.error('AI analysis failed:', error);
+                            toast.success(`Generated ${threats.length} STRIDE threats for ${nodes.length} components`);
+                          })
+                          .finally(() => {
+                            setIsAIAnalyzing(false);
+                          });
+                      } else {
+                        toast.success(`Generated ${threats.length} STRIDE threats for ${nodes.length} components`);
+                      }
                     }}
                     className="w-full mb-3"
-                    disabled={nodes.length === 0}
+                    disabled={nodes.length === 0 || isAIAnalyzing}
                   >
-                    <Target className="w-4 h-4 mr-2" />
-                    Generate STRIDE Analysis
+                    {isAIAnalyzing ? (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Target className="w-4 h-4 mr-2" />
+                        Generate STRIDE Analysis
+                      </>
+                    )}
                   </Button>
 
                   {strideThreats.length > 0 && (
@@ -5227,7 +5731,36 @@ ${validationResult.issues.map(issue => `
                         {strideThreats
                           .filter(t => selectedThreatCategory === 'All' || t.category === selectedThreatCategory)
                           .map(threat => (
-                            <Card key={threat.id} className="hover:bg-accent/5 transition-colors">
+                            <Card 
+                              key={threat.id} 
+                              className="hover:bg-accent/5 transition-colors cursor-pointer"
+                              onClick={() => {
+                                // Highlight the component associated with this threat
+                                clearHighlights();
+                                setNodes((nds: Node[]) => nds.map((node: Node) => ({
+                                  ...node,
+                                  data: {
+                                    ...node.data,
+                                    isHighlighted: node.id === threat.componentId
+                                  }
+                                })));
+                                // Also highlight any edges connected to this component
+                                setEdges((eds: Edge[]) => eds.map((edge: Edge) => ({
+                                  ...edge,
+                                  style: {
+                                    ...edge.style,
+                                    stroke: (edge.source === threat.componentId || edge.target === threat.componentId) 
+                                      ? '#a855f7' 
+                                      : ((edge.data as any)?.encryption === 'None' ? '#ef4444' : '#10b981'),
+                                    strokeWidth: (edge.source === threat.componentId || edge.target === threat.componentId) ? 3 : 2,
+                                    filter: (edge.source === threat.componentId || edge.target === threat.componentId) 
+                                      ? 'drop-shadow(0 0 8px #a855f7)' 
+                                      : undefined
+                                  }
+                                })));
+                                toast.info(`Highlighting ${threat.componentType} component`);
+                              }}
+                            >
                               <CardHeader className="pb-2">
                                 <CardTitle className="text-sm flex items-center justify-between">
                                   <span>{threat.category}</span>
@@ -5247,7 +5780,7 @@ ${validationResult.issues.map(issue => `
                                 </CardTitle>
                               </CardHeader>
                               <CardContent className="space-y-2">
-                                <p className="text-xs">{threat.threat}</p>
+                                <p className="text-xs"><strong>{threat.componentType}:</strong> {threat.threat}</p>
                                 <div>
                                   <div className="text-xs font-medium mb-1">Mitigations:</div>
                                   <ul className="space-y-1">
@@ -5839,6 +6372,50 @@ ${validationResult.issues.map(issue => `
             {showGrid && <Background gap={gridSize} />}
             <MiniMap />
             <Controls />
+            
+            {/* Analyze Connection Button - Appears when multiple nodes selected */}
+            {showAnalyzeButton && !isAnalyzingConnection && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: analyzeButtonPosition.x,
+                  top: analyzeButtonPosition.y,
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 1000,
+                }}
+              >
+                <Button
+                  onClick={analyzeConnection}
+                  className="shadow-2xl border-2 border-primary bg-primary hover:bg-primary/90 text-primary-foreground font-semibold animate-pulse"
+                  size="lg"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Analyze This Connection
+                </Button>
+              </div>
+            )}
+            
+            {/* Analyzing indicator */}
+            {isAnalyzingConnection && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: analyzeButtonPosition.x,
+                  top: analyzeButtonPosition.y,
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 1000,
+                }}
+              >
+                <Card className="p-4 shadow-2xl border-2 border-primary">
+                  <div className="flex items-center gap-3">
+                    <div className="animate-spin">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="font-medium">Analyzing connection...</span>
+                  </div>
+                </Card>
+              </div>
+            )}
           </ReactFlow>
         </ReactFlowProvider>
         
@@ -6151,8 +6728,16 @@ ${validationResult.issues.map(issue => `
                 id="paste-json"
                 value={pasteJsonText}
                 onChange={(e) => setPasteJsonText(e.target.value)}
+                onPaste={(e) => {
+                  // Ensure paste event is allowed
+                  e.stopPropagation();
+                }}
                 className="w-full h-96 px-3 py-2 rounded-md border border-border bg-background text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                 placeholder='{"nodes": [...], "edges": [...]}'
+                spellCheck={false}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
               />
               
               <div className="flex items-start gap-2 mt-3 text-sm text-muted-foreground">
@@ -6188,6 +6773,25 @@ ${validationResult.issues.map(issue => `
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Architecture Report Panel - Shows non-security recommendations */}
+      {showAIPanel && aiAnalysisResult && (
+        <div className="fixed right-0 top-0 w-[500px] h-screen bg-background border-l border-border shadow-2xl z-50 animate-in slide-in-from-right">
+          <AIRecommendationsPanel
+            result={{
+              ...aiAnalysisResult,
+              // Filter out security recommendations (they're in Security Findings now)
+              recommendations: aiAnalysisResult.recommendations.filter(r => r.category !== 'security')
+            }}
+            isLoading={isAIAnalyzing}
+            onAnalyze={runAIAnalysis}
+            onClose={() => {
+              setShowAIPanel(false);
+              setAiAnalysisResult(null);
+            }}
+          />
         </div>
       )}
     </div>

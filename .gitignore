@@ -44,3 +44,10 @@ thisISPoint/
 *.tmp
 
 # Review documents (keep only essential ones)
+
+# Visitor logs - never commit these
+kohVisitors*.txt
+kohVisitors*.json
+kohVisitors.log
+visitor-log*.txt
+analytics-log*.txt

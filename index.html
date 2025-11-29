@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Koh Atlas - Secure Architecture Designer</title>
+    <!-- Build: 2025-11-29-v2 -->
     
     <!-- Security Headers -->
     <meta http-equiv="X-Frame-Options" content="DENY">
@@ -18,7 +19,7 @@
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' data: https://fonts.gstatic.com;
       img-src 'self' data: blob:;
-      connect-src 'self';
+      connect-src 'self' https://ipapi.co;
       frame-ancestors 'none';
       base-uri 'self';
       form-action 'self';
@@ -32,6 +33,7 @@
 
 <body>
     <div id="root"></div>
+    <script src="/koh-atlas-secure-arc/analytics.js?v=2"></script>
     <script type="module" src="/src/main.tsx"></script>
 </body>
 

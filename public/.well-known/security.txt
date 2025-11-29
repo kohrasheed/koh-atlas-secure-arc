@@ -1,0 +1,52 @@
+Contact: mailto:security@koh-atlas.example.com
+Expires: 2026-11-26T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://koh-atlas.example.com/.well-known/security.txt
+Policy: https://koh-atlas.example.com/security-policy
+Acknowledgments: https://koh-atlas.example.com/security-acknowledgments
+
+# Security Policy
+
+Thank you for helping keep Koh Atlas secure!
+
+## Reporting Security Issues
+
+If you discover a security vulnerability, please report it to:
+- Email: security@koh-atlas.example.com
+- Subject: [SECURITY] Brief description
+
+Please include:
+1. Description of the vulnerability
+2. Steps to reproduce
+3. Potential impact
+4. Suggested fix (if any)
+
+## Response Timeline
+
+- Initial response: Within 48 hours
+- Status update: Within 7 days
+- Resolution target: 30 days for critical issues
+
+## Scope
+
+In scope:
+- Cross-site scripting (XSS)
+- SQL injection
+- Authentication bypass
+- Data exposure
+- Remote code execution
+
+Out of scope:
+- Social engineering
+- Physical attacks
+- Denial of service
+
+## Safe Harbor
+
+We will not pursue legal action against researchers who:
+- Act in good faith
+- Do not harm users or data
+- Report findings responsibly
+- Follow responsible disclosure
+
+Thank you for helping keep our users safe!
