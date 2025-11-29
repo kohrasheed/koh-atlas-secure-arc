@@ -2959,7 +2959,7 @@ function App() {
       }));
 
       // Try to call AI API via proxy server, fall back to mock if unavailable
-      const proxyUrl = 'https://koh-atlas-secure-arca.vercel.app/api/anthropic';
+      const proxyUrl = 'https://koh-atlas-secure-arc.onrender.com/api/anthropic';
       let analysisText = '';
       
       try {
