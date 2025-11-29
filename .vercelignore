@@ -1,0 +1,13 @@
+dist/
+node_modules/
+src/
+public/
+backup*/
+kohArch*/
+thisISPoint/
+*.tsx
+*.ts
+!api/**
+vite.config.ts
+tsconfig.json
+index.html
