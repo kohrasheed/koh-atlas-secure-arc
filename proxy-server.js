@@ -9,14 +9,21 @@ const PORT = process.env.PORT || 3001;
 
 console.log('🔍 Environment check:');
 console.log('  PORT from env:', process.env.PORT);
+console.log('  All env vars:', Object.keys(process.env).filter(k => k.includes('PORT') || k.includes('HOST')).join(', '));
 console.log('  Using PORT:', PORT);
 
 app.use(cors());
 app.use(express.json());
 
-// Health check endpoint
+// Health check endpoint - Railway compatible
 app.get('/', (req, res) => {
-  res.json({ status: 'ok', message: 'Anthropic proxy server is running' });
+  console.log('💚 Health check hit from:', req.ip);
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Anthropic proxy server is running',
+    timestamp: new Date().toISOString(),
+    port: PORT
+  });
 });
 
 app.get('/api/anthropic', (req, res) => {
@@ -70,7 +77,22 @@ app.post('/api/anthropic', async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Anthropic proxy server running on http://0.0.0.0:${PORT}`);
   console.log(`🌍 Binding to all interfaces for Railway`);
+  console.log(`🚀 Server ready to accept connections`);
+});
+
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('⚠️ SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('👋 Server closed');
+    process.exit(0);
+  });
 });
