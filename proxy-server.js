@@ -70,6 +70,7 @@ app.post('/api/anthropic', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Anthropic proxy server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Anthropic proxy server running on http://0.0.0.0:${PORT}`);
+  console.log(`🌍 Binding to all interfaces for Railway`);
 });
