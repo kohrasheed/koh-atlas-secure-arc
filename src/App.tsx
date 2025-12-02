@@ -37,6 +37,8 @@ import { toast } from 'sonner';
 import { useKV } from '@github/spark/hooks';
 import ComponentLibrary, { CustomComponent } from '@/components/ComponentLibrary';
 import BackupManager, { ProjectBackup } from '@/components/BackupManager';
+import { collectReportData, downloadPDFReport } from '@/lib/pdf-report/generator.tsx';
+// import { downloadDocumentation } from '@/lib/documentation-generator';
 import { 
   SecurityAnalyzer, 
   COMPLIANCE_FRAMEWORKS, 
@@ -93,6 +95,8 @@ import {
   Warning,
   TrendUp,
   Sparkle as Sparkles,
+  FileText,
+  BookOpen,
 } from '@phosphor-icons/react';
 import { AIRecommendationsPanel } from '@/components/analysis/AIRecommendationsPanel';
 import { getAIRecommendations } from '@/lib/ai-recommendations';
@@ -1939,6 +1943,64 @@ function App() {
     }
   }, [nodes, edges, customComponents, findings, attackPaths, isDarkTheme]);
 
+  // Generate Full Documentation
+  const generateFullDocumentation = useCallback(async () => {
+    console.log('Generating full system documentation...');
+    setIsExporting(true);
+    toast.info('Documentation feature temporarily disabled...');
+    // try {
+    //   await downloadDocumentation();
+    //   toast.success('Documentation generated successfully!');
+    // } catch (error) {
+    //   console.error('Documentation generation failed:', error);
+    //   toast.error(`Documentation generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // } finally {
+      setIsExporting(false);
+    // }
+  }, []);
+
+  // Generate PDF Security Report
+  const generatePDFSecurityReport = useCallback(async () => {
+    console.log('generatePDFSecurityReport called!');
+    
+    if (nodes.length === 0) {
+      toast.error('No architecture to analyze. Add some components first.');
+      return;
+    }
+    
+    setIsExporting(true);
+    toast.info('Generating comprehensive security report...');
+    
+    try {
+      // Get project name from user or use default
+      const projectName = prompt('Enter project name for the report:', 'Security Architecture Analysis') || 'Security Architecture Analysis';
+      
+      // Collect all report data
+      const reportData = await collectReportData(
+        nodes,
+        edges,
+        findings,
+        strideThreats,
+        complianceResults,
+        attackPaths,
+        validationResult,
+        aiAnalysisResult,
+        reactFlowInstance,
+        projectName
+      );
+      
+      // Generate and download PDF
+      await downloadPDFReport(reportData);
+      
+      toast.success('Security report generated successfully!');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error(`Failed to generate PDF report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [nodes, edges, findings, strideThreats, complianceResults, attackPaths, validationResult, aiAnalysisResult, reactFlowInstance]);
+
   // Import diagram from JSON
   const importFromJSON = useCallback((event?: React.ChangeEvent<HTMLInputElement>) => {
     if (!event) {
@@ -3057,6 +3119,38 @@ The connection between ${nodeDetails[0]?.label || 'Component 1'} and ${nodeDetai
     }
   }, [selectedMultipleNodes, nodes, edges]);
 
+  // Generic AI analysis helper function
+  const callAI = async (prompt: string): Promise<string> => {
+    const proxyUrl = 'https://koh-atlas-secure-arc.onrender.com/api/anthropic';
+    
+    try {
+      const response = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5-20250929',
+          max_tokens: 2048,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.content[0].text;
+    } catch (error) {
+      console.error('AI API error:', error);
+      throw error;
+    }
+  };
+
   // Update node data
   const updateNodeData = (nodeId: string, newData: any) => {
     setNodes((nds: Node[]) => nds.map((node: Node) => 
@@ -4111,6 +4205,36 @@ The connection between ${nodeDetails[0]?.label || 'Component 1'} and ${nodeDetai
                   </Button>
                 </div>
               </details>
+              
+              {/* PDF Security Report */}
+              <Button 
+                size="sm" 
+                variant="default"
+                onClick={(e) => {
+                  e.preventDefault();
+                  generatePDFSecurityReport();
+                }}
+                className="w-full gap-2"
+                disabled={isExporting || nodes.length === 0}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Generate Security Report</span>
+              </Button>
+              
+              {/* System Documentation */}
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  generateFullDocumentation();
+                }}
+                className="w-full gap-2"
+                disabled={isExporting}
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>System Documentation</span>
+              </Button>
               
               {/* Import */}
               <div className="flex gap-2">

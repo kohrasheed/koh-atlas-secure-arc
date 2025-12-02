@@ -61,8 +61,8 @@ interface CacheStats {
   estimatedCost: number;
 }
 
-// Proxy endpoint for API calls - use relative path to avoid CORS
-const PROXY_ENDPOINT = '/api/anthropic';
+// Proxy endpoint for API calls - use full Render URL
+const PROXY_ENDPOINT = 'https://koh-atlas-secure-arc.onrender.com/api/anthropic';
 
 /**
  * Generate cache key from diagram structure
