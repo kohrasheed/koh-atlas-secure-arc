@@ -39,13 +39,6 @@ import ComponentLibrary, { CustomComponent } from '@/components/ComponentLibrary
 import BackupManager, { ProjectBackup } from '@/components/BackupManager';
 import { collectReportData, downloadPDFReport } from '@/lib/pdf-report/generator.tsx';
 // import { downloadDocumentation } from '@/lib/documentation-generator';
-import { 
-  SecurityAnalyzer, 
-  COMPLIANCE_FRAMEWORKS, 
-  ComplianceFramework,
-  CVEVulnerability,
-  KNOWN_CVES
-} from '@/lib/security-analyzer';
 import {
   ComponentConfig,
   SecurityFinding,
@@ -426,18 +419,6 @@ function App() {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [isAnalyzingConnection, setIsAnalyzingConnection] = useState(false);
   const [isAIAnalyzing, setIsAIAnalyzing] = useState(false);
-  
-  // Compliance & CVE
-  const [selectedFramework, setSelectedFramework] = useState<ComplianceFramework | null>(COMPLIANCE_FRAMEWORKS[0]);
-  const [complianceResults, setComplianceResults] = useState<{
-    passed: any[];
-    failed: any[];
-    notApplicable: any[];
-    score: number;
-  } | null>(null);
-  const [cveResults, setCveResults] = useState<{ component: any; cves: CVEVulnerability[] }[]>([]);
-  const [strideThreats, setStrideThreats] = useState<any[]>([]);
-  const [selectedThreatCategory, setSelectedThreatCategory] = useState<string>('All');
   
   // Performance Metrics
   const [showMetricsOverlay, setShowMetricsOverlay] = useState(false);
@@ -4597,10 +4578,6 @@ The connection between ${nodeDetails[0]?.label || 'Component 1'} and ${nodeDetai
               <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="hidden lg:inline truncate">Validation</span>
             </TabsTrigger>
-            <TabsTrigger value="compliance" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Scales className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden lg:inline truncate">Compliance</span>
-            </TabsTrigger>
             <TabsTrigger value="metrics" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <ChartBar className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="hidden lg:inline truncate">Metrics</span>
@@ -5543,12 +5520,49 @@ ${validationResult.issues.map(issue => `
             </ScrollArea>
           </TabsContent>
           
-          <TabsContent value="compliance" className="flex-1 min-h-0 px-4 pb-4">
+          <TabsContent value="metrics" className="flex-1 min-h-0 px-4 pb-4">
             <ScrollArea className="h-full">
               <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <Label>Select Framework</Label>
-                  <Select 
+                {selectedNode ? (
+                  <>
+                    {(() => {
+                      const nodeData = selectedNode.data as any;
+                      return (
+                        <div className="space-y-2">
+                          <h3 className="font-medium flex items-center gap-2">
+                            <ChartBar className="w-4 h-4" />
+                            Node Metrics: {String(selectedNode.data.label)}
+                          </h3>
+                          
+                          {/* Cost Metrics */}
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-sm flex items-center gap-2">
+                                <CurrencyDollar className="w-4 h-4" />
+                                Cost
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs">Monthly Cost ($)</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="0"
+                                    value={nodeData.metrics?.cost?.monthly || ''}
+                                onChange={(e) => updateNodeMetrics(selectedNode.id, {
+                                  cost: {
+                                    ...nodeData.metrics?.cost,
+                                    monthly: parseFloat(e.target.value) || 0,
+                                    currency: 'USD'
+                                  }
+                                })}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Currency</Label>
+                              <Select 
                     value={selectedFramework?.id} 
                     onValueChange={(value) => {
                       const framework = COMPLIANCE_FRAMEWORKS.find(f => f.id === value);
