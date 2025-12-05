@@ -1,0 +1,199 @@
+{
+  "reportId": "SEC-ARCH-FIXED",
+  "timestamp": "2025-12-05T17:55:23.772764",
+  "version": "2.1.0-enterprise",
+  "summary": {
+    "score": 88,
+    "maxScore": 100,
+    "grade": "A-",
+    "totalFindings": 5,
+    "criticalFindings": 0,
+    "highFindings": 1,
+    "mediumFindings": 3,
+    "lowFindings": 1,
+    "scoringFormula": "100 - (0\u00d710 + 1\u00d75 + 3\u00d72 + 1\u00d71) = 88"
+  },
+  "encryption": {
+    "inTransit": {
+      "encrypted": 16,
+      "total": 16,
+      "percentage": 100.0,
+      "details": [
+        {
+          "id": "e1-2",
+          "protocol": "TLS-1.3",
+          "source": "1",
+          "target": "2"
+        },
+        {
+          "id": "e2-3",
+          "protocol": "TLS-1.3",
+          "source": "2",
+          "target": "3"
+        },
+        {
+          "id": "e3-4",
+          "protocol": "mTLS",
+          "source": "3",
+          "target": "4"
+        },
+        {
+          "id": "e4-5",
+          "protocol": "TLS-1.3",
+          "source": "4",
+          "target": "5"
+        },
+        {
+          "id": "e5-6",
+          "protocol": "TLS-1.3",
+          "source": "5",
+          "target": "6"
+        },
+        {
+          "id": "e5-7",
+          "protocol": "mTLS",
+          "source": "5",
+          "target": "7"
+        },
+        {
+          "id": "e5-8",
+          "protocol": "TLS-1.3",
+          "source": "5",
+          "target": "8"
+        },
+        {
+          "id": "e5-9",
+          "protocol": "TLS-1.3",
+          "source": "5",
+          "target": "9"
+        },
+        {
+          "id": "e8-7",
+          "protocol": "TLS-1.3",
+          "source": "8",
+          "target": "7"
+        },
+        {
+          "id": "e8-5",
+          "protocol": "TLS-1.3",
+          "source": "8",
+          "target": "5"
+        },
+        {
+          "id": "e8-9",
+          "protocol": "TLS-1.3",
+          "source": "8",
+          "target": "9"
+        },
+        {
+          "id": "e4-9",
+          "protocol": "TLS-1.3",
+          "source": "4",
+          "target": "9"
+        },
+        {
+          "id": "e4-10",
+          "protocol": "TLS-1.3",
+          "source": "4",
+          "target": "10"
+        },
+        {
+          "id": "e6-10",
+          "protocol": "TLS-1.3",
+          "source": "6",
+          "target": "10"
+        },
+        {
+          "id": "e7-10",
+          "protocol": "mTLS",
+          "source": "7",
+          "target": "10"
+        },
+        {
+          "id": "e10-external",
+          "protocol": "TLS-1.3",
+          "source": "10",
+          "target": "external"
+        }
+      ]
+    },
+    "atRest": {
+      "encrypted": 2,
+      "total": 2,
+      "percentage": 100.0
+    }
+  },
+  "securityControls": {
+    "networkFirewall": {
+      "present": true,
+      "type": "aws-network-firewall",
+      "status": "PASS"
+    },
+    "networkSegmentation": {
+      "present": true,
+      "subnetCount": 4,
+      "status": "PASS"
+    },
+    "databaseSecurity": {
+      "directInternetAccess": false,
+      "activityMonitoring": true,
+      "status": "PASS"
+    },
+    "auditLogging": {
+      "centralized": true,
+      "tool": "ELK",
+      "status": "PASS"
+    }
+  },
+  "compliance": {
+    "percentage": 83.6,
+    "grade": "B",
+    "frameworks": [
+      "SOC2",
+      "ISO27001",
+      "GDPR",
+      "HIPAA",
+      "PCI-DSS",
+      "NIST-800-53",
+      "CIS"
+    ],
+    "status": "PASS"
+  },
+  "findings": [
+    {
+      "id": "H-002",
+      "severity": "HIGH",
+      "title": "Client-side validation present",
+      "description": "React PWA has client-side validation, but server-side validation is required for security",
+      "recommendation": "Ensure API Gateway validates all inputs server-side"
+    },
+    {
+      "id": "M-001",
+      "severity": "MEDIUM",
+      "title": "Session timeout policy",
+      "description": "15-minute idle timeout is aggressive but acceptable for high-security applications",
+      "recommendation": "Consider user experience feedback, may extend to 30 minutes for internal users"
+    },
+    {
+      "id": "M-003",
+      "severity": "MEDIUM",
+      "title": "Redis backup frequency lower than PostgreSQL",
+      "description": "Redis backed up daily vs PostgreSQL 5-min RPO. Cache data is less critical.",
+      "recommendation": "Acceptable - cache can be rebuilt from primary database"
+    },
+    {
+      "id": "M-004",
+      "severity": "MEDIUM",
+      "title": "S3 versioning enabled but MFA delete not specified",
+      "description": "S3 has versioning but no explicit MFA delete protection",
+      "recommendation": "Enable MFA delete for compliance with SOC2 and PCI-DSS"
+    },
+    {
+      "id": "L-001",
+      "severity": "LOW",
+      "title": "CSP uses unsafe-inline for styles",
+      "description": "Content Security Policy allows unsafe-inline for styles",
+      "recommendation": "Use nonce-based or hash-based CSP for styles"
+    }
+  ]
+}
