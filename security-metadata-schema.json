@@ -1,0 +1,441 @@
+{
+  "schemaVersion": "1.0.0",
+  "description": "Machine-readable security metadata specification for Koh Atlas architecture analysis",
+  "purpose": "This file defines boolean flags and structured fields that security analyzers can reliably parse without complex inference logic",
+  
+  "nodeSecurityFlags": {
+    "description": "Every node should include these fields in data.securityFlags",
+    "fields": {
+      "encryptedAtRest": {
+        "type": "boolean",
+        "description": "Whether data stored by this component is encrypted at rest (AES-256, KMS, etc.)",
+        "applicableToTypes": ["database", "cache", "storage", "secrets-manager"],
+        "default": false
+      },
+      "encryptedInTransit": {
+        "type": "boolean",
+        "description": "Whether all connections to/from this component use encryption (TLS 1.3, mTLS)",
+        "applicableToTypes": ["all"],
+        "default": false
+      },
+      "hasFirewall": {
+        "type": "boolean",
+        "description": "Whether this component is protected by a firewall (network firewall, security groups, NACLs)",
+        "applicableToTypes": ["all"],
+        "default": false
+      },
+      "hasWAF": {
+        "type": "boolean",
+        "description": "Whether this component is protected by a Web Application Firewall",
+        "applicableToTypes": ["web-server", "api-gateway", "load-balancer"],
+        "default": false
+      },
+      "auditLoggingEnabled": {
+        "type": "boolean",
+        "description": "Whether this component generates comprehensive audit logs for all operations",
+        "applicableToTypes": ["all"],
+        "default": false
+      },
+      "auditLoggingDestination": {
+        "type": "string",
+        "description": "Where audit logs are sent (e.g., 'SIEM', 'CloudWatch', 'Elasticsearch')",
+        "applicableToTypes": ["all"],
+        "default": null
+      },
+      "activityMonitoring": {
+        "type": "boolean",
+        "description": "Whether this component has database/application activity monitoring enabled",
+        "applicableToTypes": ["database", "cache", "api-gateway"],
+        "default": false
+      },
+      "activityMonitoringTool": {
+        "type": "string",
+        "description": "Tool used for activity monitoring (e.g., 'pgAudit', 'Redis Sentinel', 'AWS GuardDuty')",
+        "applicableToTypes": ["database", "cache", "api-gateway"],
+        "default": null
+      },
+      "hasBackup": {
+        "type": "boolean",
+        "description": "Whether this component has automated backup enabled",
+        "applicableToTypes": ["database", "cache", "storage"],
+        "default": false
+      },
+      "backupFrequency": {
+        "type": "string",
+        "description": "Backup frequency (e.g., 'continuous', '5min', 'hourly', 'daily')",
+        "applicableToTypes": ["database", "cache", "storage"],
+        "default": null
+      },
+      "networkSegmentation": {
+        "type": "string",
+        "enum": ["public-subnet", "private-subnet", "data-subnet", "isolated-subnet", "none"],
+        "description": "Which network segment this component resides in",
+        "applicableToTypes": ["all"],
+        "default": "none"
+      },
+      "directInternetAccess": {
+        "type": "boolean",
+        "description": "Whether this component can be accessed directly from the internet",
+        "applicableToTypes": ["all"],
+        "default": false
+      },
+      "mfaRequired": {
+        "type": "boolean",
+        "description": "Whether multi-factor authentication is required to access this component",
+        "applicableToTypes": ["database", "secrets-manager", "admin-console"],
+        "default": false
+      },
+      "rbacEnabled": {
+        "type": "boolean",
+        "description": "Whether role-based access control is enabled",
+        "applicableToTypes": ["all"],
+        "default": false
+      },
+      "secretsManagement": {
+        "type": "string",
+        "description": "How secrets are managed (e.g., 'Vault', 'AWS Secrets Manager', 'environment-variables')",
+        "applicableToTypes": ["all"],
+        "default": "environment-variables"
+      },
+      "vulnerabilityScanning": {
+        "type": "boolean",
+        "description": "Whether this component is scanned for vulnerabilities",
+        "applicableToTypes": ["all"],
+        "default": false
+      },
+      "vulnerabilityScanningTool": {
+        "type": "string",
+        "description": "Tool used for vulnerability scanning (e.g., 'Trivy', 'Snyk', 'AWS Inspector')",
+        "applicableToTypes": ["all"],
+        "default": null
+      },
+      "complianceFrameworks": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["SOC2", "ISO27001", "GDPR", "HIPAA", "PCI-DSS", "NIST-800-53", "CIS"]
+        },
+        "description": "List of compliance frameworks this component satisfies",
+        "applicableToTypes": ["all"],
+        "default": []
+      }
+    }
+  },
+  
+  "edgeSecurityFlags": {
+    "description": "Every edge should include these fields in data.securityFlags",
+    "fields": {
+      "encrypted": {
+        "type": "boolean",
+        "description": "Whether this connection is encrypted",
+        "default": false
+      },
+      "encryptionProtocol": {
+        "type": "string",
+        "enum": ["TLS-1.2", "TLS-1.3", "mTLS", "IPSec", "WireGuard", "SSH", "none"],
+        "description": "Encryption protocol used",
+        "default": "none"
+      },
+      "encryptionCipher": {
+        "type": "string",
+        "description": "Cipher suite used (e.g., 'AES-256-GCM', 'ChaCha20-Poly1305')",
+        "default": null
+      },
+      "authenticated": {
+        "type": "boolean",
+        "description": "Whether this connection requires authentication",
+        "default": false
+      },
+      "authenticationType": {
+        "type": "string",
+        "enum": ["none", "api-key", "jwt", "oauth2", "saml", "mtls", "basic-auth", "kerberos"],
+        "description": "Type of authentication used",
+        "default": "none"
+      },
+      "authorizationEnabled": {
+        "type": "boolean",
+        "description": "Whether authorization checks are performed (RBAC, ABAC)",
+        "default": false
+      },
+      "rateLimited": {
+        "type": "boolean",
+        "description": "Whether this connection is rate limited",
+        "default": false
+      },
+      "rateLimitValue": {
+        "type": "string",
+        "description": "Rate limit value (e.g., '100/min', '1000/hour')",
+        "default": null
+      },
+      "bidirectional": {
+        "type": "boolean",
+        "description": "Whether this is a bidirectional connection (WebSocket, gRPC streaming)",
+        "default": false
+      },
+      "dataFlowDirection": {
+        "type": "string",
+        "enum": ["inbound", "outbound", "bidirectional"],
+        "description": "Direction of data flow",
+        "default": "outbound"
+      },
+      "loggingEnabled": {
+        "type": "boolean",
+        "description": "Whether connection logs are captured",
+        "default": false
+      },
+      "networkZone": {
+        "type": "string",
+        "enum": ["internet", "dmz", "internal", "data", "management"],
+        "description": "Network zone this connection traverses",
+        "default": "internal"
+      }
+    }
+  },
+  
+  "architectureSecurityMetadata": {
+    "description": "Top-level security metadata for the entire architecture",
+    "fields": {
+      "hasNetworkSegmentation": {
+        "type": "boolean",
+        "description": "Whether the architecture uses network segmentation (VPC, subnets)",
+        "default": false
+      },
+      "networkSegmentationDetails": {
+        "type": "object",
+        "properties": {
+          "vpcEnabled": { "type": "boolean" },
+          "vpcCidr": { "type": "string" },
+          "publicSubnets": { "type": "array", "items": { "type": "string" } },
+          "privateSubnets": { "type": "array", "items": { "type": "string" } },
+          "dataSubnets": { "type": "array", "items": { "type": "string" } },
+          "isolatedSubnets": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "hasNetworkFirewall": {
+        "type": "boolean",
+        "description": "Whether a network firewall is deployed",
+        "default": false
+      },
+      "firewallType": {
+        "type": "string",
+        "enum": ["none", "security-groups", "network-acl", "aws-network-firewall", "palo-alto", "fortinet", "checkpoint"],
+        "description": "Type of network firewall",
+        "default": "none"
+      },
+      "hasDNSSecurity": {
+        "type": "boolean",
+        "description": "Whether DNS security (DNSSEC, DNS firewall) is enabled",
+        "default": false
+      },
+      "dnsProvider": {
+        "type": "string",
+        "description": "DNS provider (e.g., 'Route53', 'CloudFlare', 'Google Cloud DNS')",
+        "default": null
+      },
+      "dnssecEnabled": {
+        "type": "boolean",
+        "description": "Whether DNSSEC is enabled",
+        "default": false
+      },
+      "hasDDoSProtection": {
+        "type": "boolean",
+        "description": "Whether DDoS protection is enabled",
+        "default": false
+      },
+      "ddosProvider": {
+        "type": "string",
+        "description": "DDoS protection provider (e.g., 'CloudFlare', 'AWS Shield', 'Akamai')",
+        "default": null
+      },
+      "ddosCapacity": {
+        "type": "string",
+        "description": "DDoS mitigation capacity (e.g., '134 Tbps', '100 Gbps')",
+        "default": null
+      },
+      "hasServiceMesh": {
+        "type": "boolean",
+        "description": "Whether a service mesh is deployed (Istio, Linkerd, Consul)",
+        "default": false
+      },
+      "serviceMeshType": {
+        "type": "string",
+        "enum": ["none", "istio", "linkerd", "consul", "app-mesh"],
+        "description": "Type of service mesh",
+        "default": "none"
+      },
+      "automaticMtls": {
+        "type": "boolean",
+        "description": "Whether service mesh provides automatic mTLS",
+        "default": false
+      },
+      "centralizedSecretManagement": {
+        "type": "boolean",
+        "description": "Whether centralized secret management is used",
+        "default": false
+      },
+      "secretManagementTool": {
+        "type": "string",
+        "enum": ["none", "hashicorp-vault", "aws-secrets-manager", "azure-key-vault", "google-secret-manager"],
+        "description": "Centralized secret management tool",
+        "default": "none"
+      },
+      "centralizedAuditLogging": {
+        "type": "boolean",
+        "description": "Whether centralized audit logging (SIEM) is deployed",
+        "default": false
+      },
+      "siemTool": {
+        "type": "string",
+        "description": "SIEM tool used (e.g., 'Splunk', 'ELK', 'Sumo Logic', 'AWS Security Hub')",
+        "default": null
+      },
+      "encryptionAtRestPercentage": {
+        "type": "number",
+        "description": "Percentage of data stores with encryption at rest (0-100)",
+        "default": 0
+      },
+      "encryptionInTransitPercentage": {
+        "type": "number",
+        "description": "Percentage of connections with encryption in transit (0-100)",
+        "default": 0
+      },
+      "complianceFrameworks": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "List of compliance frameworks the architecture targets",
+        "default": []
+      },
+      "disasterRecovery": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "rto": { "type": "string", "description": "Recovery Time Objective (e.g., '1h', '4h')" },
+          "rpo": { "type": "string", "description": "Recovery Point Objective (e.g., '5min', '1h')" },
+          "multiRegion": { "type": "boolean" },
+          "primaryRegion": { "type": "string" },
+          "secondaryRegion": { "type": "string" }
+        }
+      }
+    }
+  },
+  
+  "exampleUsage": {
+    "nodeExample": {
+      "id": "7",
+      "type": "custom",
+      "data": {
+        "type": "database",
+        "label": "PostgreSQL Primary",
+        "securityFlags": {
+          "encryptedAtRest": true,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "SIEM",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "pgAudit",
+          "hasBackup": true,
+          "backupFrequency": "5min",
+          "networkSegmentation": "data-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": true,
+          "rbacEnabled": true,
+          "secretsManagement": "Vault",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "AWS Inspector",
+          "complianceFrameworks": ["SOC2", "HIPAA", "PCI-DSS"]
+        }
+      }
+    },
+    "edgeExample": {
+      "id": "e5-7",
+      "source": "5",
+      "target": "7",
+      "data": {
+        "protocol": "PostgreSQL wire protocol over mTLS",
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "mTLS",
+          "encryptionCipher": "AES-256-GCM",
+          "authenticated": true,
+          "authenticationType": "mtls",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "1000/min",
+          "bidirectional": true,
+          "dataFlowDirection": "bidirectional",
+          "loggingEnabled": true,
+          "networkZone": "internal"
+        }
+      }
+    }
+  },
+  
+  "scoringFormula": {
+    "description": "Correct scoring formula for security analysis",
+    "formula": "Score = 100 - (Critical × 10 + High × 5 + Medium × 2 + Low × 1)",
+    "example": {
+      "critical": 0,
+      "high": 2,
+      "medium": 4,
+      "low": 1,
+      "calculation": "100 - (0×10 + 2×5 + 4×2 + 1×1) = 100 - (0 + 10 + 8 + 1) = 100 - 19 = 81",
+      "correctScore": 81
+    },
+    "grading": {
+      "A": { "min": 90, "max": 100, "description": "Excellent security posture" },
+      "B": { "min": 80, "max": 89, "description": "Good security posture with minor gaps" },
+      "C": { "min": 70, "max": 79, "description": "Adequate security with notable gaps" },
+      "D": { "min": 60, "max": 69, "description": "Poor security posture, urgent improvements needed" },
+      "F": { "min": 0, "max": 59, "description": "Critical security failures" }
+    }
+  },
+  
+  "analyzerRules": {
+    "description": "Updated rule logic for analyzers to use",
+    "rules": {
+      "encryption_in_transit": {
+        "check": "edge.data.securityFlags.encrypted === true && edge.data.securityFlags.encryptionProtocol !== 'none'",
+        "severity": "CRITICAL",
+        "message": "Connection {edge.id} is not encrypted"
+      },
+      "encryption_at_rest": {
+        "check": "node.data.type in ['database', 'cache', 'storage'] && node.data.securityFlags.encryptedAtRest === true",
+        "severity": "HIGH",
+        "message": "Data store {node.id} does not have encryption at rest"
+      },
+      "network_firewall": {
+        "check": "architectureMetadata.hasNetworkFirewall === true",
+        "severity": "HIGH",
+        "message": "No network firewall detected in architecture"
+      },
+      "network_segmentation": {
+        "check": "architectureMetadata.hasNetworkSegmentation === true && node.data.securityFlags.networkSegmentation !== 'none'",
+        "severity": "HIGH",
+        "message": "Network segmentation not implemented"
+      },
+      "audit_logging": {
+        "check": "node.data.securityFlags.auditLoggingEnabled === true",
+        "severity": "MEDIUM",
+        "message": "Component {node.id} does not have audit logging enabled"
+      },
+      "database_activity_monitoring": {
+        "check": "node.data.type === 'database' && node.data.securityFlags.activityMonitoring === true",
+        "severity": "MEDIUM",
+        "message": "Database {node.id} does not have activity monitoring"
+      },
+      "direct_database_access": {
+        "check": "node.data.type === 'database' && node.data.securityFlags.directInternetAccess === false",
+        "severity": "CRITICAL",
+        "message": "Database {node.id} is directly accessible from internet"
+      },
+      "dns_security": {
+        "check": "architectureMetadata.hasDNSSecurity === true && architectureMetadata.dnssecEnabled === true",
+        "severity": "LOW",
+        "message": "DNS security (DNSSEC) not enabled"
+      }
+    }
+  }
+}
