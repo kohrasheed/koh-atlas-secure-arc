@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koh Atlas - Low Level Design (LLD)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        
+        .container {
+            min-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #2d2d30;
+            padding: 20px;
+            border-left: 4px solid #007acc;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #4ec9b0;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #9cdcfe;
+            font-size: 14px;
+        }
+        
+        .diagram {
+            background: #252526;
+            padding: 40px;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .layer {
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        /* Connection Lines */
+        .connection-arrow {
+            position: absolute;
+            stroke: #007acc;
+            stroke-width: 2;
+            fill: none;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .connection-arrow-dashed {
+            stroke-dasharray: 5, 5;
+            stroke: #4ec9b0;
+        }
+        
+        .connection-label {
+            position: absolute;
+            background: #1e1e1e;
+            color: #9cdcfe;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            border: 1px solid #007acc;
+            white-space: nowrap;
+            z-index: 2;
+        }
+        
+        .port-badge {
+            background: #569cd6;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            display: inline-block;
+            margin: 2px;
+        }
+        
+        .protocol-badge {
+            background: #4ec9b0;
+            color: #1e1e1e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            display: inline-block;
+            margin: 2px;
+        }
+        
+        .layer-label {
+            color: #569cd6;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding: 8px 12px;
+            background: #1e1e1e;
+            display: inline-block;
+            border-radius: 4px;
+        }
+        
+        .components {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            position: relative;
+            justify-content: center;
+        }
+        
+        .component {
+            background: #2d2d30;
+            border: 2px solid #3e3e42;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 320px;
+            max-width: 400px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .component:hover {
+            border-color: #007acc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 122, 204, 0.3);
+        }
+        
+        .component-title {
+            color: #4ec9b0;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .component-id {
+            color: #ce9178;
+            font-size: 12px;
+            background: #1e1e1e;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .tech-stack {
+            color: #9cdcfe;
+            font-size: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #3e3e42;
+        }
+        
+        .specs {
+            font-size: 11px;
+            line-height: 1.6;
+        }
+        
+        .spec-line {
+            color: #d4d4d4;
+            margin-bottom: 4px;
+        }
+        
+        .spec-key {
+            color: #9cdcfe;
+        }
+        
+        .spec-value {
+            color: #ce9178;
+        }
+        
+        .connection {
+            color: #6a9955;
+            font-size: 11px;
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid #3e3e42;
+        }
+        
+        .connection-line {
+            margin-bottom: 4px;
+            line-height: 1.6;
+        }
+        
+        .arrow {
+            color: #569cd6;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .outbound {
+            border-left: 3px solid #4ec9b0;
+            padding-left: 8px;
+            margin-left: 4px;
+        }
+        
+        .inbound {
+            border-left: 3px solid #ce9178;
+            padding-left: 8px;
+            margin-left: 4px;
+        }
+        
+        .security-badge {
+            display: inline-block;
+            background: #0e639c;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: 4px;
+        }
+        
+        .critical {
+            background: #f48771;
+        }
+        
+        .high {
+            background: #ce9178;
+        }
+        
+        .flows {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .flows h2 {
+            color: #569cd6;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .flow {
+            font-size: 12px;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #252526;
+            border-left: 3px solid #007acc;
+            line-height: 1.6;
+        }
+        
+        .flow-path {
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+        
+        .flow-detail {
+            color: #d4d4d4;
+            margin-left: 20px;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .metric {
+            background: #2d2d30;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #4ec9b0;
+        }
+        
+        .metric-label {
+            color: #9cdcfe;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            color: #4ec9b0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>// KOH ATLAS - LOW LEVEL DESIGN (LLD)</h1>
+            <p>Enterprise Security Architecture | Version 2.0.0 | Production-Ready</p>
+        </div>
+        
+        <div class="diagram">
+            <!-- Layer 1: Client Tier -->
+            <div class="layer">
+                <div class="layer-label">// LAYER 1: CLIENT TIER (Untrusted Zone)</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">
+                            <span>React Frontend PWA</span>
+                            <span class="component-id">NODE-1</span>
+                        </div>
+                        <div class="tech-stack">React 19.0 + TypeScript 5.7.2 + Vite 6.4</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">Runtime:</span> <span class="spec-value">Browser (Chrome/Firefox/Safari)</span></div>
+                            <div class="spec-line"><span class="spec-key">Rendering:</span> <span class="spec-value">Client-Side Rendering (CSR)</span></div>
+                            <div class="spec-line"><span class="spec-key">Service Worker:</span> <span class="spec-value">Enabled (offline support)</span></div>
+                            <div class="spec-line"><span class="spec-key">CSP:</span> <span class="spec-value">default-src 'self'; script-src 'self' 'nonce-{random}'</span></div>
+                            <div class="spec-line"><span class="spec-key">Storage:</span> <span class="spec-value">IndexedDB (encrypted), Session Storage</span></div>
+                            <div class="spec-line"><span class="spec-key">Auth:</span> <span class="spec-value">JWT in httpOnly cookies</span></div>
+                        </div>
+                        <div class="connection">
+                            <div style="color: #4ec9b0; font-weight: bold; margin-bottom: 6px;">↓ OUTBOUND CONNECTIONS:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-2 (CloudFlare CDN)</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                                <span class="protocol-badge">HTTPS/3 (QUIC)</span>
+                                <span class="security-badge critical">TLS 1.3</span><br>
+                                <span style="color: #9cdcfe;">Cipher: AES-256-GCM | SNI: app.kohatlas.com</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Layer 2: Edge Security -->
+            <div class="layer">
+                <div class="layer-label">// LAYER 2: EDGE SECURITY (DDoS + WAF)</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">
+                            <span>CloudFlare CDN</span>
+                            <span class="component-id">NODE-2</span>
+                        </div>
+                        <div class="tech-stack">CloudFlare Enterprise | 280+ PoPs</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">DDoS Capacity:</span> <span class="spec-value">134 Tbps</span></div>
+                            <div class="spec-line"><span class="spec-key">Cache Hit Ratio:</span> <span class="spec-value">>95% (static assets)</span></div>
+                            <div class="spec-line"><span class="spec-key">TTL:</span> <span class="spec-value">HTML: 5min, CSS/JS: 1h, Images: 24h</span></div>
+                            <div class="spec-line"><span class="spec-key">Bot Management:</span> <span class="spec-value">JS Challenge + Captcha</span></div>
+                            <div class="spec-line"><span class="spec-key">Rate Limit:</span> <span class="spec-value">10,000 req/min per IP (global)</span></div>
+                        </div>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ INBOUND FROM:</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-1 (React Client)</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                                <span class="protocol-badge">HTTPS/3</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ OUTBOUND TO:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-3 (ModSecurity WAF)</strong><br>
+                                <span class="port-badge">PORT: 8080</span>
+                                <span class="protocol-badge">HTTP/1.1</span>
+                                <span class="security-badge">Internal LAN</span><br>
+                                <span style="color: #9cdcfe;">Network: 10.0.1.0/24 | 10 Gbps link</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="component">
+                        <div class="component-title">
+                            <span>ModSecurity WAF</span>
+                            <span class="component-id">NODE-3</span>
+                        </div>
+                        <div class="tech-stack">ModSecurity 3.0 + OWASP CRS 4.0</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">Paranoia Level:</span> <span class="spec-value">2 (balanced)</span></div>
+                            <div class="spec-line"><span class="spec-key">SQL Injection:</span> <span class="spec-value">942xxx rules (100+ patterns)</span></div>
+                            <div class="spec-line"><span class="spec-key">XSS Protection:</span> <span class="spec-value">941xxx rules (200+ patterns)</span></div>
+                            <div class="spec-line"><span class="spec-key">Geo-Blocking:</span> <span class="spec-value">Blocklist: CN, RU, KP</span></div>
+                            <div class="spec-line"><span class="spec-key">Request Inspection:</span> <span class="spec-value">Headers + Body (10MB max)</span></div>
+                        </div>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ INBOUND FROM:</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-2 (CloudFlare CDN)</strong><br>
+                                <span class="port-badge">PORT: 8080</span>
+                                <span style="color: #9cdcfe;">X-Forwarded-For header preserved</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ OUTBOUND TO:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-4 (HAProxy LB)</strong><br>
+                                <span class="port-badge">PORT: 8443</span>
+                                <span class="protocol-badge">HTTPS</span>
+                                <span class="security-badge critical">mTLS</span><br>
+                                <span style="color: #9cdcfe;">Client Cert: CN=waf.internal | Issuer: internal-ca</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Layer 3: Network Distribution -->
+            <div class="layer">
+                <div class="layer-label">// LAYER 3: NETWORK DISTRIBUTION</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">
+                            <span>HAProxy Load Balancer</span>
+                            <span class="component-id">NODE-4</span>
+                        </div>
+                        <div class="tech-stack">HAProxy 2.8 + Let's Encrypt</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">Algorithm:</span> <span class="spec-value">Round Robin (default), Least Conn (fallback)</span></div>
+                            <div class="spec-line"><span class="spec-key">SSL Termination:</span> <span class="spec-value">TLS 1.3 (RSA 4096 + ECDSA P-256)</span></div>
+                            <div class="spec-line"><span class="spec-key">Health Check:</span> <span class="spec-value">GET /health every 5s (timeout: 2s)</span></div>
+                            <div class="spec-line"><span class="spec-key">Session Persistence:</span> <span class="spec-value">Cookie-based (24h TTL)</span></div>
+                            <div class="spec-line"><span class="spec-key">Max Connections:</span> <span class="spec-value">1000 concurrent</span></div>
+                        </div>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ INBOUND FROM:</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-3 (ModSecurity WAF)</strong><br>
+                                <span class="port-badge">PORT: 8443</span>
+                                <span class="protocol-badge">HTTPS (mTLS)</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ OUTBOUND TO:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-5 (API Gateway)</strong><br>
+                                <span class="port-badge">PORT: 3000</span>
+                                <span class="protocol-badge">HTTP/2</span>
+                                <span class="security-badge critical">mTLS</span><br>
+                                <span style="color: #9cdcfe;">Cert: CN=api-*.internal | Keep-Alive: 60s</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Layer 4: Application -->
+            <div class="layer">
+                <div class="layer-label">// LAYER 4: APPLICATION TIER</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">
+                            <span>API Gateway</span>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ INBOUND FROM:</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-4 (HAProxy LB)</strong><br>
+                                <span class="port-badge">PORT: 3000</span>
+                                <span class="protocol-badge">HTTP/2</span>
+                                <span style="color: #9cdcfe;">Load balanced across 4 instances</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ OUTBOUND TO:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-6 (Vault)</strong><br>
+                                <span class="port-badge">PORT: 8200</span>
+                                <span class="protocol-badge">HTTPS</span>
+                                <span class="security-badge">TLS 1.3</span><br>
+                                <span style="color: #9cdcfe;">Token: X-Vault-Token (AppRole, 1h TTL)</span>
+                            </div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-7 (PostgreSQL)</strong><br>
+                                <span class="port-badge">PORT: 5432</span>
+                                <span class="protocol-badge">PostgreSQL Wire</span>
+                                <span class="security-badge critical">mTLS</span><br>
+                                <span style="color: #9cdcfe;">User: dynamic (from Vault) | Pool: PgBouncer</span>
+                            </div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-8 (Redis)</strong><br>
+                                <span class="port-badge">PORT: 6379</span>
+                                <span class="protocol-badge">RESP3</span>
+                                <span class="security-badge">TLS 1.3</span><br>
+                                <span style="color: #9cdcfe;">Auth: ACL user (from Vault) | Sentinel: 26379</span>
+                            </div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-9 (Workers)</strong><br>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ INBOUND FROM:</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-5 (API Gateway)</strong><br>
+                                <span style="color: #9cdcfe;">Via BullMQ job queue (async)</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ OUTBOUND TO:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-6 (Vault)</strong><br>
+                                <span class="port-badge">PORT: 8200</span>
+                                <span class="protocol-badge">HTTPS</span><br>
+                                <span style="color: #9cdcfe;">Fetch: DB creds, Anthropic API key, AWS STS</span>
+                            </div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-7 (PostgreSQL Replica)</strong><br>
+                                <span class="port-badge">PORT: 5432</span>
+                                <span class="protocol-badge">Read-Only</span>
+                                <span class="security-badge critical">mTLS</span><br>
+                                <span style="color: #9cdcfe;">Queries: SELECT only (no INSERT/UPDATE/DELETE)</span>
+                            </div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-8 (Redis)</strong><br>
+                                <span class="port-badge">PORT: 6379</span>
+                                <span class="protocol-badge">RESP3</span><br>
+                                <span style="color: #9cdcfe;">BullMQ: XREAD, XACK, XDEL commands</span>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ INBOUND CONNECTIONS (Clients):</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-5 (API Gateway)</strong><br>
+                                <span class="port-badge">PORT: 8200</span>
+                                <span class="protocol-badge">HTTPS</span>
+                                <span style="color: #9cdcfe;">Endpoint: /v1/secret/data/db-creds</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-9 (Workers)</strong><br>
+                                <span class="port-badge">PORT: 8200</span>
+                                <span style="color: #9cdcfe;">Endpoints: /v1/aws/sts/deploy, /v1/secret/data/anthropic</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-7 (PostgreSQL)</strong><br>
+                                <span style="color: #9cdcfe;">Dynamic creds: 1h TTL, auto-revoked</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-8 (Redis)</strong><br>
+                                <span style="color: #9cdcfe;">Dynamic ACLs: 24h TTL</span>
+                            </div>
+                        </div>  <span class="arrow">→</span> <strong>NODE-10 (S3)</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                                <span class="protocol-badge">HTTPS (AWS SigV4)</span><br>
+                                <span style="color: #9cdcfe;">Operations: PutObject, GetObject (pre-signed URLs)</span>
+                            </div>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ INBOUND CONNECTIONS:</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-5 (API Gateway)</strong><br>
+                                <span class="port-badge">PORT: 6432 (PgBouncer)</span>
+                                <span class="protocol-badge">PostgreSQL Wire</span>
+                                <span class="security-badge critical">mTLS</span><br>
+                                <span style="color: #9cdcfe;">Mode: Transaction pooling | Permissions: Read/Write</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-9 (Workers)</strong><br>
+                                <span class="port-badge">PORT: 5433 (Replica)</span>
+                                <span class="protocol-badge">Read-Only</span>
+                                <span class="security-badge critical">mTLS</span><br>
+                                <span style="color: #9cdcfe;">Mode: Statement pooling | Permissions: SELECT only</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ OUTBOUND TO:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>NODE-10 (S3 - Backups)</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ INBOUND CONNECTIONS:</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-5 (API Gateway)</strong><br>
+                                <span class="port-badge">PORT: 6379</span>
+                                <span class="protocol-badge">RESP3</span>
+                                <span class="security-badge">TLS 1.3</span><br>
+                                <span style="color: #9cdcfe;">Use: Session storage, Cache, Rate limiting</span><br>
+                                <span style="color: #9cdcfe;">Commands: GET, SET, INCR, EXPIRE, HGET, HSET</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-9 (Workers)</strong><br>
+                                <span class="port-badge">PORT: 6379</span>
+                                <span class="protocol-badge">BullMQ (RESP3)</span><br>
+                                <span style="color: #9cdcfe;">Commands: XADD, XREAD, XACK, XDEL (Stream ops)</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ CLUSTER COMMUNICATION:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">↔</span> <strong>Redis Cluster Nodes</strong><br>
+                                <span class="port-badge">PORT: 16379</span>
+                                <span class="protocol-badge">Redis Cluster Bus</span><br>
+                                <span style="color: #9cdcfe;">Gossip protocol: Node health, slot mapping</span>
+                            </div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">↔</span> <strong>Sentinel Nodes</strong><br>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ INBOUND CONNECTIONS:</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-5 (API Gateway)</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                                <span class="protocol-badge">HTTPS (AWS SigV4)</span><br>
+                                <span style="color: #9cdcfe;">Operations: GeneratePresignedUrl (1h TTL)</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-9 (Workers)</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                                <span class="protocol-badge">HTTPS (AWS SigV4)</span><br>
+                                <span style="color: #9cdcfe;">Operations: PutObject (exports, PDFs), GetObject</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-7 (PostgreSQL)</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                                <span style="color: #9cdcfe;">WAL archiving + pg_basebackup uploads</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-1 (Client Browser)</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                                <span class="protocol-badge">HTTPS</span><br>
+                                <span style="color: #9cdcfe;">Direct upload via pre-signed URLs (bypass server)</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ REPLICATION:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>S3 us-west-2 (DR Region)</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                                <span class="protocol-badge">S3 Cross-Region Replication</span><br>
+                                <span style="color: #9cdcfe;">Async replication: All objects, all versions</span>
+                            </div>
+                        </div>  <span style="color: #9cdcfe;">Monitoring: Master election, failover (< 10s)</span>
+                            </div>
+                        </div>div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>Replica Nodes (Streaming)</strong><br>
+                                <span class="port-badge">PORT: 5432</span>
+                                <span class="protocol-badge">PostgreSQL Replication</span><br>
+                                <span style="color: #9cdcfe;">Protocol: Streaming replication | Lag: < 100ms</span>
+                            </div>
+                        </div>  <span class="port-badge">PORT: 443</span>
+                                <span class="protocol-badge">HTTPS</span><br>
+                                <span style="color: #9cdcfe;">Model: Claude 3.5 Sonnet | X-API-Key auth</span>
+                            </div>
+                        </div>  <span style="color: #9cdcfe;">Queues: security-analysis, export-pdf, email</span>
+                            </div>
+                        </div>lass="specs">
+                            <div class="spec-line"><span class="spec-key">Instances:</span> <span class="spec-value">4x (PM2 cluster mode)</span></div>
+                            <div class="spec-line"><span class="spec-key">Memory:</span> <span class="spec-value">2GB per instance</span></div>
+                            <div class="spec-line"><span class="spec-key">Auth:</span> <span class="spec-value">JWT RS256 (15min access, 7d refresh)</span></div>
+                            <div class="spec-line"><span class="spec-key">Validation:</span> <span class="spec-value">Zod 3.22 (runtime type checking)</span></div>
+                        <div class="connection">
+                            <div style="color: #ce9178; font-weight: bold; margin-bottom: 6px;">↓ SCRAPE TARGETS (Pull-Based):</div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-5 (API Gateway)</strong><br>
+                                <span class="port-badge">PORT: 9090</span>
+                                <span class="protocol-badge">HTTP /metrics</span><br>
+                                <span style="color: #9cdcfe;">Interval: 15s | Format: Prometheus exposition</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-7 (PostgreSQL)</strong><br>
+                                <span class="port-badge">PORT: 9187</span>
+                                <span class="protocol-badge">postgres_exporter</span><br>
+                                <span style="color: #9cdcfe;">Metrics: Connections, queries, replication lag</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-8 (Redis)</strong><br>
+                                <span class="port-badge">PORT: 9121</span>
+                                <span class="protocol-badge">redis_exporter</span><br>
+                                <span style="color: #9cdcfe;">Metrics: Memory, keys, commands/sec, hit rate</span>
+                            </div>
+                            <div class="connection-line inbound">
+                                <span class="arrow">←</span> <strong>NODE-9 (Workers)</strong><br>
+                                <span class="port-badge">PORT: 9090</span>
+                                <span style="color: #9cdcfe;">Metrics: Job processing, queue depth, failures</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ LOG AGGREGATION (Push-Based):</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">←</span> <strong>All Services → Elasticsearch</strong><br>
+                                <span class="port-badge">PORT: 9200</span>
+                                <span class="protocol-badge">HTTP (JSON)</span><br>
+                                <span style="color: #9cdcfe;">Agent: Filebeat | Format: JSON structured logs</span>
+                            </div>
+                            <div style="color: #4ec9b0; font-weight: bold; margin: 8px 0 6px;">↓ ALERTING:</div>
+                            <div class="connection-line outbound">
+                                <span class="arrow">→</span> <strong>PagerDuty / Slack</strong><br>
+                                <span class="port-badge">PORT: 443</span>
+                                <span class="protocol-badge">HTTPS Webhook</span><br>
+                                <span style="color: #9cdcfe;">Triggers: CPU > 80%, Memory > 90%, 5xx > 1%</span>
+                            </div>
+                        </div>iv class="spec-line"><span class="spec-key">Endpoints:</span> <span class="spec-value">/api/v1/* (versioned)</span></div>
+                        </div>
+                        <div class="connection">
+                            <div class="connection-line"><span class="arrow">→</span> Vault (NODE-6) <span class="security-badge">HTTPS:8200</span> | PostgreSQL (NODE-7) <span class="security-badge critical">mTLS:5432</span></div>
+                            <div class="connection-line"><span class="arrow">→</span> Redis (NODE-8) <span class="security-badge">TLS:6379</span> | Workers (NODE-9) <span class="security-badge">BullMQ</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="component">
+                        <div class="component-title">
+                            <span>Background Workers</span>
+                            <span class="component-id">NODE-9</span>
+                        </div>
+                        <div class="tech-stack">Node.js 22 + BullMQ 5.x + VM2 Sandbox</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">Instances:</span> <span class="spec-value">4-10x (auto-scale CPU > 70%)</span></div>
+                            <div class="spec-line"><span class="spec-key">Memory:</span> <span class="spec-value">4GB per worker</span></div>
+                            <div class="spec-line"><span class="spec-key">Concurrency:</span> <span class="spec-value">10 jobs per worker</span></div>
+                            <div class="spec-line"><span class="spec-key">Queues:</span> <span class="spec-value">security-analysis, export-pdf, email-notifications</span></div>
+                            <div class="spec-line"><span class="spec-key">DB Access:</span> <span class="spec-value">Read-only (SELECT only)</span></div>
+                            <div class="spec-line"><span class="spec-key">AI Integration:</span> <span class="spec-value">Anthropic Claude 3.5 Sonnet</span></div>
+                        </div>
+                        <div class="connection">
+                            <div class="connection-line"><span class="arrow">→</span> PostgreSQL Read-Only (NODE-7) | Redis (NODE-8) | S3 (NODE-10)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Layer 5: Security -->
+            <div class="layer">
+                <div class="layer-label">// LAYER 5: SECURITY TIER</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">
+                            <span>HashiCorp Vault</span>
+                            <span class="component-id">NODE-6</span>
+                        </div>
+                        <div class="tech-stack">Vault Enterprise 1.15 + Raft Storage</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">Deployment:</span> <span class="spec-value">HA Cluster (3 nodes, quorum 2)</span></div>
+                            <div class="spec-line"><span class="spec-key">Storage:</span> <span class="spec-value">Raft Integrated (consensus-based)</span></div>
+                            <div class="spec-line"><span class="spec-key">Auto-Unseal:</span> <span class="spec-value">AWS KMS (automatic on restart)</span></div>
+                            <div class="spec-line"><span class="spec-key">Engines:</span> <span class="spec-value">KV v2, Database, PKI, Transit, AWS</span></div>
+                            <div class="spec-line"><span class="spec-key">Dynamic Creds:</span> <span class="spec-value">PostgreSQL (1h), Redis (24h), AWS (15min)</span></div>
+                            <div class="spec-line"><span class="spec-key">Audit Log:</span> <span class="spec-value">File + Syslog (2 year retention)</span></div>
+                        </div>
+                        <div class="connection">
+                            <div class="connection-line"><span class="arrow">←</span> Consumed by: API Gateway, Workers, PostgreSQL, Redis</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Layer 6: Data -->
+            <div class="layer">
+                <div class="layer-label">// LAYER 6: DATA TIER</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">
+                            <span>PostgreSQL Primary</span>
+                            <span class="component-id">NODE-7</span>
+                        </div>
+                        <div class="tech-stack">PostgreSQL 16.1 + Patroni + PgBouncer</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">Instance:</span> <span class="spec-value">r6g.2xlarge (8 vCPU, 64GB RAM)</span></div>
+                            <div class="spec-line"><span class="spec-key">Storage:</span> <span class="spec-value">3TB gp3 SSD (16K IOPS, 1GB/s)</span></div>
+                            <div class="spec-line"><span class="spec-key">Replication:</span> <span class="spec-value">Streaming (1 primary + 2 replicas)</span></div>
+                            <div class="spec-line"><span class="spec-key">Encryption:</span> <span class="spec-value">AES-256 at rest (KMS), TLS 1.3 in transit</span></div>
+                            <div class="spec-line"><span class="spec-key">Pooling:</span> <span class="spec-value">PgBouncer (500 client → 100 backend)</span></div>
+                            <div class="spec-line"><span class="spec-key">Backup:</span> <span class="spec-value">Daily full + 5min WAL (RPO < 5min)</span></div>
+                            <div class="spec-line"><span class="spec-key">ORM:</span> <span class="spec-value">Prisma 5.x (type-safe queries)</span></div>
+                        </div>
+                        <div class="connection">
+                            <div class="connection-line"><span class="arrow">←</span> Read/Write: API Gateway | Read-Only: Workers</div>
+                        </div>
+                    </div>
+                    
+                    <div class="component">
+                        <div class="component-title">
+                            <span>Redis Cluster</span>
+                            <span class="component-id">NODE-8</span>
+                        </div>
+                        <div class="tech-stack">Redis 7.2 + Sentinel (HA)</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">Architecture:</span> <span class="spec-value">6 nodes (3 masters + 3 replicas)</span></div>
+                            <div class="spec-line"><span class="spec-key">Instance:</span> <span class="spec-value">r7g.xlarge (4 vCPU, 32GB RAM)</span></div>
+                            <div class="spec-line"><span class="spec-key">Sharding:</span> <span class="spec-value">Hash slots (16,384 slots / 3 masters)</span></div>
+                            <div class="spec-line"><span class="spec-key">Failover:</span> <span class="spec-value">Sentinel (< 10s downtime)</span></div>
+                            <div class="spec-line"><span class="spec-key">Use Cases:</span> <span class="spec-value">Sessions, Cache, Rate Limit, BullMQ</span></div>
+                            <div class="spec-line"><span class="spec-key">Persistence:</span> <span class="spec-value">RDB (hourly) + AOF (everysec)</span></div>
+                            <div class="spec-line"><span class="spec-key">ACLs:</span> <span class="spec-value">Per-user permissions (v2)</span></div>
+                        </div>
+                        <div class="connection">
+                            <div class="connection-line"><span class="arrow">←</span> Used by: API Gateway (cache), Workers (BullMQ)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Layer 7: Storage & Observability -->
+            <div class="layer">
+                <div class="layer-label">// LAYER 7: STORAGE & OBSERVABILITY</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">
+                            <span>S3 Storage</span>
+                            <span class="component-id">NODE-10</span>
+                        </div>
+                        <div class="tech-stack">AWS S3 + KMS + Lifecycle Policies</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">Buckets:</span> <span class="spec-value">user-uploads, backups, audit-logs, exports</span></div>
+                            <div class="spec-line"><span class="spec-key">Encryption:</span> <span class="spec-value">SSE-KMS (AES-256, yearly rotation)</span></div>
+                            <div class="spec-line"><span class="spec-key">Versioning:</span> <span class="spec-value">Enabled (10 versions, 90d retention)</span></div>
+                            <div class="spec-line"><span class="spec-key">Object Lock:</span> <span class="spec-value">WORM mode (audit logs, 7 years)</span></div>
+                            <div class="spec-line"><span class="spec-key">Lifecycle:</span> <span class="spec-value">Standard → IA (30d) → Glacier (90d)</span></div>
+                            <div class="spec-line"><span class="spec-key">Replication:</span> <span class="spec-value">Cross-region (us-east-1 → us-west-2)</span></div>
+                        </div>
+                        <div class="connection">
+                            <div class="connection-line"><span class="arrow">←</span> Uploads: API Gateway, Workers | Access: Pre-signed URLs (1h)</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="component">
+                        <div class="component-title">
+                            <span>Monitoring Stack</span>
+                            <span class="component-id">NODE-11</span>
+                        </div>
+                        <div class="tech-stack">Prometheus + Grafana + Sentry + ELK + Jaeger</div>
+                        <div class="specs">
+                            <div class="spec-line"><span class="spec-key">Metrics:</span> <span class="spec-value">Prometheus (15s scrape, 90d retention)</span></div>
+                            <div class="spec-line"><span class="spec-key">Dashboards:</span> <span class="spec-value">Grafana 10.x (OAuth SSO)</span></div>
+                            <div class="spec-line"><span class="spec-key">Logs:</span> <span class="spec-value">Elasticsearch + Kibana (7d hot, 90d cold)</span></div>
+                            <div class="spec-line"><span class="spec-key">Errors:</span> <span class="spec-value">Sentry (session replay, performance)</span></div>
+                            <div class="spec-line"><span class="spec-key">Tracing:</span> <span class="spec-value">Jaeger (10% sampling, 90d retention)</span></div>
+                            <div class="spec-line"><span class="spec-key">Alerting:</span> <span class="spec-value">Alertmanager → PagerDuty/Slack</span></div>
+                        </div>
+                        <div class="connection">
+                            <div class="connection-line"><span class="arrow">←</span> Metrics from: All services (15s interval)</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Flows -->
+        <div class="flows">
+            <h2>// DATA FLOWS & COMMUNICATION PROTOCOLS</h2>
+            
+            <div class="flow">
+                <div class="flow-path">Flow 1: User Authentication</div>
+                <div class="flow-detail">1. Client (NODE-1) → CDN (NODE-2) → WAF (NODE-3) → LB (NODE-4) → API Gateway (NODE-5)</div>
+                <div class="flow-detail">2. API Gateway → Vault (NODE-6) [fetch DB credentials]</div>
+                <div class="flow-detail">3. API Gateway → PostgreSQL (NODE-7) [verify user, bcrypt hash check]</div>
+                <div class="flow-detail">4. API Gateway → Redis (NODE-8) [store session with 24h TTL]</div>
+                <div class="flow-detail">5. API Gateway → Client [return JWT in httpOnly cookie, 15min expiry]</div>
+                <div class="flow-detail">Protocol: HTTPS → mTLS → PostgreSQL wire protocol (TLS 1.3) → RESP3 (TLS 1.3)</div>
+            </div>
+            
+            <div class="flow">
+                <div class="flow-path">Flow 2: Architecture Design Creation</div>
+                <div class="flow-detail">1. Client (NODE-1) → POST /api/v1/designs [JWT in cookie]</div>
+                <div class="flow-detail">2. API Gateway (NODE-5) [validate JWT, check rate limit in Redis]</div>
+                <div class="flow-detail">3. API Gateway → PostgreSQL (NODE-7) [INSERT into designs table with JSONB]</div>
+                <div class="flow-detail">4. API Gateway → Redis (NODE-8) [invalidate cache for GET /designs]</div>
+                <div class="flow-detail">5. Return 201 Created with design ID</div>
+                <div class="flow-detail">Protocol: TLS 1.3 end-to-end, mTLS for internal services</div>
+            </div>
+            
+            <div class="flow">
+                <div class="flow-path">Flow 3: Security Analysis (Async Job)</div>
+                <div class="flow-detail">1. Client → POST /api/v1/analysis/security [design_id]</div>
+                <div class="flow-detail">2. API Gateway (NODE-5) → Redis (NODE-8) [XADD to security-analysis queue via BullMQ]</div>
+                <div class="flow-detail">3. Return 202 Accepted with job_id</div>
+                <div class="flow-detail">4. Worker (NODE-9) [XREAD from queue] → PostgreSQL (NODE-7) [SELECT design (read-only)]</div>
+                <div class="flow-detail">5. Worker → Vault (NODE-6) [fetch Anthropic API key]</div>
+                <div class="flow-detail">6. Worker → Anthropic API [send design for analysis]</div>
+                <div class="flow-detail">7. Worker → PostgreSQL (NODE-7) [UPDATE analysis_results]</div>
+                <div class="flow-detail">8. Worker → Redis (NODE-8) [XACK job completion]</div>
+                <div class="flow-detail">Protocol: BullMQ (Redis Streams) → TLS 1.3 for all external calls</div>
+            </div>
+            
+            <div class="flow">
+                <div class="flow-path">Flow 4: PDF Export</div>
+                <div class="flow-detail">1. Client → POST /api/v1/exports/pdf [design_id]</div>
+                <div class="flow-detail">2. API Gateway → Redis (BullMQ) [queue export-pdf job]</div>
+                <div class="flow-detail">3. Worker (NODE-9) [Puppeteer headless Chrome] → render design to PDF</div>
+                <div class="flow-detail">4. Worker → Vault (NODE-6) [fetch AWS STS credentials (15min TTL)]</div>
+                <div class="flow-detail">5. Worker → S3 (NODE-10) [PutObject to exports bucket, SSE-KMS encryption]</div>
+                <div class="flow-detail">6. Worker → API Gateway [job complete with S3 key]</div>
+                <div class="flow-detail">7. API Gateway → Client [return pre-signed URL (1h expiry)]</div>
+                <div class="flow-detail">Protocol: TLS 1.3, AWS Signature v4 for S3 authentication</div>
+            </div>
+            
+            <div class="flow">
+                <div class="flow-path">Flow 5: Metrics Collection</div>
+                <div class="flow-detail">1. Prometheus (NODE-11) [scrape /metrics endpoint every 15s]</div>
+                <div class="flow-detail">2. Targets: API Gateway (NODE-5), Workers (NODE-9), PostgreSQL (NODE-7), Redis (NODE-8)</div>
+                <div class="flow-detail">3. Exporters: postgres_exporter, redis_exporter, node_exporter, prom-client</div>
+                <div class="flow-detail">4. Grafana queries Prometheus [PromQL] → render dashboards</div>
+                <div class="flow-detail">5. Alertmanager evaluates rules → PagerDuty/Slack webhooks</div>
+                <div class="flow-detail">Protocol: HTTP (Prometheus scrape), TLS 1.3, Basic Auth</div>
+            </div>
+            
+            <div class="flow">
+                <div class="flow-path">Flow 6: Backup & Disaster Recovery</div>
+                <div class="flow-detail">1. PostgreSQL (NODE-7) [pg_basebackup daily at 2 AM UTC]</div>
+                <div class="flow-detail">2. PostgreSQL → S3 (NODE-10) [upload to backups bucket, encrypted]</div>
+                <div class="flow-detail">3. WAL archiving every 5 minutes → S3 (continuous backup)</div>
+                <div class="flow-detail">4. S3 cross-region replication → us-west-2 (DR region)</div>
+                <div class="flow-detail">5. Vault (NODE-6) [Raft snapshot every 6 hours] → S3</div>
+                <div class="flow-detail">6. Redis (NODE-8) [RDB snapshot daily] → S3</div>
+                <div class="flow-detail">Protocol: AWS S3 API (TLS 1.3), PostgreSQL native backup protocol</div>
+            </div>
+        </div>
+        
+        <!-- Performance Metrics -->
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Request Latency (p95)</div>
+                <div class="metric-value">< 200ms</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Throughput</div>
+                <div class="metric-value">1M req/day</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Availability SLA</div>
+                <div class="metric-value">99.95%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Cache Hit Ratio</div>
+                <div class="metric-value">> 80%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">RTO (Recovery Time)</div>
+                <div class="metric-value">< 1 hour</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">RPO (Data Loss)</div>
+                <div class="metric-value">< 5 min</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Concurrent Users</div>
+                <div class="metric-value">100K+</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Monthly Cost</div>
+                <div class="metric-value">$3.5K-4.5K</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

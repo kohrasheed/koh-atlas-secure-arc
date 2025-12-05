@@ -1,0 +1,2068 @@
+{
+  "version": "2.0.0-enterprise",
+  "timestamp": 1733270400000,
+  "projectName": "Koh Atlas Enterprise Security Architecture - Complete Implementation",
+  "description": "Production-ready secure architecture with comprehensive security controls, monitoring, and compliance. All 27 critical security issues resolved with defense-in-depth approach.",
+  "metadata": {
+    "securityRating": "A- (8.5/10)",
+    "compliance": ["SOC2 Type II", "ISO27001:2022", "GDPR Article 32", "HIPAA", "PCI-DSS v4.0", "NIST 800-53", "CIS Benchmarks v8"],
+    "issuesResolved": 27,
+    "criticalIssuesFixed": 3,
+    "highIssuesFixed": 8,
+    "mediumIssuesFixed": 10,
+    "lowIssuesFixed": 6,
+    "estimatedMonthlyCost": "$3500-4500",
+    "scalability": "100K+ concurrent users",
+    "availability": "99.95% SLA",
+    "rpo": "5 minutes",
+    "rto": "1 hour",
+    "lastSecurityAudit": "2025-12-02",
+    "nextPenetrationTest": "2026-03-01"
+  },
+  "nodes": [
+    {
+      "id": "1",
+      "type": "custom",
+      "position": {"x": 100, "y": 50},
+      "data": {
+        "type": "web-browser",
+        "label": "React Frontend PWA",
+        "zone": "Client Tier (Untrusted)",
+        "description": "Progressive Web App with TypeScript, React 19, and Vite 6",
+        "technology": "React 19 + TypeScript 5.7 + Vite 6 + Tailwind CSS",
+        "security": {
+          "contentSecurityPolicy": "default-src 'self'; script-src 'self' 'strict-dynamic' 'nonce-{random}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss://api.kohatlas.com; frame-ancestors 'none'",
+          "headers": [
+            "X-Frame-Options: DENY",
+            "X-Content-Type-Options: nosniff",
+            "X-XSS-Protection: 1; mode=block",
+            "Referrer-Policy: strict-origin-when-cross-origin",
+            "Permissions-Policy: geolocation=(), microphone=(), camera=()",
+            "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload"
+          ],
+          "subresourceIntegrity": "Enabled for all CDN assets with SHA-384 hashes",
+          "sessionStorage": "httpOnly cookies only (NO localStorage for JWT)",
+          "xssProtection": "Input sanitization with DOMPurify",
+          "csrfProtection": "Double submit cookie pattern for state-changing operations"
+        },
+        "features": [
+          "Service Worker (offline mode with encrypted cache)",
+          "Code splitting and lazy loading (per route)",
+          "WebSocket client (TLS 1.3 with automatic reconnection)",
+          "Client-side validation (first line of defense)",
+          "Session timeout: 15 minutes idle, 8 hours absolute",
+          "Automatic logout on suspicious activity"
+        ],
+        "dependencies": {
+          "runtime": ["React 19", "React Router v6", "ReactFlow", "Socket.io-client"],
+          "security": ["DOMPurify", "zod (client-side validation)"],
+          "monitoring": ["@sentry/react", "web-vitals"]
+        }
+      },
+      "measured": {"width": 200, "height": 150}
+    },
+    {
+      "id": "2",
+      "type": "custom",
+      "position": {"x": 100, "y": 240},
+      "data": {
+        "type": "edge-cdn",
+        "label": "CloudFlare CDN + DDoS Protection",
+        "zone": "Edge Security Layer",
+        "description": "Global CDN with integrated WAF and DDoS mitigation",
+        "technology": "CloudFlare Enterprise with Argo Smart Routing",
+        "security": {
+          "ddosProtection": {
+            "layer3_4": "Automatic mitigation (SYN flood, UDP amplification, ACK flood)",
+            "layer7": "HTTP flood protection with JavaScript challenge and rate limiting",
+            "capacity": "134 Tbps global network",
+            "mitigationTime": "<3 seconds"
+          },
+          "wafRules": [
+            "OWASP ModSecurity Core Rule Set 3.3",
+            "SQL injection detection (942xxx rules)",
+            "XSS protection (941xxx rules)",
+            "Path traversal prevention (930xxx rules)",
+            "Remote code execution blocking (932xxx rules)",
+            "PHP injection protection (933xxx rules)",
+            "Command injection prevention",
+            "SSRF protection",
+            "XXE attack blocking",
+            "Deserialization vulnerability protection"
+          ],
+          "rateLimiting": {
+            "global": "10000 req/min per IP (sliding window)",
+            "burst": "100 requests",
+            "challeging": "Automatic CAPTCHA after 3 rate limit hits",
+            "blockDuration": "1 hour for repeated violations"
+          },
+          "botManagement": {
+            "enabled": true,
+            "machinelearning": "ML-based bot detection",
+            "challenges": ["JavaScript challenge", "CAPTCHA", "Managed challenge"],
+            "allowedBots": ["Google", "Bing", "legitimate crawlers"]
+          },
+          "tlsConfiguration": {
+            "minVersion": "TLS 1.3",
+            "cipherSuites": ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+            "http3": "Enabled (QUIC protocol)",
+            "zeroRTT": "Enabled for performance"
+          }
+        },
+        "caching": {
+          "staticAssets": "max-age=31536000, immutable",
+          "dynamicContent": "no-cache, no-store, must-revalidate",
+          "compression": "Brotli level 11 + Gzip fallback",
+          "purgeApi": "Instant cache purge on deployment"
+        },
+        "monitoring": {
+          "realTimeAnalytics": true,
+          "threatIntelligence": "Integrated with CloudFlare threat feeds",
+          "logRetention": "30 days"
+        }
+      },
+      "measured": {"width": 200, "height": 140}
+    },
+    {
+      "id": "3",
+      "type": "custom",
+      "position": {"x": 380, "y": 50},
+      "data": {
+        "type": "waf",
+        "label": "Application WAF (ModSecurity)",
+        "zone": "Security Perimeter",
+        "description": "Layer 7 Web Application Firewall with custom rules",
+        "technology": "ModSecurity 3.x + OWASP CRS 4.0 + Custom Rules",
+        "security": {
+          "ruleEngine": "ModSecurity with paranoia level 2",
+          "corRules": [
+            "REQUEST-901-INITIALIZATION",
+            "REQUEST-905-COMMON-EXCEPTIONS",
+            "REQUEST-911-METHOD-ENFORCEMENT",
+            "REQUEST-913-SCANNER-DETECTION",
+            "REQUEST-920-PROTOCOL-ENFORCEMENT",
+            "REQUEST-921-PROTOCOL-ATTACK",
+            "REQUEST-930-APPLICATION-ATTACK-LFI",
+            "REQUEST-931-APPLICATION-ATTACK-RFI",
+            "REQUEST-932-APPLICATION-ATTACK-RCE",
+            "REQUEST-933-APPLICATION-ATTACK-PHP",
+            "REQUEST-941-APPLICATION-ATTACK-XSS",
+            "REQUEST-942-APPLICATION-ATTACK-SQLI",
+            "REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION",
+            "REQUEST-944-APPLICATION-ATTACK-JAVA"
+          ],
+          "customRules": [
+            "Block requests with SQL keywords in URLs",
+            "Reject User-Agent: curl/wget/python-requests",
+            "Enforce Content-Type: application/json for API requests",
+            "Block requests without Accept header",
+            "Limit request body size to 5MB",
+            "Validate JSON structure and depth (max 10 levels)"
+          ],
+          "rateLimiting": {
+            "perIP": "100 req/min (burst: 20)",
+            "perEndpoint": {
+              "/api/v1/analyze": "5 req/min per authenticated user",
+              "/api/v1/auth/login": "5 attempts per 15 minutes",
+              "/api/v1/architectures": "60 req/min per user"
+            },
+            "implementation": "Redis-backed atomic counters",
+            "response": "429 Too Many Requests with Retry-After header"
+          },
+          "geoBlocking": {
+            "mode": "whitelist",
+            "allowedCountries": ["US", "CA", "GB", "EU", "AU", "JP"],
+            "blockedCountries": "Known high-risk regions from threat intelligence"
+          },
+          "ipReputation": {
+            "enabled": true,
+            "sources": ["AbuseIPDB", "Spamhaus", "CloudFlare Threat Feed"],
+            "autoBlock": "Automatically block IPs with reputation score < 20"
+          }
+        },
+        "logging": {
+          "allBlocked": true,
+          "sampledAllowed": "10% of allowed requests",
+          "destination": "SIEM + CloudWatch Logs",
+          "retention": "90 days"
+        }
+      },
+      "measured": {"width": 220, "height": 160}
+    },
+    {
+      "id": "4",
+      "type": "custom",
+      "position": {"x": 380, "y": 250},
+      "data": {
+        "type": "load-balancer-global",
+        "label": "HA Proxy Load Balancer",
+        "zone": "Network Distribution Layer",
+        "description": "Layer 7 load balancer with SSL termination and health checks",
+        "technology": "HAProxy 2.8 Enterprise / AWS ALB / Azure Application Gateway",
+        "deployment": {
+          "highAvailability": "Active-Active across 3 AZs",
+          "autoscaling": "Elastic load balancing with auto-scaling",
+          "redundancy": "N+1 redundancy with automatic failover"
+        },
+        "security": {
+          "sslTermination": {
+            "enabled": true,
+            "protocols": ["TLSv1.3"],
+            "cipherSuites": [
+              "TLS_AES_256_GCM_SHA384",
+              "TLS_CHACHA20_POLY1305_SHA256",
+              "TLS_AES_128_GCM_SHA256"
+            ],
+            "certificateProvider": "Let's Encrypt with auto-renewal (90-day certs)",
+            "ocspStapling": "Enabled for performance",
+            "sessionResumption": "TLS session tickets (4-hour TTL)",
+            "sni": "Server Name Indication enabled",
+            "hsts": "max-age=31536000; includeSubDomains; preload"
+          },
+          "headers": [
+            "Strict-Transport-Security: max-age=31536000",
+            "X-Frame-Options: DENY",
+            "X-Content-Type-Options: nosniff",
+            "X-XSS-Protection: 1; mode=block"
+          ],
+          "attackPrevention": {
+            "slowloris": "Connection timeout: 10s, request timeout: 30s",
+            "requestSmuggling": "Strict HTTP parsing, reject ambiguous requests",
+            "hostHeaderInjection": "Validate Host header against whitelist"
+          }
+        },
+        "features": {
+          "algorithms": ["Round Robin", "Least Connections", "IP Hash"],
+          "activeAlgorithm": "Least Connections with health check weighting",
+          "sessionPersistence": {
+            "method": "Cookie-based sticky sessions",
+            "cookieName": "__lb_affinity",
+            "secure": true,
+            "httpOnly": true,
+            "sameSite": "Strict"
+          },
+          "healthChecks": {
+            "endpoint": "/health",
+            "interval": "5 seconds",
+            "timeout": "2 seconds",
+            "unhealthyThreshold": 3,
+            "healthyThreshold": 2,
+            "expectedStatus": 200
+          },
+          "connectionPooling": {
+            "maxConnections": 1000,
+            "maxIdleTime": "30 seconds",
+            "keepAlive": true
+          },
+          "protocolSupport": ["HTTP/1.1", "HTTP/2", "HTTP/3 (QUIC)", "WebSocket"]
+        },
+        "monitoring": {
+          "metrics": ["Request rate", "Error rate", "Response time", "Active connections", "Backend health"],
+          "alerts": [
+            "Backend unhealthy > 1 minute",
+            "Response time p99 > 500ms",
+            "Error rate > 1%"
+          ]
+        }
+      },
+      "measured": {"width": 220, "height": 160}
+    },
+    {
+      "id": "5",
+      "type": "custom",
+      "position": {"x": 700, "y": 100},
+      "data": {
+        "type": "api-gateway",
+        "label": "API Gateway",
+        "zone": "Application",
+        "technology": "Express 4.19 + TypeScript 5.7",
+        "runtime": {
+          "platform": "Node.js 22 LTS",
+          "clustering": "PM2 cluster mode (all CPU cores)",
+          "memory": "2GB per instance",
+          "instances": "4+ (auto-scaling based on CPU > 70%)"
+        },
+        "authentication": {
+          "primary": "JWT (RS256 asymmetric signing)",
+          "tokenExpiry": {
+            "access": "15 minutes",
+            "refresh": "7 days (rotating)",
+            "apiKey": "90 days (for M2M)"
+          },
+          "mfa": "TOTP enforced for admin endpoints",
+          "oauth2": "OAuth 2.0 + PKCE flow via Auth0/Clerk",
+          "sessionManagement": "Redis-backed with 24h idle timeout"
+        },
+        "authorization": {
+          "model": "RBAC + ABAC hybrid",
+          "roles": ["admin", "architect", "viewer", "auditor"],
+          "permissions": "Fine-grained resource-level (e.g., 'design:read', 'design:write')",
+          "enforcement": "Middleware chain + Casbin policy engine"
+        },
+        "inputValidation": {
+          "library": "Zod 3.22 for runtime type safety",
+          "sanitization": "DOMPurify + validator.js",
+          "maxPayload": "10MB (configurable per endpoint)",
+          "contentType": "Strict whitelist (application/json, multipart/form-data)",
+          "sqlInjection": "Parameterized queries only via Prisma ORM",
+          "xss": "All output escaped, CSP enforced",
+          "pathTraversal": "Path normalization + whitelist validation"
+        },
+        "rateLimiting": {
+          "global": "1000 req/min per IP",
+          "perEndpoint": {
+            "auth": "10 req/min (brute force protection)",
+            "api": "100 req/min (normal operations)",
+            "export": "5 req/min (resource-intensive)",
+            "upload": "20 req/hour (file operations)"
+          },
+          "implementation": "Redis sliding window + express-rate-limit",
+          "429Response": "Retry-After header + exponential backoff guidance"
+        },
+        "securityMiddleware": {
+          "tls": "TLS 1.3 only (internal mTLS to backend services)",
+          "certificates": "Let's Encrypt auto-renewed + cert-manager",
+          "hsts": "max-age=31536000; includeSubDomains; preload",
+          "cors": {
+            "origins": ["https://app.kohatlas.com", "https://admin.kohatlas.com"],
+            "credentials": true,
+            "maxAge": "86400"
+          },
+          "helmet": "All 15 headers enforced (CSP, X-Frame-Options, etc.)",
+          "secretsManagement": "HashiCorp Vault dynamic credentials (no hardcoded secrets)",
+          "apiKeys": "Hashed with bcrypt (cost=12) in PostgreSQL"
+        },
+        "logging": {
+          "format": "JSON structured logs (Winston)",
+          "levels": "error, warn, info, http, debug",
+          "pii": "Automatic redaction (emails, tokens, passwords)",
+          "auditLog": "All authentication + authorization events logged",
+          "retention": "90 days in Elasticsearch, 1 year cold storage",
+          "siem": "Real-time streaming to Splunk/DataDog"
+        },
+        "monitoring": {
+          "metrics": "Prometheus Node Exporter + prom-client",
+          "traces": "OpenTelemetry with Jaeger integration",
+          "healthCheck": "/health (liveness) + /ready (readiness)",
+          "alerts": {
+            "p50Latency > 200ms": "Warning",
+            "p95Latency > 1s": "Critical",
+            "errorRate > 1%": "Critical",
+            "authFailures > 50/min": "Security incident"
+          }
+        },
+        "endpoints": {
+          "auth": [
+            "POST /api/v1/auth/register",
+            "POST /api/v1/auth/login",
+            "POST /api/v1/auth/logout",
+            "POST /api/v1/auth/refresh",
+            "POST /api/v1/auth/mfa/verify"
+          ],
+          "designs": [
+            "GET /api/v1/designs (paginated, filtered)",
+            "POST /api/v1/designs (with validation)",
+            "GET /api/v1/designs/:id",
+            "PUT /api/v1/designs/:id",
+            "DELETE /api/v1/designs/:id"
+          ],
+          "analysis": [
+            "POST /api/v1/analysis/security (async job)",
+            "GET /api/v1/analysis/:jobId/status",
+            "GET /api/v1/analysis/:jobId/results"
+          ],
+          "admin": [
+            "GET /api/v1/admin/users (RBAC: admin only)",
+            "PUT /api/v1/admin/users/:id/role",
+            "GET /api/v1/admin/audit-logs"
+          ]
+        },
+        "errorHandling": {
+          "strategy": "Centralized error middleware",
+          "responses": "Standardized JSON error format (RFC 7807)",
+          "stackTraces": "Only in development (never in production)",
+          "sentry": "Automatic error capture + release tracking"
+        },
+        "performance": {
+          "compression": "Gzip/Brotli for responses > 1KB",
+          "caching": "Redis for GET requests (5-60 min TTL)",
+          "connectionPool": {
+            "postgres": "Max 20 connections per instance",
+            "redis": "Max 50 connections per instance"
+          },
+          "timeout": "30s request timeout, 5s idle timeout"
+        },
+        "security": ["JWT Auth", "Input Validation", "Rate Limiting", "mTLS", "RBAC/ABAC", "Vault Secrets", "PII Redaction", "OpenTelemetry Tracing"],
+        "compliance": ["SOC2 (CC6.1)", "ISO27001 (A.9.4.2)", "OWASP API Security Top 10"],
+        "dependencies": ["vault", "postgresql", "redis", "workers"]
+      }
+    },
+    {
+      "id": "6",
+      "type": "custom",
+      "position": {"x": 700, "y": 300},
+      "data": {
+        "type": "bastion-host",
+        "label": "HashiCorp Vault",
+        "zone": "Security",
+        "version": "Vault Enterprise 1.15+ (or Open Source 1.15+)",
+        "deployment": {
+          "architecture": "High Availability (HA) cluster with 3+ nodes",
+          "storageBackend": "Raft Integrated Storage (consensus-based replication)",
+          "backupBackend": "PostgreSQL for disaster recovery snapshots",
+          "multiRegion": "Active-Passive replication for DR (RTO < 15 min)"
+        },
+        "authentication": {
+          "methods": [
+            "AppRole (for API Gateway, Workers)",
+            "Kubernetes Auth (for K8s deployments)",
+            "LDAP/Active Directory (for human administrators)",
+            "AWS IAM (for cloud workloads)",
+            "OIDC (for SSO via Auth0/Okta)"
+          ],
+          "mfa": "Duo or TOTP enforced for admin access",
+          "tokenRenewal": "Automatic token renewal with max TTL 768h (32 days)",
+          "roleBindings": "Fine-grained policies per service identity"
+        },
+        "secretsEngines": {
+          "kvV2": {
+            "description": "Versioned key-value store for static secrets",
+            "versioning": "10 versions retained per secret",
+            "paths": [
+              "kv/api-gateway/* (API keys, OAuth client secrets)",
+              "kv/database/* (DB connection strings, backup credentials)",
+              "kv/external/* (Third-party API keys: Anthropic, Stripe, etc.)"
+            ],
+            "deleteProtection": "Soft delete with 30-day recovery window"
+          },
+          "database": {
+            "description": "Dynamic database credentials (auto-rotating)",
+            "ttl": "1 hour (credentials expire and regenerate)",
+            "rotation": "Automatic rotation every 24 hours",
+            "databases": ["PostgreSQL (primary + replica)", "Redis ACLs"],
+            "privileges": "Least privilege per service (read-only for analytics, read-write for API)"
+          },
+          "pki": {
+            "description": "Internal PKI for mTLS certificates",
+            "rootCA": "Offline root CA with 10-year validity",
+            "intermediateCA": "Online intermediate CA with 5-year validity",
+            "leafCertificates": "Auto-issued with 90-day validity + auto-renewal",
+            "usage": "mTLS between API Gateway, Workers, PostgreSQL, Redis"
+          },
+          "transit": {
+            "description": "Encryption-as-a-Service (EaaS)",
+            "keyTypes": ["AES-256-GCM (default)", "RSA-4096", "ECDSA P-256"],
+            "operations": ["Encrypt", "Decrypt", "Sign", "Verify", "HMAC"],
+            "keyRotation": "Automatic 90-day rotation with backward compatibility",
+            "usage": "Encrypt PII in database (SSN, credit cards, emails)"
+          },
+          "aws": {
+            "description": "Dynamic AWS IAM credentials",
+            "ttl": "15 minutes (STS temporary credentials)",
+            "usage": "S3 bucket access for file uploads/exports"
+          }
+        },
+        "encryption": {
+          "atRest": "AES-256-GCM with auto-unsealing via AWS KMS/Azure Key Vault",
+          "inTransit": "TLS 1.3 only with mTLS client certificate validation",
+          "unsealKeys": "Shamir's Secret Sharing (5 keys, threshold 3) stored in HSM",
+          "autoUnseal": "Cloud KMS integration (AWS KMS, Azure Key Vault, GCP Cloud KMS)"
+        },
+        "accessControl": {
+          "policies": "HCL-based policies with path-based permissions",
+          "defaultDeny": "All access denied by default (explicit allow required)",
+          "leastPrivilege": "Services granted minimum required paths only",
+          "examplePolicy": {
+            "path_kv/api-gateway/*": {
+              "capabilities": ["read", "list"]
+            },
+            "path_database/creds/api": {
+              "capabilities": ["read"]
+            }
+          }
+        },
+        "auditLogging": {
+          "enabledDevices": ["File", "Syslog", "Socket"],
+          "format": "JSON with full request/response logging",
+          "piiHandling": "Automatic HMAC-SHA256 hashing of sensitive fields",
+          "retention": "2 years in immutable S3 bucket (compliance requirement)",
+          "siem": "Real-time streaming to Splunk/DataDog for anomaly detection",
+          "alerts": {
+            "failedAuthAttempts > 10": "Warning (potential brute force)",
+            "unauthorizedAccessAttempt": "Critical (security incident)",
+            "secretsLeakage": "Critical (secret accessed by unauthorized entity)"
+          }
+        },
+        "monitoring": {
+          "metrics": "Prometheus exporter (vault_core_*, vault_token_*)",
+          "healthCheck": "/v1/sys/health (returns seal status + HA leader)",
+          "telemetry": "StatsD/Prometheus/DataDog integration",
+          "dashboards": "Grafana with pre-built Vault dashboards",
+          "alerts": {
+            "sealedNode": "Critical (node sealed unexpectedly)",
+            "leadershipChange": "Warning (HA failover occurred)",
+            "storageErrors": "Critical (Raft consensus issues)"
+          }
+        },
+        "backup": {
+          "snapshots": "Automated Raft snapshots every 6 hours",
+          "storage": "Encrypted backups in S3 with versioning + MFA delete",
+          "retention": "30 daily, 12 monthly, 7 yearly backups",
+          "testing": "Quarterly disaster recovery drills (restore to staging)",
+          "rto": "< 15 minutes (automated failover)",
+          "rpo": "< 6 hours (snapshot frequency)"
+        },
+        "compliance": {
+          "fips140-2": "FIPS 140-2 Inside mode for cryptographic operations",
+          "soc2": "Type II compliant (CC6.1 - Logical Access)",
+          "pciDss": "PCI-DSS 4.0 compliant for cardholder data encryption",
+          "gdpr": "Encryption at rest + right to be forgotten (secret deletion)",
+          "hipaa": "PHI encryption + audit trail for healthcare data"
+        },
+        "security": ["Secrets Management", "Dynamic Credentials", "Audit Logs", "mTLS Enforcement", "Auto-Unsealing", "KMS Integration", "FIPS 140-2"],
+        "dependencies": ["kms (AWS KMS/Azure Key Vault)", "postgresql", "siem"],
+        "clients": ["api-gateway", "workers", "postgresql", "redis"]
+      }
+    },
+    {
+      "id": "7",
+      "type": "custom",
+      "position": {"x": 900, "y": 100},
+      "data": {
+        "type": "database",
+        "label": "PostgreSQL Primary",
+        "zone": "Data",
+        "version": "PostgreSQL 16.1 (latest stable)",
+        "deployment": {
+          "architecture": "Primary-Replica (1 primary + 2 read replicas)",
+          "replication": "Streaming replication (async to replicas, sync to 1 standby)",
+          "failover": "Patroni + etcd for automatic leader election (30s failover time)",
+          "multiAz": "Primary in us-east-1a, Replica 1 in us-east-1b, Replica 2 in us-east-1c",
+          "disasterRecovery": "Cross-region replica in us-west-2 (RPO < 5 min)"
+        },
+        "hardware": {
+          "instanceType": "r6g.2xlarge (8 vCPU, 64GB RAM, ARM Graviton3)",
+          "storage": "3TB gp3 SSD (16,000 IOPS, 1,000 MB/s throughput)",
+          "storageAutoscaling": "Auto-expand at 85% capacity (max 10TB)",
+          "connectionLimit": "500 max connections (200 reserved for API, 100 for workers)"
+        },
+        "encryption": {
+          "atRest": "AES-256 encryption via AWS RDS or native pgcrypto",
+          "keyManagement": "AWS KMS with automatic key rotation (yearly)",
+          "inTransit": "TLS 1.3 required for all connections (ssl_mode=require)",
+          "certificateValidation": "mTLS with client certificates from Vault PKI",
+          "columnEncryption": "pgcrypto for PII columns (SSN, credit cards, emails)"
+        },
+        "authentication": {
+          "method": "SCRAM-SHA-256 (FIPS 140-2 compliant)",
+          "passwordPolicy": "16+ chars, complexity enforced, 90-day rotation",
+          "vaultIntegration": "Dynamic credentials from Vault (1-hour TTL)",
+          "serviceAccounts": [
+            "api_gateway (read-write on public schema)",
+            "analytics (read-only on reporting views)",
+            "backup (superuser for pg_dump)",
+            "replication (replication role)"
+          ],
+          "sslEnforcement": "hostssl all all 0.0.0.0/0 cert"
+        },
+        "authorization": {
+          "model": "Role-Based Access Control (RBAC) + Row-Level Security (RLS)",
+          "roles": ["api_user", "analyst", "admin", "auditor"],
+          "rls": {
+            "enabled": true,
+            "policies": [
+              "users can only read/write their own designs",
+              "admins bypass RLS (BYPASSRLS privilege)",
+              "auditors read-only access to audit_log table"
+            ]
+          },
+          "grants": "Least privilege per role (GRANT SELECT, INSERT, UPDATE only where needed)"
+        },
+        "schema": {
+          "orm": "Prisma 5.x for type-safe queries + migrations",
+          "migrations": "Versioned migrations with rollback support",
+          "tables": [
+            "users (id, email, password_hash, mfa_secret, role, created_at)",
+            "designs (id, user_id, name, nodes JSONB, edges JSONB, version, created_at)",
+            "analysis_results (id, design_id, security_score, issues JSONB, created_at)",
+            "audit_log (id, user_id, action, resource, ip_address, timestamp)",
+            "sessions (id, user_id, token_hash, expires_at)"
+          ],
+          "indexes": [
+            "btree on users(email) for fast login",
+            "gin on designs(nodes) for JSONB queries",
+            "btree on audit_log(user_id, timestamp) for audit trail"
+          ],
+          "constraints": [
+            "UNIQUE on users(email)",
+            "FOREIGN KEY designs(user_id) REFERENCES users(id) ON DELETE CASCADE",
+            "CHECK on designs(version >= 1)"
+          ]
+        },
+        "performance": {
+          "connectionPooling": "PgBouncer in transaction mode (max 500 connections → 100 backend)",
+          "queryOptimization": "pg_stat_statements for slow query analysis",
+          "vacuuming": "Autovacuum enabled (aggressive on high-write tables)",
+          "partitioning": "audit_log partitioned by month (range partitioning)",
+          "caching": "shared_buffers=16GB, effective_cache_size=48GB",
+          "workMem": "256MB per query (for sorting/hashing)"
+        },
+        "backup": {
+          "method": "pg_basebackup + WAL archiving (Point-In-Time Recovery)",
+          "frequency": "Full backup daily at 2 AM UTC, incremental WAL every 5 minutes",
+          "retention": "7 daily, 4 weekly, 12 monthly, 7 yearly backups",
+          "storage": "S3 with versioning + Glacier for long-term (99.999999999% durability)",
+          "encryption": "AES-256 + S3 bucket policy with MFA delete",
+          "testing": "Monthly restore drills to staging environment (validate RTO < 1 hour)",
+          "rto": "< 1 hour (restore from S3 + replay WAL)",
+          "rpo": "< 5 minutes (WAL archiving frequency)"
+        },
+        "monitoring": {
+          "metrics": "Prometheus postgres_exporter (queries/sec, cache hit ratio, replication lag)",
+          "slowQueries": "log_min_duration_statement = 1000ms (log queries > 1s)",
+          "replicationLag": "Alert if lag > 10 seconds (potential failover needed)",
+          "dashboards": "Grafana with PostgreSQL official dashboard",
+          "alerts": {
+            "connectionsSaturated > 90%": "Warning (scale up needed)",
+            "replicationLag > 60s": "Critical (data loss risk)",
+            "diskUsage > 80%": "Warning (storage autoscaling triggered)",
+            "cacheHitRatio < 95%": "Warning (increase shared_buffers)"
+          }
+        },
+        "auditLogging": {
+          "extension": "pgaudit for comprehensive audit trail",
+          "loggedEvents": ["DDL changes", "DML on sensitive tables", "Role changes", "Authentication failures"],
+          "format": "JSON logs streamed to Elasticsearch via Filebeat",
+          "retention": "2 years in audit_log table (compliance requirement)",
+          "tamperProofing": "Write-once audit table with append-only constraint"
+        },
+        "highAvailability": {
+          "patroni": "Leader election + automatic failover (30-60s downtime)",
+          "synchronousReplication": "One replica in sync mode (zero data loss on failover)",
+          "healthChecks": "TCP port 5432 + SELECT 1 query every 10 seconds",
+          "splitBrain": "etcd distributed lock prevents dual-primary scenario"
+        },
+        "compliance": {
+          "soc2": "Type II compliant (CC6.1, CC6.7 - Logical Access + Encryption)",
+          "iso27001": "A.10.1.1 (Cryptographic controls)",
+          "gdpr": "Article 32 (Encryption + Pseudonymization)",
+          "hipaa": "164.312(a)(2)(iv) + 164.312(e)(2)(ii) (PHI encryption)",
+          "pciDss": "Requirement 3.4 (Cardholder Data Encryption)"
+        },
+        "security": ["Encryption at Rest", "TLS 1.3", "Row Level Security", "Backups", "SCRAM-SHA-256", "mTLS", "Vault Dynamic Credentials", "PgBouncer", "pgaudit"],
+        "dependencies": ["vault (dynamic credentials)", "pgbouncer (connection pooling)", "s3 (backups)", "etcd (Patroni coordination)"],
+        "clients": ["api-gateway", "workers", "analytics"]
+      }
+    },
+    {
+      "id": "8",
+      "type": "custom",
+      "position": {"x": 900, "y": 250},
+      "data": {
+        "type": "cache",
+        "label": "Redis Cluster",
+        "zone": "Data",
+        "version": "Redis 7.2 (latest stable with ACLs v2)",
+        "deployment": {
+          "architecture": "Redis Cluster with 6 nodes (3 masters + 3 replicas)",
+          "sharding": "Hash slot-based sharding (16,384 slots distributed across 3 masters)",
+          "replication": "Async replication (1 replica per master)",
+          "failover": "Redis Sentinel for automatic failover (< 10s downtime)",
+          "multiAz": "Masters in us-east-1a/1b/1c, replicas in opposite AZs"
+        },
+        "hardware": {
+          "instanceType": "r7g.xlarge (4 vCPU, 32GB RAM, ARM Graviton3)",
+          "memory": "24GB usable (75% of 32GB, leaving 8GB for OS/overhead)",
+          "storage": "256GB NVMe SSD for RDB/AOF persistence",
+          "networkThroughput": "Up to 12.5 Gbps"
+        },
+        "useCases": {
+          "sessionStore": {
+            "description": "User sessions with JWT refresh tokens",
+            "ttl": "24 hours (sliding window on activity)",
+            "keyPattern": "session:{user_id}:{token_hash}",
+            "dataSize": "~1KB per session",
+            "estimatedKeys": "100K active sessions at peak"
+          },
+          "apiCache": {
+            "description": "GET request response caching",
+            "ttl": "5-60 minutes (endpoint-specific)",
+            "keyPattern": "cache:{endpoint}:{params_hash}",
+            "hitRatio": "> 80% (reduces PostgreSQL load by 80%)",
+            "invalidation": "TTL-based + manual purge on data mutations"
+          },
+          "rateLimiting": {
+            "description": "Distributed rate limiting with sliding window",
+            "implementation": "ZSET with timestamp-based scoring",
+            "keyPattern": "ratelimit:{endpoint}:{ip}",
+            "ttl": "1 minute (window duration)",
+            "atomicity": "Lua scripts for race condition prevention"
+          },
+          "jobQueue": {
+            "description": "BullMQ job queue for async analysis tasks",
+            "queues": ["security-analysis", "export-pdf", "email-notifications"],
+            "persistence": "AOF enabled (every write persisted)",
+            "reliability": "Job retry with exponential backoff (max 5 attempts)"
+          },
+          "pubsub": {
+            "description": "Real-time notifications to connected clients",
+            "channels": ["design-updates", "system-alerts"],
+            "subscribers": "WebSocket server subscribes to push updates"
+          }
+        },
+        "authentication": {
+          "aclSystem": "Redis ACL v2 (granular per-user permissions)",
+          "users": [
+            "api_gateway: ~cache:* ~session:* +get +set +del +expire",
+            "workers: ~jobs:* +xread +xadd +xack +xdel",
+            "monitoring: +info +ping +cluster (read-only)"
+          ],
+          "passwordPolicy": "64-character random passwords from Vault",
+          "vaultIntegration": "Dynamic credentials with 24-hour TTL",
+          "requirepass": "Disabled (ACLs enforce per-user auth)"
+        },
+        "encryption": {
+          "inTransit": "TLS 1.3 required for all connections (tls-auth-clients yes)",
+          "certificates": "mTLS with client certificates from Vault PKI",
+          "cipherSuites": "TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256",
+          "atRest": "Encrypted EBS volumes (AES-256) for RDB/AOF files"
+        },
+        "persistence": {
+          "rdb": {
+            "description": "Point-in-time snapshots",
+            "schedule": "save 900 1, save 300 10, save 60 10000 (if 1/10/10K keys changed)",
+            "compression": "LZF compression enabled",
+            "backup": "Daily RDB snapshots to S3 (encrypted + versioned)"
+          },
+          "aof": {
+            "description": "Append-only file for durability",
+            "fsync": "everysec (balance between performance and durability)",
+            "rewrite": "Auto-rewrite at 100% size growth",
+            "enabled": true
+          },
+          "tradeoff": "RDB for fast restarts, AOF for minimal data loss (< 1s)"
+        },
+        "performance": {
+          "evictionPolicy": "allkeys-lru (evict least recently used keys when maxmemory reached)",
+          "maxMemory": "20GB (leaving 4GB buffer for overhead)",
+          "pipelining": "Enabled for batch operations (reduce RTT latency)",
+          "connectionPooling": "ioredis with min=10, max=100 connections per API instance",
+          "slowLogThreshold": "10ms (log queries slower than 10ms)"
+        },
+        "monitoring": {
+          "metrics": "Prometheus redis_exporter (connected_clients, used_memory, hit_rate, evicted_keys)",
+          "healthCheck": "PING command every 10 seconds",
+          "dashboards": "Grafana with Redis official dashboard",
+          "alerts": {
+            "memoryUsage > 90%": "Warning (eviction pressure)",
+            "cacheHitRate < 70%": "Warning (ineffective caching)",
+            "replicationLag > 10s": "Critical (replica out of sync)",
+            "connectionsSaturated > 80%": "Warning (connection pool exhaustion)"
+          }
+        },
+        "highAvailability": {
+          "sentinel": {
+            "description": "Redis Sentinel for automatic failover",
+            "quorum": "2 of 3 sentinels must agree on master failure",
+            "downAfterMilliseconds": "5000 (5s to detect master down)",
+            "failoverTimeout": "10000 (10s to complete failover)",
+            "parallelSyncs": "1 (sync one replica at a time during failover)"
+          },
+          "clientHandling": "ioredis with automatic reconnection + sentinel discovery",
+          "dataLoss": "< 1 second (AOF fsync frequency)"
+        },
+        "backup": {
+          "rdbSnapshots": "Daily snapshots to S3 (encrypted)",
+          "retention": "7 daily, 4 weekly, 3 monthly backups",
+          "crossRegion": "Replicated to us-west-2 for disaster recovery",
+          "testing": "Monthly restore drills to staging"
+        },
+        "compliance": {
+          "soc2": "Type II compliant (CC6.1 - Logical Access)",
+          "gdpr": "Encryption at rest + in transit for user session data",
+          "hipaa": "TLS 1.3 + ACLs for PHI caching (if applicable)"
+        },
+        "security": ["TLS 1.3", "ACLs v2", "Vault Dynamic Credentials", "mTLS", "Encrypted Persistence", "Sentinel HA", "Lua Script Sandboxing"],
+        "dependencies": ["vault (dynamic credentials)", "sentinel (failover)", "s3 (backups)"],
+        "clients": ["api-gateway", "workers"]
+      }
+    },
+    {
+      "id": "9",
+      "type": "custom",
+      "position": {"x": 700, "y": 450},
+      "data": {
+        "type": "app-server",
+        "label": "Background Workers",
+        "zone": "Processing",
+        "technology": "Node.js 22 LTS + TypeScript 5.7 + BullMQ 5.x",
+        "deployment": {
+          "architecture": "Horizontally scaled worker pool (4-10 instances)",
+          "orchestration": "Kubernetes with HPA (scale on CPU > 70% or queue depth > 100)",
+          "isolation": "Separate worker pools per job type (security-analysis, exports, notifications)",
+          "distribution": "Round-robin job distribution across workers via Redis queue"
+        },
+        "jobQueues": {
+          "securityAnalysis": {
+            "description": "Run AI-powered security analysis on architecture designs",
+            "priority": "High",
+            "concurrency": "5 jobs per worker (CPU-bound)",
+            "timeout": "5 minutes per job",
+            "retries": "3 attempts with exponential backoff (1s, 5s, 25s)",
+            "rateLimiting": "Max 100 jobs/hour per user (prevent abuse)"
+          },
+          "exportPdf": {
+            "description": "Generate PDF/PNG exports of architecture diagrams",
+            "priority": "Medium",
+            "concurrency": "2 jobs per worker (memory-bound)",
+            "timeout": "2 minutes per job",
+            "retries": "2 attempts",
+            "tools": "Puppeteer for headless Chrome rendering"
+          },
+          "emailNotifications": {
+            "description": "Send transactional emails (analysis complete, shared design, etc.)",
+            "priority": "Low",
+            "concurrency": "10 jobs per worker (I/O-bound)",
+            "timeout": "30 seconds per job",
+            "retries": "5 attempts (email delivery can be flaky)",
+            "provider": "SendGrid/AWS SES with DKIM/SPF"
+          },
+          "dataBackup": {
+            "description": "Periodic backup of user designs to S3",
+            "priority": "Low",
+            "schedule": "Cron: Daily at 3 AM UTC",
+            "concurrency": "1 job (serialized)",
+            "timeout": "30 minutes"
+          }
+        },
+        "security": {
+          "sandboxing": {
+            "method": "VM2 sandbox for user-provided code execution (if applicable)",
+            "restrictions": "No file system access, no network access, no child processes",
+            "timeout": "10 seconds per code execution",
+            "memoryLimit": "256MB per sandbox"
+          },
+          "databaseAccess": {
+            "mode": "Read-only for analysis workers (SELECT only)",
+            "credentials": "Vault dynamic credentials with 1-hour TTL",
+            "connectionPool": "Max 10 connections per worker (prevent connection exhaustion)"
+          },
+          "secretsManagement": "All API keys from Vault (Anthropic, SendGrid, AWS)",
+          "networkIsolation": "Workers in private subnet (no direct internet access)",
+          "outboundProxy": "All external API calls via HTTP proxy with allow-list"
+        },
+        "resourceLimits": {
+          "cpu": "2 vCPU per worker (throttled at 2 cores)",
+          "memory": "4GB RAM per worker (OOMKill at 4GB)",
+          "disk": "10GB ephemeral storage (for temporary files)",
+          "concurrency": "Max 10 concurrent jobs per worker",
+          "timeout": "Global job timeout: 10 minutes (prevent runaway jobs)"
+        },
+        "jobProcessing": {
+          "library": "BullMQ 5.x (Redis-backed job queue)",
+          "features": [
+            "Job priority (high/medium/low)",
+            "Delayed jobs (schedule for future execution)",
+            "Job retries with exponential backoff",
+            "Job progress tracking (0-100%)",
+            "Job result persistence (7 days in Redis)",
+            "Dead letter queue (DLQ) for failed jobs"
+          ],
+          "errorHandling": {
+            "strategy": "Automatic retry with backoff, then move to DLQ",
+            "notifications": "Sentry alert on job failure rate > 5%",
+            "dlq": "Manual inspection of DLQ jobs via admin dashboard"
+          }
+        },
+        "aiIntegration": {
+          "provider": "Anthropic Claude 3.5 Sonnet",
+          "apiKey": "From Vault (rotated monthly)",
+          "rateLimiting": "100 requests/minute (Anthropic tier limit)",
+          "costControl": "Track token usage per user (alert if > $10/day)",
+          "caching": "Cache identical prompts for 24 hours (reduce API costs)",
+          "fallback": "Queue for retry if Anthropic API unavailable"
+        },
+        "logging": {
+          "format": "JSON structured logs (Winston)",
+          "levels": "error, warn, info, debug",
+          "jobLogs": "All job execution logs with job ID, user ID, duration, result",
+          "retention": "30 days in Elasticsearch",
+          "pii": "Automatic redaction of user data in logs"
+        },
+        "monitoring": {
+          "metrics": "Prometheus BullMQ exporter (jobs_completed, jobs_failed, queue_depth)",
+          "healthCheck": "/health (checks Redis connectivity + worker process status)",
+          "alerts": {
+            "queueDepth > 500": "Warning (workers overwhelmed)",
+            "jobFailureRate > 10%": "Critical (systemic issue)",
+            "workerCrash": "Critical (restart worker + investigate logs)",
+            "anthropicApiDown": "Warning (queue jobs for retry)"
+          }
+        },
+        "performance": {
+          "optimization": "Job batching where possible (e.g., batch email sends)",
+          "caching": "Cache AI analysis results for 24 hours (reduce redundant calls)",
+          "parallelization": "Multi-threaded job execution with worker_threads",
+          "gracefulShutdown": "Wait for in-progress jobs to complete before shutdown (max 30s)"
+        },
+        "compliance": {
+          "soc2": "Type II compliant (CC7.2 - System Monitoring)",
+          "gdpr": "User data processed only as needed, deleted after 90 days"
+        },
+        "security": ["Sandboxed Execution", "Read-only DB", "Resource Limits", "Vault Secrets", "Network Isolation", "Dead Letter Queue", "Job Timeout Enforcement"],
+        "dependencies": ["redis (BullMQ)", "vault (secrets)", "postgresql (read-only)", "anthropic-api", "s3 (exports)"],
+        "clients": ["api-gateway (job submission)"]
+      }
+    },
+    {
+      "id": "10",
+      "type": "custom",
+      "position": {"x": 1100, "y": 100},
+      "data": {
+        "type": "cloud",
+        "label": "S3 Storage",
+        "zone": "Storage",
+        "provider": "AWS S3 (or compatible: Azure Blob, GCP Cloud Storage)",
+        "buckets": {
+          "userUploads": {
+            "name": "kohatlas-user-uploads-prod",
+            "description": "User-uploaded files (diagrams, exports)",
+            "storageClass": "S3 Standard (hot access)",
+            "encryption": "SSE-KMS with AWS KMS key rotation",
+            "versioning": "Enabled (keep 10 versions, 90-day retention)",
+            "maxFileSize": "10MB per file",
+            "allowedTypes": ["image/png", "image/svg+xml", "application/pdf", "application/json"],
+            "lifecycle": "Delete versions older than 90 days"
+          },
+          "systemBackups": {
+            "name": "kohatlas-backups-prod",
+            "description": "PostgreSQL/Redis backups + Vault snapshots",
+            "storageClass": "S3 Standard-IA (infrequent access) → Glacier Deep Archive after 90 days",
+            "encryption": "SSE-KMS with customer-managed CMK",
+            "versioning": "Enabled (immutable backups)",
+            "mfaDelete": "Enabled (prevent accidental deletion)",
+            "lifecycle": {
+              "transitionToIA": "30 days (move to Infrequent Access)",
+              "transitionToGlacier": "90 days (move to Glacier)",
+              "retention": "7 years (compliance requirement)"
+            }
+          },
+          "auditLogs": {
+            "name": "kohatlas-audit-logs-prod",
+            "description": "Immutable audit logs from Vault, PostgreSQL, API Gateway",
+            "storageClass": "S3 Standard-IA → Glacier after 365 days",
+            "encryption": "SSE-KMS + Object Lock (WORM mode)",
+            "objectLock": "Governance mode (7 years retention)",
+            "lifecycle": "Retain for 7 years (SOC2/HIPAA compliance)"
+          },
+          "exports": {
+            "name": "kohatlas-exports-prod",
+            "description": "Generated PDF/PNG exports for user download",
+            "storageClass": "S3 Standard",
+            "encryption": "SSE-S3 (default encryption)",
+            "lifecycle": "Delete after 7 days (temporary storage)",
+            "signedUrls": "Pre-signed URLs with 1-hour expiry"
+          }
+        },
+        "encryption": {
+          "atRest": "AES-256 via SSE-KMS (AWS Key Management Service)",
+          "keyManagement": {
+            "customerManagedKey": "CMK with automatic yearly rotation",
+            "keyPolicy": "Only API Gateway + Workers can decrypt",
+            "auditTrail": "AWS CloudTrail logs all KMS key usage"
+          },
+          "inTransit": "TLS 1.3 required (enforce via bucket policy)",
+          "clientSideEncryption": "Optional for sensitive files (client encrypts before upload)"
+        },
+        "accessControl": {
+          "bucketPolicy": {
+            "denyInsecureTransport": "Enforce TLS (aws:SecureTransport)",
+            "restrictIpRange": "Allow only from API Gateway CIDR (10.0.0.0/16)",
+            "denyPublicAccess": "Block all public ACLs + public bucket policies"
+          },
+          "iam": {
+            "apiGatewayRole": "s3:PutObject, s3:GetObject on user-uploads bucket",
+            "workersRole": "s3:PutObject on exports bucket",
+            "backupRole": "s3:PutObject, s3:ListBucket on backups bucket (no delete)"
+          },
+          "vaultIntegration": "Dynamic AWS IAM credentials via Vault (STS temporary credentials, 15-min TTL)",
+          "mfaDelete": "Required for deleting objects in backups bucket (prevent accidental data loss)"
+        },
+        "versioning": {
+          "enabled": true,
+          "retentionPolicy": "Keep 10 versions per object",
+          "deletionProtection": "Soft delete with 30-day recovery window",
+          "immutability": "Object Lock on audit-logs bucket (WORM compliance mode)"
+        },
+        "lifecycle": {
+          "userUploads": {
+            "deleteOldVersions": "Delete versions older than 90 days",
+            "abortIncompleteUploads": "Abort multipart uploads after 7 days"
+          },
+          "backups": {
+            "transitionToIA": "Standard → Standard-IA after 30 days",
+            "transitionToGlacier": "Standard-IA → Glacier Deep Archive after 90 days",
+            "retention": "Keep for 7 years (compliance)"
+          },
+          "exports": {
+            "expiration": "Delete after 7 days (temporary files)",
+            "abortIncompleteUploads": "Abort after 1 day"
+          }
+        },
+        "monitoring": {
+          "accessLogs": {
+            "enabled": true,
+            "destination": "kohatlas-s3-access-logs-prod bucket",
+            "format": "AWS S3 server access logs",
+            "retention": "90 days",
+            "analysis": "Athena queries for anomaly detection (unusual access patterns)"
+          },
+          "metrics": {
+            "cloudWatch": "BucketSizeBytes, NumberOfObjects, AllRequests, 4xxErrors, 5xxErrors",
+            "prometheus": "Custom exporter for S3 metrics (via CloudWatch API)"
+          },
+          "alerts": {
+            "4xxErrors > 100/hour": "Warning (authentication issues or missing objects)",
+            "5xxErrors > 10/hour": "Critical (S3 service issues)",
+            "storageGrowth > 10% per day": "Warning (potential abuse or misconfiguration)",
+            "unauthorizedAccess": "Critical (potential security breach)"
+          }
+        },
+        "replication": {
+          "crossRegion": {
+            "enabled": true,
+            "destination": "kohatlas-backups-prod-dr (us-west-2)",
+            "replicationTime": "< 15 minutes (S3 RTC - Replication Time Control)",
+            "deleteMarkerReplication": "Enabled (replicate deletions)"
+          },
+          "compliance": "Meet RPO < 15 minutes for disaster recovery"
+        },
+        "compliance": {
+          "soc2": "Type II compliant (CC6.1 - Logical Access, CC6.7 - Encryption)",
+          "iso27001": "A.10.1.1 (Cryptographic controls)",
+          "gdpr": "Article 32 (Encryption at rest + in transit)",
+          "hipaa": "164.312(a)(2)(iv) (Encryption) + 164.312(b) (Audit logs)",
+          "pciDss": "Requirement 3.4 (Cardholder Data Encryption)"
+        },
+        "costOptimization": {
+          "intelligentTiering": "S3 Intelligent-Tiering for backups (auto-move to cheaper storage classes)",
+          "lifecycle": "Aggressive lifecycle policies to minimize storage costs",
+          "compression": "Gzip-compress backups before upload (reduce storage by ~70%)",
+          "estimatedCost": "$200-300/month for 1TB storage + transfers"
+        },
+        "security": ["Encryption (SSE-KMS)", "Versioning", "MFA Delete", "Access Logs", "Object Lock (WORM)", "TLS 1.3 Enforcement", "Vault Dynamic IAM", "Cross-Region Replication"],
+        "dependencies": ["vault (dynamic IAM credentials)", "kms (encryption keys)", "cloudwatch (monitoring)"],
+        "clients": ["api-gateway (uploads)", "workers (exports)", "backup-system (backups)"]
+      }
+    },
+    {
+      "id": "11",
+      "type": "custom",
+      "position": {"x": 1100, "y": 300},
+      "data": {
+        "type": "app-server",
+        "label": "Monitoring Stack",
+        "zone": "Observability",
+        "components": {
+          "prometheus": {
+            "version": "Prometheus 2.48+",
+            "description": "Time-series metrics database",
+            "scrapeInterval": "15 seconds (for all targets)",
+            "retention": "90 days (long-term storage in Thanos/Cortex)",
+            "targets": [
+              "API Gateway (prom-client exporter)",
+              "PostgreSQL (postgres_exporter)",
+              "Redis (redis_exporter)",
+              "HAProxy (haproxy_exporter)",
+              "Workers (BullMQ exporter)",
+              "Vault (vault_exporter)",
+              "Node metrics (node_exporter on all servers)"
+            ],
+            "storageBackend": "Local SSD (500GB) + Thanos for long-term object storage (S3)",
+            "highAvailability": "2 Prometheus replicas with Thanos sidecar"
+          },
+          "grafana": {
+            "version": "Grafana 10.x",
+            "description": "Visualization and dashboards",
+            "dataSources": ["Prometheus", "Elasticsearch", "PostgreSQL"],
+            "dashboards": [
+              "API Gateway Performance (requests/sec, latency, error rate)",
+              "Database Health (connections, query time, cache hit ratio, replication lag)",
+              "Redis Performance (memory usage, cache hit rate, evictions)",
+              "Worker Queue Status (jobs pending, processing, failed)",
+              "Infrastructure Overview (CPU, memory, disk, network)",
+              "Security Metrics (auth failures, WAF blocks, rate limit hits)"
+            ],
+            "authentication": "OAuth 2.0 via Auth0 (SSO)",
+            "rbac": "Viewer, Editor, Admin roles",
+            "alerting": "Built-in Grafana Alerting (sends to PagerDuty/Slack/Email)"
+          },
+          "sentry": {
+            "version": "Sentry 23.x (self-hosted or SaaS)",
+            "description": "Application error tracking and performance monitoring",
+            "integration": [
+              "API Gateway (Node.js SDK)",
+              "Workers (Node.js SDK)",
+              "Frontend (React SDK with session replay)"
+            ],
+            "features": [
+              "Error capture with full stack traces",
+              "Session replay for frontend errors",
+              "Performance monitoring (transaction tracing)",
+              "Release tracking (correlate errors to deployments)",
+              "Breadcrumbs (user actions leading to error)"
+            ],
+            "alerts": {
+              "newError": "Notify Slack + email on first occurrence",
+              "errorSpike": "Alert if error rate increases 5x over baseline",
+              "performanceDegradation": "Alert if p95 latency > 2s"
+            },
+            "retention": "90 days for errors, 30 days for performance data"
+          },
+          "elasticsearchKibana": {
+            "version": "Elasticsearch 8.x + Kibana 8.x",
+            "description": "Log aggregation and analysis",
+            "indices": [
+              "api-gateway-logs-* (API request/response logs)",
+              "workers-logs-* (background job logs)",
+              "postgres-logs-* (database slow queries + errors)",
+              "vault-audit-* (Vault audit trail)",
+              "security-events-* (WAF blocks, auth failures)"
+            ],
+            "retention": {
+              "hotTier": "7 days (SSD for fast search)",
+              "warmTier": "30 days (cheaper storage)",
+              "coldTier": "90 days (frozen for compliance)",
+              "deletion": "Delete after 90 days (GDPR compliance)"
+            },
+            "kibana": {
+              "dashboards": [
+                "API Request Analysis (status codes, endpoints, latency)",
+                "Security Events (WAF blocks, brute force attempts)",
+                "Error Logs (aggregated by service + severity)"
+              ],
+              "authentication": "OAuth 2.0 via Auth0 (SSO)"
+            }
+          },
+          "openTelemetry": {
+            "description": "Distributed tracing for microservices",
+            "collector": "OpenTelemetry Collector (OTLP protocol)",
+            "exporters": ["Jaeger (traces)", "Prometheus (metrics)"],
+            "tracing": {
+              "samplingRate": "10% (sample 1 in 10 requests to reduce overhead)",
+              "propagation": "W3C Trace Context (span IDs propagated across services)",
+              "traces": "API Gateway → Vault → PostgreSQL → Redis (full request path)"
+            },
+            "jaeger": {
+              "version": "Jaeger 1.50+",
+              "storage": "Elasticsearch (90-day retention)",
+              "ui": "Jaeger UI for trace visualization"
+            }
+          }
+        },
+        "alerting": {
+          "alertmanager": {
+            "version": "Alertmanager 0.26+",
+            "description": "Centralized alert routing from Prometheus",
+            "routes": {
+              "critical": "PagerDuty (24/7 on-call)",
+              "warning": "Slack #alerts channel",
+              "info": "Email to ops@kohatlas.com"
+            },
+            "grouping": "Group alerts by service + severity (reduce noise)",
+            "inhibition": "Silence lower-priority alerts if higher-priority alert fired",
+            "throttling": "Max 1 alert per 5 minutes per rule (prevent spam)"
+          },
+          "alertRules": [
+            {
+              "name": "HighErrorRate",
+              "severity": "Critical",
+              "condition": "error_rate > 5% for 5 minutes",
+              "action": "PagerDuty page + Slack alert"
+            },
+            {
+              "name": "DatabaseDown",
+              "severity": "Critical",
+              "condition": "pg_up == 0",
+              "action": "PagerDuty page + auto-failover to replica"
+            },
+            {
+              "name": "HighLatency",
+              "severity": "Warning",
+              "condition": "p95_latency > 1s for 10 minutes",
+              "action": "Slack alert"
+            },
+            {
+              "name": "DiskSpaceLow",
+              "severity": "Warning",
+              "condition": "disk_usage > 85%",
+              "action": "Email + auto-scale storage"
+            },
+            {
+              "name": "SecurityIncident",
+              "severity": "Critical",
+              "condition": "auth_failures > 50/min",
+              "action": "PagerDuty page + SIEM alert"
+            }
+          ]
+        },
+        "siem": {
+          "integration": "Splunk Enterprise Security / DataDog Security Monitoring",
+          "dataSources": [
+            "WAF logs (CloudFlare)",
+            "Vault audit logs",
+            "API authentication events",
+            "Database access logs",
+            "S3 access logs"
+          ],
+          "useCases": [
+            "Detect brute force attacks (failed logins > 10 in 1 min)",
+            "Detect SQL injection attempts (WAF blocked requests)",
+            "Detect privilege escalation (unauthorized role changes)",
+            "Detect data exfiltration (unusual S3 download volume)",
+            "Compliance reporting (SOC2, HIPAA audit trails)"
+          ],
+          "alerting": {
+            "method": "Real-time correlation rules + machine learning anomaly detection",
+            "response": "Automated incident creation in Jira + PagerDuty page",
+            "playbooks": "SOAR integration for automated remediation (e.g., block IP)"
+          }
+        },
+        "uptime": {
+          "tool": "UptimeRobot / Pingdom",
+          "checks": [
+            "https://app.kohatlas.com (HTTP 200, every 1 minute)",
+            "https://api.kohatlas.com/health (HTTP 200, every 1 minute)",
+            "PostgreSQL TCP:5432 (every 5 minutes)",
+            "Redis TCP:6379 (every 5 minutes)"
+          ],
+          "alerting": "PagerDuty page if down for > 2 minutes",
+          "statusPage": "Public status page at status.kohatlas.com"
+        },
+        "costMonitoring": {
+          "tool": "AWS Cost Explorer / CloudHealth",
+          "budget": "$5000/month with 80% threshold alert",
+          "costAllocation": "Tag all resources by service (api, db, cache, storage)",
+          "optimization": "Right-sizing recommendations (downsize over-provisioned instances)"
+        },
+        "security": {
+          "metricsAuth": "Prometheus secured with Basic Auth + TLS",
+          "grafanaAuth": "OAuth 2.0 via Auth0 (SSO)",
+          "sentryDsn": "Stored in Vault (rotated every 90 days)",
+          "logEncryption": "Logs encrypted in transit (TLS) + at rest (S3 SSE-KMS)",
+          "rbac": "Read-only access for developers, full access for SRE team"
+        },
+        "compliance": {
+          "soc2": "Type II compliant (CC7.2 - System Monitoring)",
+          "iso27001": "A.12.4.1 (Event logging)",
+          "gdpr": "Article 32 (Security monitoring + incident response)",
+          "hipaa": "164.312(b) (Audit controls)"
+        },
+        "security": ["Secure Metrics", "Alerting", "SIEM Integration", "TLS 1.3 for All Exporters", "OAuth 2.0 Authentication", "RBAC for Dashboards"],
+        "dependencies": ["prometheus", "grafana", "sentry", "elasticsearch", "jaeger", "alertmanager"],
+        "clients": ["All services export metrics to Prometheus", "Logs streamed to Elasticsearch"]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1-2",
+      "source": "1",
+      "target": "2",
+      "label": "HTTPS:443",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTPS/2 + HTTPS/3 (QUIC)",
+        "encryption": "TLS 1.3 (AES-256-GCM, ChaCha20-Poly1305)",
+        "authentication": "None (public internet traffic)",
+        "dataFlow": "User browser → CloudFlare CDN",
+        "bandwidth": "Up to 100 Gbps (CDN capacity)",
+        "caching": "Static assets (HTML, CSS, JS, images) cached at edge",
+        "compression": "Brotli + Gzip",
+        "security": ["DDoS protection", "Bot mitigation", "TLS fingerprinting"]
+      }
+    },
+    {
+      "id": "e2-3",
+      "source": "2",
+      "target": "3",
+      "label": "HTTPS:443",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTPS/1.1",
+        "encryption": "TLS 1.3 (AES-256-GCM)",
+        "authentication": "None (CDN to WAF is trusted path)",
+        "dataFlow": "CloudFlare CDN → ModSecurity WAF",
+        "bandwidth": "10 Gbps dedicated link",
+        "latency": "< 5ms (same datacenter)",
+        "security": ["CloudFlare IP whitelist", "OWASP CRS rule evaluation", "Rate limiting"]
+      }
+    },
+    {
+      "id": "e3-4",
+      "source": "3",
+      "target": "4",
+      "label": "mTLS:3000",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTP/2 over mTLS",
+        "encryption": "TLS 1.3 with mutual authentication",
+        "authentication": "Client certificates from Vault PKI (90-day validity)",
+        "certificateValidation": "CN, SAN, key usage, expiration checked",
+        "dataFlow": "WAF → Load Balancer → API Gateway",
+        "bandwidth": "10 Gbps",
+        "connectionPooling": "Keep-alive connections (max 1000 concurrent)",
+        "security": ["Certificate pinning", "Zero-trust network", "Per-request authentication"]
+      }
+    },
+    {
+      "id": "e4-5",
+      "source": "4",
+      "target": "5",
+      "label": "HTTP/2:3000",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTP/2 over mTLS",
+        "encryption": "TLS 1.3 + mTLS (client certificate)",
+        "authentication": "AppRole token (renewed every 1 hour)",
+        "dataFlow": "API Gateway → Vault (secrets retrieval, dynamic credentials)",
+        "bandwidth": "1 Gbps",
+        "requestRate": "~100 requests/minute (fetch secrets on demand)",
+        "caching": "Secrets cached in memory for TTL duration (max 1 hour)",
+        "security": ["Token renewal automation", "Namespace isolation", "Audit logging"]
+      }
+    },
+    {
+      "id": "e5-6",
+      "source": "5",
+      "target": "6",
+      "label": "HTTPS:8200",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "PostgreSQL wire protocol v3",
+        "encryption": "TLS 1.3 + mTLS (client certificate from Vault)",
+        "authentication": "SCRAM-SHA-256 with dynamic credentials (1-hour TTL)",
+        "dataFlow": "API Gateway → PgBouncer → PostgreSQL Primary",
+        "bandwidth": "10 Gbps",
+        "connectionPooling": "PgBouncer (500 client → 100 backend connections)",
+        "queries": ["INSERT designs", "UPDATE users", "SELECT * FROM designs WHERE user_id=?", "BEGIN/COMMIT transactions"],
+        "latency": "< 10ms (p95)",
+        "security": ["Row-level security (RLS)", "Prepared statements", "Connection encryption", "Read-write access"]
+      }
+    },
+    {
+      "id": "e5-7",
+      "source": "5",
+      "target": "7",
+      "label": "PostgreSQL:5432",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "RESP3 (Redis Serialization Protocol v3)",
+        "encryption": "TLS 1.3",
+        "authentication": "Redis ACL with dynamic password from Vault (24-hour TTL)",
+        "dataFlow": "API Gateway → Redis Cluster (session store, cache, rate limiting)",
+        "bandwidth": "10 Gbps",
+        "connectionPooling": "ioredis (min=10, max=100 connections per API instance)",
+        "operations": ["GET/SET sessions", "INCR rate_limit counters", "ZADD/ZRANGE for sorted sets", "XADD for streams"],
+        "latency": "< 1ms (p95)",
+        "security": ["ACL per-command permissions", "TLS encryption", "Password authentication"]
+      }
+    },
+    {
+      "id": "e5-8",
+      "source": "5",
+      "target": "8",
+      "label": "Redis:6379",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "BullMQ (Redis-backed job queue)",
+        "encryption": "TLS 1.3 (via Redis connection)",
+        "authentication": "Redis ACL (workers user)",
+        "dataFlow": "API Gateway → Redis → Background Workers (async job submission)",
+        "bandwidth": "1 Gbps",
+        "jobTypes": ["security-analysis", "export-pdf", "email-notifications"],
+        "reliability": "Job persistence in Redis (AOF enabled)",
+        "latency": "< 100ms job submission, variable processing time (1s-5min)",
+        "security": ["Job payload validation", "Resource limits per job", "Sandboxed execution"]
+      }
+    },
+    {
+      "id": "e5-9",
+      "source": "5",
+      "target": "9",
+      "label": "Job Queue",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "PostgreSQL wire protocol v3",
+        "encryption": "TLS 1.3 + mTLS",
+        "authentication": "SCRAM-SHA-256 with dynamic credentials (read-only role)",
+        "dataFlow": "Background Workers → PostgreSQL Replica (read-only queries)",
+        "bandwidth": "10 Gbps",
+        "connectionPooling": "Max 10 connections per worker",
+        "queries": ["SELECT designs for analysis", "SELECT user data for reports"],
+        "permissions": "GRANT SELECT ONLY (no INSERT/UPDATE/DELETE)",
+        "security": ["Read-only role enforcement", "Connection encryption", "Vault dynamic credentials"]
+      }
+    },
+    {
+      "id": "e8-7",
+      "source": "8",
+      "target": "7",
+      "label": "Redis Queue",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "RESP3 (Redis Streams for BullMQ)",
+        "encryption": "TLS 1.3",
+        "authentication": "Redis ACL (workers user with XREAD/XACK permissions)",
+        "dataFlow": "Background Workers → Redis (fetch jobs, update status)",
+        "bandwidth": "1 Gbps",
+        "operations": ["XREAD (fetch jobs)", "XACK (acknowledge completion)", "XADD (update progress)"],
+        "latency": "< 5ms",
+        "security": ["ACL per-command permissions", "TLS encryption"]
+      }
+    },
+    {
+      "id": "e8-5",
+      "source": "8",
+      "target": "5",
+      "label": "Vault Secrets",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTPS (Vault HTTP API)",
+        "encryption": "TLS 1.3 + mTLS",
+        "authentication": "AppRole token (workers role)",
+        "dataFlow": "Workers → Vault (fetch Anthropic API key, SendGrid key, AWS credentials)",
+        "bandwidth": "1 Gbps",
+        "requestRate": "~50 requests/minute (fetch secrets as needed)",
+        "security": ["Token renewal", "Least privilege access", "Audit logging"]
+      }
+    },
+    {
+      "id": "e8-9",
+      "source": "8",
+      "target": "9",
+      "label": "S3 Uploads",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTPS (AWS S3 API)",
+        "encryption": "TLS 1.3 + S3 SSE-KMS",
+        "authentication": "AWS STS temporary credentials from Vault (15-min TTL)",
+        "dataFlow": "Workers → S3 (upload PDF exports, backup files)",
+        "bandwidth": "Up to 10 Gbps (S3 multi-part upload)",
+        "operations": ["PutObject (exports)", "PutObject (backups)"],
+        "security": ["IAM role with least privilege", "Server-side encryption", "TLS enforcement"]
+      }
+    },
+    {
+      "id": "e4-9",
+      "source": "4",
+      "target": "9",
+      "label": "HTTPS:443",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTPS (AWS S3 API)",
+        "encryption": "TLS 1.3 + S3 SSE-KMS",
+        "authentication": "AWS STS temporary credentials from Vault (15-min TTL)",
+        "dataFlow": "API Gateway → S3 (user file uploads, retrieve exports)",
+        "bandwidth": "Up to 10 Gbps",
+        "operations": ["PutObject (user uploads)", "GetObject (download exports)", "DeleteObject"],
+        "security": ["Pre-signed URLs (1-hour expiry)", "Content-Type validation", "Virus scanning"]
+      }
+    },
+    {
+      "id": "e4-10",
+      "source": "4",
+      "target": "10",
+      "label": "Metrics",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTP (Prometheus scrape)",
+        "encryption": "TLS 1.3",
+        "authentication": "Basic Auth (prometheus user)",
+        "dataFlow": "API Gateway → Prometheus (metrics export)",
+        "bandwidth": "100 Mbps",
+        "scrapeInterval": "15 seconds",
+        "metrics": ["http_requests_total", "http_request_duration_seconds", "jwt_auth_failures", "rate_limit_hits"],
+        "security": ["TLS encryption", "Basic authentication", "Internal network only"]
+      }
+    },
+    {
+      "id": "e6-10",
+      "source": "6",
+      "target": "10",
+      "label": "DB Metrics",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTP (Prometheus postgres_exporter)",
+        "encryption": "TLS 1.3",
+        "authentication": "PostgreSQL monitoring user (read-only)",
+        "dataFlow": "PostgreSQL → Prometheus (database metrics)",
+        "metrics": ["pg_stat_database", "pg_replication_lag", "pg_cache_hit_ratio"],
+        "security": ["Read-only monitoring user", "TLS encryption"]
+      }
+    },
+    {
+      "id": "e7-10",
+      "source": "7",
+      "target": "10",
+      "label": "Cache Metrics",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTP (Prometheus redis_exporter)",
+        "encryption": "TLS 1.3",
+        "authentication": "Redis monitoring ACL user",
+        "dataFlow": "Redis → Prometheus (cache metrics)",
+        "metrics": ["redis_used_memory_bytes", "redis_cache_hit_rate", "redis_connected_clients"],
+        "security": ["ACL monitoring user (INFO + PING only)", "TLS encryption"]
+      }
+    },
+    {
+      "id": "e10-external",
+      "source": "10",
+      "target": "external",
+      "label": "Alerts",
+      "type": "smoothstep",
+      "data": {
+        "protocol": "HTTPS (webhooks)",
+        "encryption": "TLS 1.3",
+        "authentication": "API keys for PagerDuty, Slack, Email",
+        "dataFlow": "Alertmanager → PagerDuty/Slack/Email (critical alerts)",
+        "bandwidth": "10 Mbps",
+        "security": ["Webhook signing", "TLS encryption", "Rate limiting"]
+      }
+    }
+  ],
+  "securityControls": {
+    "vulnerabilitiesFixed": {
+      "critical": [
+        {
+          "id": "CRIT-01",
+          "issue": "No secrets management (hardcoded API keys)",
+          "fix": "HashiCorp Vault with dynamic credentials (1-hour TTL)",
+          "impact": "Prevents credential leakage, automatic rotation"
+        },
+        {
+          "id": "CRIT-02",
+          "issue": "Unencrypted internal traffic",
+          "fix": "mTLS with Vault-issued certificates (90-day rotation)",
+          "impact": "Zero-trust network, prevents MITM attacks"
+        },
+        {
+          "id": "CRIT-03",
+          "issue": "No network segmentation",
+          "fix": "VPC with private subnets, security groups, NACLs",
+          "impact": "Lateral movement prevention, blast radius reduction"
+        }
+      ],
+      "high": [
+        {
+          "id": "HIGH-01",
+          "issue": "Weak JWT (long-lived, symmetric signing)",
+          "fix": "RS256 asymmetric JWT, 15-min access tokens, 7-day refresh tokens",
+          "impact": "Reduced token theft window, stronger cryptography"
+        },
+        {
+          "id": "HIGH-02",
+          "issue": "No rate limiting",
+          "fix": "Redis-backed distributed rate limiting (1000 req/min global, 10 req/min auth)",
+          "impact": "Brute force prevention, DDoS mitigation"
+        },
+        {
+          "id": "HIGH-03",
+          "issue": "Insufficient input validation",
+          "fix": "Zod runtime validation + DOMPurify sanitization + Prisma parameterized queries",
+          "impact": "SQL injection, XSS, path traversal prevention"
+        },
+        {
+          "id": "HIGH-04",
+          "issue": "No database encryption at rest",
+          "fix": "AES-256 encryption via AWS KMS, pgcrypto for PII columns",
+          "impact": "Compliance (GDPR, HIPAA, PCI-DSS), data breach protection"
+        },
+        {
+          "id": "HIGH-05",
+          "issue": "Unencrypted backups",
+          "fix": "AES-256 encrypted backups in S3 with MFA delete + versioning",
+          "impact": "Backup theft prevention, accidental deletion protection"
+        },
+        {
+          "id": "HIGH-06",
+          "issue": "No security scanning in CI/CD",
+          "fix": "Snyk, Trivy, npm audit in GitHub Actions (fail on high/critical)",
+          "impact": "Vulnerable dependency detection, supply chain security"
+        },
+        {
+          "id": "HIGH-07",
+          "issue": "No security monitoring",
+          "fix": "SIEM (Splunk/DataDog) with real-time correlation rules",
+          "impact": "Threat detection, incident response, compliance auditing"
+        },
+        {
+          "id": "HIGH-08",
+          "issue": "No disaster recovery plan",
+          "fix": "Cross-region replication, automated failover, quarterly DR drills",
+          "impact": "RTO < 1 hour, RPO < 5 minutes, business continuity"
+        }
+      ],
+      "medium": [
+        {
+          "id": "MED-01",
+          "issue": "Weak CORS configuration",
+          "fix": "Strict origin whitelist (only app.kohatlas.com, admin.kohatlas.com)",
+          "impact": "CSRF prevention, unauthorized domain access blocked"
+        },
+        {
+          "id": "MED-02",
+          "issue": "Missing security headers",
+          "fix": "CSP, HSTS, X-Frame-Options, X-Content-Type-Options via Helmet.js",
+          "impact": "XSS, clickjacking, MIME sniffing prevention"
+        },
+        {
+          "id": "MED-03",
+          "issue": "No session fixation protection",
+          "fix": "Session ID regeneration on login, httpOnly + secure cookies",
+          "impact": "Session hijacking prevention"
+        },
+        {
+          "id": "MED-04",
+          "issue": "Insufficient password policy",
+          "fix": "16+ chars, complexity, 90-day rotation, bcrypt cost=12",
+          "impact": "Credential stuffing, brute force prevention"
+        },
+        {
+          "id": "MED-05",
+          "issue": "No file upload validation",
+          "fix": "Content-Type whitelist, max 10MB, virus scanning (ClamAV)",
+          "impact": "Malware upload, zip bomb prevention"
+        },
+        {
+          "id": "MED-06",
+          "issue": "Verbose error messages",
+          "fix": "Generic errors in production, stack traces only in dev + Sentry",
+          "impact": "Information disclosure prevention"
+        },
+        {
+          "id": "MED-07",
+          "issue": "No API versioning",
+          "fix": "/api/v1/* versioning with deprecation warnings",
+          "impact": "Breaking change management, backward compatibility"
+        },
+        {
+          "id": "MED-08",
+          "issue": "Missing audit logging",
+          "fix": "pgaudit + Vault audit logs + API auth events to Elasticsearch",
+          "impact": "Forensics, compliance, incident investigation"
+        },
+        {
+          "id": "MED-09",
+          "issue": "No dependency pinning",
+          "fix": "package-lock.json with exact versions, Dependabot auto-updates",
+          "impact": "Supply chain security, reproducible builds"
+        },
+        {
+          "id": "MED-10",
+          "issue": "Default admin credentials",
+          "fix": "No default credentials, forced password change on first login",
+          "impact": "Credential stuffing prevention"
+        }
+      ],
+      "low": [
+        {
+          "id": "LOW-01",
+          "issue": "No Content-Security-Policy",
+          "fix": "CSP with strict-dynamic, nonce-based script execution",
+          "impact": "XSS prevention"
+        },
+        {
+          "id": "LOW-02",
+          "issue": "Missing SRI for CDN assets",
+          "fix": "Subresource Integrity hashes for all external scripts",
+          "impact": "CDN compromise prevention"
+        },
+        {
+          "id": "LOW-03",
+          "issue": "No cache poisoning protection",
+          "fix": "Cache-Control headers, Vary header validation",
+          "impact": "Cache poisoning prevention"
+        },
+        {
+          "id": "LOW-04",
+          "issue": "Weak TLS configuration",
+          "fix": "TLS 1.3 only, strong cipher suites (AES-256-GCM, ChaCha20)",
+          "impact": "Downgrade attack prevention"
+        },
+        {
+          "id": "LOW-05",
+          "issue": "No DNSSEC",
+          "fix": "DNSSEC enabled for kohatlas.com (CloudFlare)",
+          "impact": "DNS spoofing prevention"
+        },
+        {
+          "id": "LOW-06",
+          "issue": "Missing security.txt",
+          "fix": "security.txt at /.well-known/security.txt with GPG key",
+          "impact": "Responsible disclosure channel"
+        }
+      ],
+      "totalFixed": 27
+    },
+    "authentication": {
+      "provider": "Auth0 / Clerk (OAuth 2.0 + OIDC)",
+      "methods": ["Password + MFA", "Social Login (Google, GitHub)", "Magic Link"],
+      "mfa": {
+        "enforced": "Required for admin + architect roles",
+        "methods": ["TOTP (Google Authenticator, Authy)", "SMS (fallback)", "WebAuthn (hardware keys)"]
+      },
+      "sessionManagement": {
+        "storage": "Redis-backed sessions",
+        "cookies": "httpOnly, Secure, SameSite=Strict",
+        "accessTokenTTL": "15 minutes (short-lived)",
+        "refreshTokenTTL": "7 days (rotating)",
+        "idleTimeout": "24 hours",
+        "absoluteTimeout": "30 days (forced re-authentication)"
+      },
+      "passwordPolicy": {
+        "minLength": 16,
+        "complexity": "Upper, lower, digit, special char",
+        "rotation": "90 days (with 5 password history)",
+        "hashing": "bcrypt (cost=12)",
+        "breachDetection": "Have I Been Pwned API integration"
+      },
+      "accountLockout": {
+        "failedAttempts": 5,
+        "lockoutDuration": "15 minutes",
+        "notifyUser": "Email on lockout"
+      }
+    },
+    "authorization": {
+      "model": "RBAC + ABAC hybrid",
+      "roles": {
+        "admin": "Full system access, user management, audit logs",
+        "architect": "Create/edit designs, run analysis, export",
+        "viewer": "Read-only access to designs",
+        "auditor": "Read-only access to audit logs + security reports"
+      },
+      "enforcement": {
+        "api": "Middleware chain (JWT validation → role check → resource ownership)",
+        "database": "Row-Level Security (users can only access their own designs)",
+        "engine": "Casbin for complex ABAC policies"
+      }
+    },
+    "encryption": {
+      "inTransit": {
+        "external": "TLS 1.3 (CloudFlare → WAF → Load Balancer)",
+        "internal": "mTLS with Vault-issued certificates (API → DB, API → Redis, API → Vault)",
+        "cipherSuites": ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+        "protocols": "TLS 1.3 only (TLS 1.2 and below disabled)"
+      },
+      "atRest": {
+        "database": "PostgreSQL AES-256 encryption via AWS RDS, pgcrypto for PII columns",
+        "cache": "Redis encrypted persistence (RDB + AOF on encrypted EBS)",
+        "storage": "S3 SSE-KMS with customer-managed keys (yearly rotation)",
+        "backups": "AES-256 encrypted backups in S3 with MFA delete",
+        "logs": "Elasticsearch index encryption (AES-256)"
+      },
+      "keyManagement": {
+        "primary": "HashiCorp Vault Transit Engine (AES-256-GCM)",
+        "cloud": "AWS KMS with automatic yearly rotation",
+        "backup": "Offline root CA keys in HSM (air-gapped)"
+      }
+    },
+    "networkSecurity": {
+      "architecture": "Zero-trust network with VPC isolation",
+      "vpc": {
+        "cidr": "10.0.0.0/16",
+        "publicSubnets": ["10.0.1.0/24 (Load Balancer)", "10.0.2.0/24 (NAT Gateway)"],
+        "privateSubnets": ["10.0.10.0/24 (API Gateway)", "10.0.11.0/24 (Workers)", "10.0.12.0/24 (Databases)"],
+        "isolatedSubnets": ["10.0.20.0/24 (Vault)", "10.0.21.0/24 (Monitoring)"]
+      },
+      "securityGroups": {
+        "lb": "Inbound: 443 from 0.0.0.0/0, Outbound: 3000 to API SG",
+        "api": "Inbound: 3000 from LB SG, Outbound: 5432 to DB SG, 6379 to Redis SG, 8200 to Vault SG",
+        "db": "Inbound: 5432 from API SG + Workers SG, Outbound: None",
+        "redis": "Inbound: 6379 from API SG + Workers SG, Outbound: None"
+      },
+      "firewall": "ModSecurity WAF with OWASP CRS 4.0 (paranoia level 2)",
+      "ddos": "CloudFlare with 134 Tbps capacity, layer 3/4/7 protection",
+      "ips": "AWS Network Firewall with Suricata rules (block known malicious IPs)"
+    },
+    "dataProtection": {
+      "classification": {
+        "public": "Marketing materials, documentation",
+        "internal": "Architecture designs, analysis results",
+        "confidential": "User credentials, API keys, PII",
+        "restricted": "Payment data (if applicable), healthcare data (if HIPAA)"
+      },
+      "pii": {
+        "fields": ["email", "name", "ip_address", "session_tokens"],
+        "encryption": "pgcrypto for database columns, Vault Transit Engine for API",
+        "anonymization": "HMAC-SHA256 in logs, pseudonymization for analytics",
+        "retention": "90 days for logs, 7 years for audit trails",
+        "rightToDelete": "GDPR-compliant user data deletion API"
+      },
+      "dlp": {
+        "scanning": "Prevent PII in logs, alerts, exports",
+        "masking": "Automatic redaction (emails → e***@example.com, tokens → tok_***)"
+      }
+    },
+    "monitoring": {
+      "metrics": {
+        "platform": "Prometheus + Grafana",
+        "scrapeInterval": "15 seconds",
+        "retention": "90 days in Prometheus, long-term in Thanos (S3)",
+        "dashboards": "API performance, database health, cache metrics, security events"
+      },
+      "logging": {
+        "platform": "Elasticsearch + Kibana + Filebeat",
+        "format": "JSON structured logs",
+        "retention": "7 days hot, 30 days warm, 90 days cold, then deleted",
+        "pii": "Automatic redaction via logstash filters"
+      },
+      "errors": {
+        "platform": "Sentry (self-hosted or SaaS)",
+        "features": "Error capture, session replay, performance monitoring, release tracking",
+        "alerts": "New errors, error spikes, performance degradation"
+      },
+      "tracing": {
+        "platform": "OpenTelemetry + Jaeger",
+        "sampling": "10% (1 in 10 requests)",
+        "retention": "90 days in Elasticsearch"
+      },
+      "siem": {
+        "platform": "Splunk Enterprise Security / DataDog Security Monitoring",
+        "useCases": ["Brute force detection", "Privilege escalation", "Data exfiltration", "Compliance reporting"],
+        "alerts": "Real-time correlation rules + ML anomaly detection"
+      },
+      "uptime": {
+        "tool": "UptimeRobot / Pingdom",
+        "checks": "HTTPS endpoints every 1 minute, TCP ports every 5 minutes",
+        "sla": "99.9% uptime (43.8 minutes downtime/month allowed)"
+      }
+    },
+    "incidentResponse": {
+      "playbooks": {
+        "bruteForce": "Auto-block IP after 50 failed logins, alert security team",
+        "dataExfiltration": "Quarantine affected accounts, revoke credentials, audit access logs",
+        "ddos": "Enable CloudFlare Under Attack Mode, scale infrastructure",
+        "sqlInjection": "Block offending IP via WAF, patch vulnerable endpoint, audit database logs"
+      },
+      "team": {
+        "oncall": "24/7 PagerDuty rotation (2 SRE, 1 security engineer)",
+        "escalation": "Tier 1 (on-call SRE) → Tier 2 (security lead) → Tier 3 (CISO)"
+      },
+      "tools": ["PagerDuty (alerting)", "Slack (communication)", "Jira (ticketing)", "SOAR platform (automation)"]
+    },
+    "compliance": {
+      "frameworks": {
+        "soc2": {
+          "type": "Type II (continuous monitoring)",
+          "controlsCovered": ["CC6.1 (Logical Access)", "CC6.7 (Encryption)", "CC7.2 (Monitoring)"],
+          "auditFrequency": "Annual",
+          "auditor": "Big 4 accounting firm"
+        },
+        "iso27001": {
+          "controls": ["A.9.4.2 (Access Control)", "A.10.1.1 (Cryptographic Controls)", "A.12.4.1 (Event Logging)"],
+          "certificationBody": "ANAB-accredited registrar",
+          "surveillance": "Annual surveillance audits"
+        },
+        "gdpr": {
+          "articles": ["Article 32 (Security)", "Article 33 (Breach Notification)", "Article 17 (Right to Erasure)"],
+          "dpo": "Data Protection Officer appointed",
+          "dpia": "Data Protection Impact Assessment completed"
+        },
+        "hipaa": {
+          "rules": ["Security Rule (164.312)", "Privacy Rule (164.530)", "Breach Notification Rule"],
+          "baa": "Business Associate Agreements with all subprocessors",
+          "phi": "Encrypted at rest + in transit, audit logs retained 7 years"
+        },
+        "pciDss": {
+          "version": "PCI-DSS 4.0",
+          "requirements": ["Req 3.4 (Encryption)", "Req 8.2 (Authentication)", "Req 10.2 (Audit Logs)"],
+          "qsa": "Qualified Security Assessor for annual validation",
+          "scope": "CDE (Cardholder Data Environment) minimized to payment processor only"
+        },
+        "nist": {
+          "framework": "NIST CSF 2.0 + NIST 800-53",
+          "controls": ["AC-2 (Account Management)", "SC-7 (Boundary Protection)", "AU-2 (Audit Logging)"]
+        }
+      },
+      "reporting": {
+        "auditLogs": "7-year retention in immutable S3 (Object Lock)",
+        "incidentReporting": "72-hour breach notification (GDPR), 60-day for HIPAA",
+        "complianceDashboard": "Real-time compliance posture in Grafana"
+      }
+    }
+  },
+  "deployment": {
+    "platform": {
+      "cloudProvider": "AWS (primary) with multi-cloud capability (Azure, GCP)",
+      "compute": "Amazon EKS (Elastic Kubernetes Service) 1.28+",
+      "networking": "Amazon VPC with Transit Gateway for multi-region",
+      "loadBalancing": "AWS Application Load Balancer (ALB) + HAProxy",
+      "dns": "AWS Route 53 with health checks + CloudFlare for DDoS"
+    },
+    "containers": {
+      "runtime": "Docker 24+ with containerd",
+      "orchestration": "Kubernetes 1.28+ (EKS)",
+      "registries": ["Amazon ECR (private)", "GitHub Container Registry (backup)"],
+      "imageScanning": "Trivy + Snyk for vulnerability scanning",
+      "imageSigning": "Cosign for image provenance (SLSA Level 3)",
+      "baseImages": "Distroless containers (minimal attack surface)"
+    },
+    "kubernetes": {
+      "clusters": {
+        "production": "us-east-1 (primary) + us-west-2 (DR)",
+        "staging": "us-east-1 (single cluster)",
+        "development": "Local kind/minikube"
+      },
+      "nodeGroups": {
+        "api": "r6g.2xlarge (ARM Graviton3, 4-10 nodes with HPA)",
+        "workers": "c6g.2xlarge (CPU-optimized, 2-8 nodes)",
+        "database": "r6g.4xlarge (memory-optimized, 3 nodes for PostgreSQL)"
+      },
+      "networking": "Calico CNI with network policies (zero-trust)",
+      "storage": "EBS CSI driver with gp3 volumes (encrypted)",
+      "secrets": "External Secrets Operator (sync from Vault)",
+      "ingress": "NGINX Ingress Controller with cert-manager (Let's Encrypt)",
+      "serviceMesh": "Istio for mTLS + observability (optional)",
+      "autoscaling": {
+        "hpa": "Horizontal Pod Autoscaler (CPU > 70%, memory > 80%)",
+        "vpa": "Vertical Pod Autoscaler (right-size requests/limits)",
+        "clusterAutoscaler": "Scale nodes based on pod scheduling failures"
+      },
+      "security": {
+        "psp": "Pod Security Standards (restricted profile)",
+        "rbac": "Fine-grained RBAC for service accounts",
+        "networkPolicies": "Default deny all, explicit allow per service",
+        "admissionControllers": ["OPA Gatekeeper (policy enforcement)", "Falco (runtime security)"]
+      }
+    },
+    "cicd": {
+      "platform": "GitHub Actions",
+      "workflows": {
+        "build": {
+          "triggers": ["push to main", "pull_request"],
+          "steps": [
+            "Checkout code",
+            "Setup Node.js 22",
+            "Install dependencies (npm ci)",
+            "Run linters (ESLint, Prettier)",
+            "Run tests (Jest + Playwright)",
+            "Build Docker image",
+            "Scan image (Trivy, Snyk)",
+            "Sign image (Cosign)",
+            "Push to ECR"
+          ],
+          "duration": "~5 minutes"
+        },
+        "deploy": {
+          "triggers": ["push to main (after build passes)", "manual workflow_dispatch"],
+          "steps": [
+            "Authenticate to AWS (OIDC)",
+            "Update kubeconfig (EKS)",
+            "Apply Kubernetes manifests (kubectl apply -f k8s/)",
+            "Wait for rollout (kubectl rollout status)",
+            "Run smoke tests (curl /health)",
+            "Notify Slack (#deployments)"
+          ],
+          "strategy": "Rolling update (25% max surge, 25% max unavailable)",
+          "rollback": "Automatic rollback if smoke tests fail",
+          "duration": "~3 minutes"
+        },
+        "security": {
+          "triggers": ["schedule (daily at 2 AM)", "pull_request"],
+          "steps": [
+            "npm audit (fail on high/critical)",
+            "Snyk test (dependencies + container images)",
+            "SAST (Semgrep, CodeQL)",
+            "Secret scanning (TruffleHog, GitGuardian)",
+            "License compliance (FOSSA)"
+          ],
+          "duration": "~10 minutes"
+        }
+      },
+      "environments": {
+        "development": "Auto-deploy on every commit to dev branch",
+        "staging": "Auto-deploy on every commit to main",
+        "production": "Manual approval required (via GitHub Environments)"
+      },
+      "secrets": "GitHub Actions secrets + OIDC for AWS (no long-lived credentials)"
+    },
+    "regions": {
+      "primary": {
+        "region": "us-east-1 (N. Virginia)",
+        "availabilityZones": ["us-east-1a", "us-east-1b", "us-east-1c"],
+        "services": ["API Gateway", "PostgreSQL Primary", "Redis Cluster", "Workers", "Vault Primary"]
+      },
+      "dr": {
+        "region": "us-west-2 (Oregon)",
+        "availabilityZones": ["us-west-2a", "us-west-2b"],
+        "services": ["PostgreSQL Read Replica", "Redis Replica", "Vault Standby"],
+        "failoverMode": "Active-Passive (manual failover with Route 53 health checks)"
+      },
+      "cdn": {
+        "provider": "CloudFlare (280+ global edge locations)",
+        "caching": "Static assets cached at edge (HTML, CSS, JS, images)"
+      }
+    },
+    "disasterRecovery": {
+      "strategy": "Active-Passive multi-region",
+      "rto": "< 1 hour (Recovery Time Objective)",
+      "rpo": "< 5 minutes (Recovery Point Objective)",
+      "backups": {
+        "database": "Daily full + 5-min WAL archiving to S3 (cross-region replication)",
+        "vault": "6-hour Raft snapshots to S3 (encrypted + versioned)",
+        "configuration": "All IaC in Git (Terraform state in S3 with locking)"
+      },
+      "failover": {
+        "manual": "DNS failover via Route 53 (update CNAME to us-west-2 ALB)",
+        "automated": "Health checks trigger failover if us-east-1 unhealthy for > 5 minutes",
+        "validation": "Quarterly DR drills (restore backups, test failover)"
+      },
+      "dataReplication": {
+        "database": "Streaming replication to us-west-2 (< 5s lag)",
+        "storage": "S3 cross-region replication (< 15 min)",
+        "vault": "Active-Passive replication (promoted to active on failure)"
+      }
+    },
+    "infrastructureAsCode": {
+      "tool": "Terraform 1.6+",
+      "structure": {
+        "modules": ["vpc", "eks", "rds", "elasticache", "s3", "iam", "monitoring"],
+        "environments": ["dev.tfvars", "staging.tfvars", "prod.tfvars"]
+      },
+      "stateManagement": "S3 backend with DynamoDB locking (encrypted + versioned)",
+      "cicd": "Atlantis for Terraform PR automation (plan on PR, apply on merge)",
+      "validation": "tflint, tfsec, Checkov for security scanning"
+    },
+    "monitoring": {
+      "infrastructure": "Prometheus + Grafana (CPU, memory, disk, network)",
+      "applications": "OpenTelemetry + Jaeger (traces), Sentry (errors)",
+      "logs": "Elasticsearch + Kibana + Filebeat (centralized logging)",
+      "uptime": "UptimeRobot + CloudWatch Synthetics (endpoint monitoring)",
+      "costs": "AWS Cost Explorer + CloudHealth (budget alerts)"
+    },
+    "scalability": {
+      "currentCapacity": "100K users, 1M requests/day",
+      "targetCapacity": "1M users, 10M requests/day",
+      "bottlenecks": {
+        "database": "Horizontal scaling with sharding (coming in Phase 2)",
+        "cache": "Redis Cluster with 6+ nodes (add more masters for scaling)",
+        "workers": "Kubernetes HPA scales to 100+ pods"
+      },
+      "loadTesting": "k6 for load testing (simulate 10K concurrent users)"
+    },
+    "costs": {
+      "estimated": "$3,500 - $4,500/month for 100K users",
+      "breakdown": {
+        "compute": "$1,500 (EKS nodes)",
+        "database": "$800 (RDS PostgreSQL r6g.2xlarge)",
+        "cache": "$300 (ElastiCache Redis r7g.xlarge)",
+        "storage": "$200 (S3 + EBS)",
+        "networking": "$400 (ALB + data transfer)",
+        "monitoring": "$300 (Prometheus, Sentry, Splunk)"
+      },
+      "optimization": "Reserved Instances (30% savings), Spot Instances for workers (70% savings)"
+    }
+  }
+}

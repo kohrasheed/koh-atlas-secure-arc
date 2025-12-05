@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koh Atlas Enterprise Architecture - Visual Diagram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .diagram-container {
+            padding: 40px;
+            background: #f8fafc;
+        }
+        
+        .layer {
+            margin-bottom: 40px;
+        }
+        
+        .layer-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .nodes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .node {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            border-color: #3b82f6;
+        }
+        
+        .node::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        }
+        
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .node-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+        
+        .node-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        .node-tech {
+            font-size: 0.85em;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        
+        .node-description {
+            font-size: 0.9em;
+            color: #475569;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .node-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .tag {
+            font-size: 0.75em;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-weight: 600;
+        }
+        
+        .tag.critical { background: #fee2e2; color: #991b1b; }
+        .tag.high { background: #ffedd5; color: #9a3412; }
+        .tag.security { background: #dcfce7; color: #166534; }
+        
+        .connections {
+            margin-top: 40px;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+        }
+        
+        .connections h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #1e293b;
+        }
+        
+        .connection-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 15px;
+        }
+        
+        .connection {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #3b82f6;
+            font-size: 0.9em;
+        }
+        
+        .connection-path {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+        
+        .connection-detail {
+            color: #64748b;
+            font-size: 0.85em;
+        }
+        
+        .security-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .compliance {
+            margin-top: 30px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+        }
+        
+        .compliance h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        
+        .compliance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .compliance-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .compliance-item strong {
+            display: block;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        
+        .icon-client { background: linear-gradient(135deg, #ec4899, #f472b6); }
+        .icon-cdn { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+        .icon-waf { background: linear-gradient(135deg, #ef4444, #f87171); }
+        .icon-lb { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+        .icon-api { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+        .icon-vault { background: linear-gradient(135deg, #000000, #404040); }
+        .icon-db { background: linear-gradient(135deg, #0ea5e9, #38bdf8); }
+        .icon-redis { background: linear-gradient(135deg, #dc2626, #ef4444); }
+        .icon-workers { background: linear-gradient(135deg, #059669, #10b981); }
+        .icon-s3 { background: linear-gradient(135deg, #ff9900, #ffb84d); }
+        .icon-monitor { background: linear-gradient(135deg, #6366f1, #818cf8); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏛️ Koh Atlas Enterprise Security Architecture</h1>
+            <p>Production-Ready Secure Architecture with Defense-in-Depth</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">A-</div>
+                    <div class="stat-label">Security Rating</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">11</div>
+                    <div class="stat-label">Components</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">27</div>
+                    <div class="stat-label">Issues Fixed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">99.95%</div>
+                    <div class="stat-label">Availability SLA</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="diagram-container">
+            <!-- Client Tier -->
+            <div class="layer">
+                <div class="layer-title">🌐 Client Tier (Untrusted Zone)</div>
+                <div class="nodes">
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-client">🖥️</div>
+                            <div>
+                                <div class="node-title">React Frontend PWA</div>
+                                <div class="node-tech">React 19 + TypeScript 5.7</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Progressive Web App with Service Worker, comprehensive CSP policy, and security headers
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag security">HTTPS Only</span>
+                            <span class="tag security">CSP Enforced</span>
+                            <span class="tag">httpOnly Cookies</span>
+                            <span class="tag">SRI</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Edge Security Layer -->
+            <div class="layer">
+                <div class="layer-title">🛡️ Edge Security Layer</div>
+                <div class="nodes">
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-cdn">☁️</div>
+                            <div>
+                                <div class="node-title">CloudFlare CDN</div>
+                                <div class="node-tech">280+ Edge Locations</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Global CDN with 134 Tbps DDoS protection, bot management, and intelligent caching
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag critical">DDoS Protection</span>
+                            <span class="tag high">WAF</span>
+                            <span class="tag">TLS 1.3</span>
+                            <span class="tag">Bot Mitigation</span>
+                        </div>
+                    </div>
+                    
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-waf">🔥</div>
+                            <div>
+                                <div class="node-title">ModSecurity WAF</div>
+                                <div class="node-tech">OWASP CRS 4.0</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Application firewall with paranoia level 2, custom rules, and geo-blocking
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag critical">SQL Injection</span>
+                            <span class="tag critical">XSS Protection</span>
+                            <span class="tag high">Rate Limiting</span>
+                            <span class="tag">IP Reputation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Network Layer -->
+            <div class="layer">
+                <div class="layer-title">⚖️ Network Distribution Layer</div>
+                <div class="nodes">
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-lb">⚡</div>
+                            <div>
+                                <div class="node-title">HAProxy Load Balancer</div>
+                                <div class="node-tech">HAProxy 2.8 + SSL Termination</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Layer 7 load balancer with health checks, session persistence, and attack prevention
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag security">mTLS</span>
+                            <span class="tag">Round Robin</span>
+                            <span class="tag">Health Checks</span>
+                            <span class="tag">HTTP/2</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Application Layer -->
+            <div class="layer">
+                <div class="layer-title">🚀 Application Layer</div>
+                <div class="nodes">
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-api">🔌</div>
+                            <div>
+                                <div class="node-title">API Gateway</div>
+                                <div class="node-tech">Express 4.19 + TypeScript 5.7</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            RESTful API with JWT RS256 authentication, RBAC/ABAC authorization, and input validation
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag critical">JWT Auth</span>
+                            <span class="tag high">RBAC/ABAC</span>
+                            <span class="tag security">Zod Validation</span>
+                            <span class="tag">Rate Limiting</span>
+                        </div>
+                    </div>
+                    
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-workers">⚙️</div>
+                            <div>
+                                <div class="node-title">Background Workers</div>
+                                <div class="node-tech">Node.js 22 + BullMQ 5.x</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Async job processing for security analysis, PDF exports, and notifications
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag security">Sandboxed</span>
+                            <span class="tag">Read-Only DB</span>
+                            <span class="tag">Resource Limits</span>
+                            <span class="tag">BullMQ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Layer -->
+            <div class="layer">
+                <div class="layer-title">🔐 Security Layer</div>
+                <div class="nodes">
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-vault">🔑</div>
+                            <div>
+                                <div class="node-title">HashiCorp Vault</div>
+                                <div class="node-tech">Vault Enterprise 1.15+</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Secrets management with dynamic credentials, PKI, and encryption-as-a-service
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag critical">Secrets Management</span>
+                            <span class="tag critical">Dynamic Creds</span>
+                            <span class="tag security">FIPS 140-2</span>
+                            <span class="tag">Auto-Unseal</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data Layer -->
+            <div class="layer">
+                <div class="layer-title">💾 Data Layer</div>
+                <div class="nodes">
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-db">🗄️</div>
+                            <div>
+                                <div class="node-title">PostgreSQL Primary</div>
+                                <div class="node-tech">PostgreSQL 16.1 + Patroni HA</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Primary database with encryption at rest, RLS, and streaming replication
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag critical">AES-256</span>
+                            <span class="tag high">Row-Level Security</span>
+                            <span class="tag security">mTLS</span>
+                            <span class="tag">Prisma ORM</span>
+                        </div>
+                    </div>
+                    
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-redis">⚡</div>
+                            <div>
+                                <div class="node-title">Redis Cluster</div>
+                                <div class="node-tech">Redis 7.2 (6 nodes)</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Distributed cache with TLS, ACLs, and Redis Sentinel for high availability
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag security">TLS 1.3</span>
+                            <span class="tag security">ACLs v2</span>
+                            <span class="tag">Session Store</span>
+                            <span class="tag">Cache</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Storage & Monitoring -->
+            <div class="layer">
+                <div class="layer-title">📊 Storage & Observability</div>
+                <div class="nodes">
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-s3">📦</div>
+                            <div>
+                                <div class="node-title">S3 Storage</div>
+                                <div class="node-tech">AWS S3 with SSE-KMS</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Object storage with encryption, versioning, MFA delete, and cross-region replication
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag critical">SSE-KMS</span>
+                            <span class="tag high">Versioning</span>
+                            <span class="tag security">MFA Delete</span>
+                            <span class="tag">Object Lock</span>
+                        </div>
+                    </div>
+                    
+                    <div class="node">
+                        <div class="node-header">
+                            <div class="node-icon icon-monitor">📈</div>
+                            <div>
+                                <div class="node-title">Monitoring Stack</div>
+                                <div class="node-tech">Prometheus + Grafana + Sentry</div>
+                            </div>
+                        </div>
+                        <div class="node-description">
+                            Complete observability with metrics, logs, traces, and error tracking
+                        </div>
+                        <div class="node-tags">
+                            <span class="tag">Prometheus</span>
+                            <span class="tag">Grafana</span>
+                            <span class="tag">Sentry</span>
+                            <span class="tag">SIEM</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Connections -->
+            <div class="connections">
+                <h2>🔗 Secure Communication Paths</h2>
+                <div class="connection-list">
+                    <div class="connection">
+                        <div class="connection-path">Client → CDN <span class="security-badge">TLS 1.3</span></div>
+                        <div class="connection-detail">HTTPS/2 + HTTPS/3 (QUIC), DDoS protection, static asset caching</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">CDN → WAF <span class="security-badge">TLS 1.3</span></div>
+                        <div class="connection-detail">OWASP CRS evaluation, rate limiting, IP reputation checking</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">WAF → Load Balancer <span class="security-badge">mTLS</span></div>
+                        <div class="connection-detail">HTTP/2 with mutual authentication, certificate validation</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">Load Balancer → API Gateway <span class="security-badge">mTLS</span></div>
+                        <div class="connection-detail">SSL termination, health checks, session persistence</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">API Gateway → Vault <span class="security-badge">mTLS</span></div>
+                        <div class="connection-detail">AppRole authentication, dynamic credentials, secrets retrieval</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">API Gateway → PostgreSQL <span class="security-badge">mTLS</span></div>
+                        <div class="connection-detail">SCRAM-SHA-256, PgBouncer pooling, read-write access</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">API Gateway → Redis <span class="security-badge">TLS 1.3</span></div>
+                        <div class="connection-detail">ACL authentication, session store, cache, rate limiting</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">API Gateway → Workers <span class="security-badge">TLS 1.3</span></div>
+                        <div class="connection-detail">BullMQ job queue, async job submission via Redis</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">Workers → PostgreSQL <span class="security-badge">mTLS</span></div>
+                        <div class="connection-detail">Read-only access, dynamic credentials, SELECT only</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">Workers → Redis <span class="security-badge">TLS 1.3</span></div>
+                        <div class="connection-detail">Job fetching, status updates, XREAD/XACK operations</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">Workers → Vault <span class="security-badge">mTLS</span></div>
+                        <div class="connection-detail">Fetch API keys (Anthropic, SendGrid, AWS credentials)</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">Workers → S3 <span class="security-badge">TLS 1.3</span></div>
+                        <div class="connection-detail">STS temporary credentials, PDF exports, backup uploads</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">API Gateway → S3 <span class="security-badge">TLS 1.3</span></div>
+                        <div class="connection-detail">User file uploads, pre-signed URLs, content validation</div>
+                    </div>
+                    <div class="connection">
+                        <div class="connection-path">All Services → Monitoring <span class="security-badge">TLS 1.3</span></div>
+                        <div class="connection-detail">Metrics export, log aggregation, distributed tracing</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compliance -->
+            <div class="compliance">
+                <h2>✅ Compliance & Security Frameworks</h2>
+                <div class="compliance-grid">
+                    <div class="compliance-item">
+                        <strong>SOC 2</strong>
+                        Type II
+                    </div>
+                    <div class="compliance-item">
+                        <strong>ISO 27001</strong>
+                        2022 Standard
+                    </div>
+                    <div class="compliance-item">
+                        <strong>GDPR</strong>
+                        Article 32
+                    </div>
+                    <div class="compliance-item">
+                        <strong>HIPAA</strong>
+                        Security Rule
+                    </div>
+                    <div class="compliance-item">
+                        <strong>PCI-DSS</strong>
+                        Version 4.0
+                    </div>
+                    <div class="compliance-item">
+                        <strong>NIST</strong>
+                        800-53 Controls
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

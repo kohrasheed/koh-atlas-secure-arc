@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koh Atlas - Interactive Architecture Canvas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            display: block;
+            cursor: grab;
+            background: #0d1117;
+        }
+        
+        #canvas:active {
+            cursor: grabbing;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 1000;
+        }
+        
+        .controls h3 {
+            color: #58a6ff;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .control-btn {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .control-btn:hover {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+        
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 1000;
+        }
+        
+        .legend h3 {
+            color: #58a6ff;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 3px;
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+        
+        .info-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            max-width: 300px;
+            z-index: 1000;
+        }
+        
+        .info-panel h2 {
+            color: #58a6ff;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .info-panel p {
+            color: #8b949e;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin: 2px;
+            font-weight: 500;
+        }
+        
+        .badge-blue { background: #1f6feb; color: #fff; }
+        .badge-green { background: #238636; color: #fff; }
+        .badge-red { background: #da3633; color: #fff; }
+        .badge-purple { background: #8957e5; color: #fff; }
+        .badge-orange { background: #f85149; color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="info-panel">
+        <h2>🏗️ Koh Atlas Architecture v2.1</h2>
+        <p>Enterprise Security Platform - Hardened</p>
+        <div>
+            <span class="badge badge-blue">29 Components</span>
+            <span class="badge badge-green">100% Encrypted</span>
+            <span class="badge badge-red">99.95% SLA</span>
+        </div>
+        <div style="margin-top: 10px; font-size: 11px; color: #8b949e;">
+            ✅ Network Segmentation<br>
+            ✅ DNS + DNSSEC<br>
+            ✅ Network Firewall<br>
+            ✅ Database Activity Monitoring<br>
+            ✅ At-Rest Encryption<br>
+            ✅ Comprehensive Audit Logging
+        </div>
+    </div>
+    
+    <div class="controls">
+        <h3>🎮 Controls</h3>
+        <button class="control-btn" onclick="resetView()">🔄 Reset View</button>
+        <button class="control-btn" onclick="toggleConnections()">🔗 Toggle Connections</button>
+        <button class="control-btn" onclick="exportDiagram()">💾 Export PNG</button>
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #30363d;">
+            <small style="color: #8b949e;">
+                🖱️ Drag: Move nodes<br>
+                🖱️ Wheel: Zoom<br>
+                🖱️ Hover: Details
+            </small>
+        </div>
+    </div>
+    
+    <div class="legend">
+        <h3>🎨 Protocols & Encryption</h3>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f85149;"></div>
+            <span>mTLS (Mutual Auth)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #1f6feb;"></div>
+            <span>HTTPS/TLS 1.3</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #3fb950;"></div>
+            <span>WebSocket (WSS)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #a371f7;"></div>
+            <span>gRPC + TLS</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ff7b72;"></div>
+            <span>Kafka + TLS</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #6f42c1;"></div>
+            <span>SIEM Audit Logs</span>
+        </div>
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #30363d;">
+            <div style="font-size: 11px; color: #8b949e;">
+                🔒 = In-Transit Encryption<br>
+                💾 = At-Rest Encryption
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Canvas setup
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            draw();
+        });
+        
+        // Architecture components
+        const nodes = [
+            // Layer 0: DNS & Edge Security
+            { id: 21, name: 'Route53\nDNS+DNSSEC', x: 200, y: 20, width: 130, height: 60, color: '#ff9800', layer: 'DNS', encrypted: true },
+            { id: 22, name: 'Network\nFirewall', x: 400, y: 20, width: 130, height: 60, color: '#e74c3c', layer: 'Firewall', encrypted: true },
+            { id: 23, name: 'DDoS Shield\n134 Tbps', x: 600, y: 20, width: 130, height: 60, color: '#e74c3c', layer: 'Security', encrypted: true },
+            
+            // Layer 1: Client
+            { id: 1, name: 'React PWA', x: 400, y: 120, width: 140, height: 70, color: '#58a6ff', layer: 'Client', encrypted: true },
+            
+            // Layer 2: Edge
+            { id: 2, name: 'CloudFlare CDN', x: 200, y: 240, width: 140, height: 70, color: '#f78166', layer: 'Edge', encrypted: true },
+            { id: 3, name: 'WAF', x: 380, y: 240, width: 140, height: 70, color: '#f78166', layer: 'Edge', encrypted: true },
+            { id: 4, name: 'HAProxy LB', x: 560, y: 240, width: 140, height: 70, color: '#f78166', layer: 'Edge', encrypted: true },
+            
+            // Layer 2.5: VPC & Network Segmentation
+            { id: 24, name: 'VPC\n10.0.0.0/16', x: 100, y: 340, width: 140, height: 50, color: '#34495e', layer: 'Network', encrypted: true },
+            { id: 25, name: 'Public Subnet\n10.0.1.0/24', x: 260, y: 340, width: 140, height: 50, color: '#16a085', layer: 'Network', encrypted: true },
+            { id: 26, name: 'Private Subnet\n10.0.2.0/24', x: 420, y: 340, width: 140, height: 50, color: '#27ae60', layer: 'Network', encrypted: true },
+            { id: 27, name: 'Data Subnet\n10.0.3.0/24', x: 580, y: 340, width: 140, height: 50, color: '#2ecc71', layer: 'Network', encrypted: true },
+            
+            // Layer 3: Gateway
+            { id: 5, name: 'API Gateway\nREST', x: 200, y: 420, width: 120, height: 70, color: '#3fb950', layer: 'Gateway', encrypted: true },
+            { id: 15, name: 'GraphQL\nGateway', x: 340, y: 420, width: 120, height: 70, color: '#d29922', layer: 'Gateway', encrypted: true },
+            { id: 16, name: 'gRPC\nGateway', x: 480, y: 420, width: 120, height: 70, color: '#a371f7', layer: 'Gateway', encrypted: true },
+            { id: 17, name: 'WebSocket\nServer', x: 620, y: 420, width: 120, height: 70, color: '#3fb950', layer: 'Gateway', encrypted: true },
+            
+            // Layer 4: Messaging
+            { id: 18, name: 'Kafka\nEvent Bus', x: 280, y: 540, width: 140, height: 70, color: '#ff7b72', layer: 'Messaging', encrypted: true },
+            { id: 19, name: 'Service Mesh\n(Istio)', x: 480, y: 540, width: 140, height: 70, color: '#8957e5', layer: 'Messaging', encrypted: true },
+            
+            // Layer 5: Application
+            { id: 9, name: 'Workers\n(BullMQ)', x: 100, y: 660, width: 120, height: 70, color: '#1f6feb', layer: 'App', encrypted: true },
+            { id: 20, name: 'AI Service\n(Claude)', x: 240, y: 660, width: 120, height: 70, color: '#bc8cff', layer: 'App', encrypted: true },
+            
+            // Layer 6: Security
+            { id: 6, name: 'Vault\nSecrets', x: 400, y: 660, width: 120, height: 70, color: '#ffd700', layer: 'Security', encrypted: true },
+            { id: 28, name: 'pgAudit\nDB Monitor', x: 540, y: 660, width: 120, height: 70, color: '#17a2b8', layer: 'Security', encrypted: true },
+            
+            // Layer 7: Data (with encryption badges)
+            { id: 7, name: 'PostgreSQL\n+AES-256', x: 80, y: 800, width: 120, height: 70, color: '#1f6feb', layer: 'Data', encrypted: true, encryptedAtRest: true },
+            { id: 8, name: 'Redis\n+TLS ACLs', x: 220, y: 800, width: 120, height: 70, color: '#dc3545', layer: 'Data', encrypted: true, encryptedAtRest: true },
+            { id: 14, name: 'Elasticsearch\n+Node-Node TLS', x: 360, y: 800, width: 120, height: 70, color: '#ffc107', layer: 'Data', encrypted: true, encryptedAtRest: true },
+            
+            // Layer 8: Storage
+            { id: 10, name: 'S3\n+SSE-KMS', x: 520, y: 800, width: 120, height: 70, color: '#6c757d', layer: 'Storage', encrypted: true, encryptedAtRest: true },
+            
+            // Layer 9: Observability & SIEM
+            { id: 11, name: 'Prometheus', x: 680, y: 800, width: 110, height: 70, color: '#e85d1c', layer: 'Monitoring', encrypted: true },
+            { id: 12, name: 'Grafana', x: 810, y: 800, width: 110, height: 70, color: '#f46800', layer: 'Monitoring', encrypted: true },
+            { id: 13, name: 'Sentry', x: 940, y: 800, width: 110, height: 70, color: '#362d59', layer: 'Monitoring', encrypted: true },
+            { id: 29, name: 'SIEM\nAudit Logs', x: 1070, y: 800, width: 110, height: 70, color: '#6f42c1', layer: 'Monitoring', encrypted: true }
+        ];
+        
+        // Connections with protocols and ports
+        const connections = [
+            // DNS & Edge Security Layer
+            { from: 1, to: 21, type: 'dns', port: '53', label: 'DNS/DNSSEC', color: '#ff9800', bidirectional: false, encrypted: true },
+            { from: 2, to: 3, type: 'https', port: '8080', label: 'TLS 1.3', color: '#1f6feb', bidirectional: false, encrypted: true },
+            { from: 3, to: 4, type: 'mtls', port: '8443', label: 'mTLS', color: '#f85149', bidirectional: false, encrypted: true },
+            
+            // Network Segmentation
+            { from: 4, to: 25, type: 'mtls', port: '443', label: 'Public', color: '#16a085', bidirectional: false, encrypted: true },
+            { from: 25, to: 26, type: 'mtls', port: 'internal', label: 'Private', color: '#27ae60', bidirectional: false, encrypted: true },
+            { from: 26, to: 27, type: 'mtls', port: 'internal', label: 'Data', color: '#2ecc71', bidirectional: false, encrypted: true },
+            
+            // Edge to Gateways (through network layers)
+            { from: 4, to: 5, type: 'mtls', port: '3000', label: 'mTLS', color: '#f85149', bidirectional: true, encrypted: true },
+            { from: 4, to: 15, type: 'mtls', port: '4000', label: 'mTLS', color: '#f85149', bidirectional: true, encrypted: true },
+            { from: 4, to: 16, type: 'grpc', port: '5000', label: 'gRPC+TLS', color: '#a371f7', bidirectional: true, encrypted: true },
+            { from: 1, to: 17, type: 'websocket', port: '3001', label: 'WSS', color: '#3fb950', bidirectional: true, encrypted: true },
+            
+            // Edge to Gateways
+            { from: 4, to: 5, type: 'mtls', port: '3000', label: 'mTLS', color: '#f85149', bidirectional: true },
+            { from: 4, to: 15, type: 'mtls', port: '4000', label: 'mTLS', color: '#f85149', bidirectional: true },
+            { from: 4, to: 16, type: 'grpc', port: '5000', label: 'gRPC', color: '#a371f7', bidirectional: true },
+            { from: 1, to: 17, type: 'websocket', port: '3001', label: 'WS', color: '#3fb950', bidirectional: true },
+            
+            // Gateways to Kafka (encrypted)
+            { from: 5, to: 18, type: 'kafka', port: '9093', label: 'Kafka+TLS', color: '#ff7b72', bidirectional: false, encrypted: true },
+            { from: 15, to: 18, type: 'kafka', port: '9093', label: 'Kafka+TLS', color: '#ff7b72', bidirectional: false, encrypted: true },
+            { from: 16, to: 18, type: 'kafka', port: '9093', label: 'Kafka+TLS', color: '#ff7b72', bidirectional: false, encrypted: true },
+            
+            // Service Mesh connections (automatic mTLS)
+            { from: 5, to: 19, type: 'mtls', port: '15443', label: 'Istio mTLS', color: '#8957e5', bidirectional: true, encrypted: true },
+            { from: 15, to: 19, type: 'mtls', port: '15443', label: 'Istio mTLS', color: '#8957e5', bidirectional: true, encrypted: true },
+            { from: 16, to: 19, type: 'mtls', port: '15443', label: 'Istio mTLS', color: '#8957e5', bidirectional: true, encrypted: true },
+            
+            // Gateway to Vault (TLS)
+            { from: 5, to: 6, type: 'https', port: '8200', label: 'TLS 1.3', color: '#1f6feb', bidirectional: false, encrypted: true },
+            { from: 15, to: 6, type: 'https', port: '8200', label: 'TLS 1.3', color: '#1f6feb', bidirectional: false, encrypted: true },
+            { from: 9, to: 6, type: 'https', port: '8200', label: 'TLS 1.3', color: '#1f6feb', bidirectional: false, encrypted: true },
+            
+            // Gateway to Data Layer (all encrypted)
+            { from: 5, to: 7, type: 'mtls', port: '5432', label: 'PG+mTLS', color: '#f85149', bidirectional: true, encrypted: true },
+            { from: 5, to: 8, type: 'tls', port: '6379', label: 'Redis TLS', color: '#1f6feb', bidirectional: true, encrypted: true },
+            { from: 15, to: 7, type: 'mtls', port: '5432', label: 'PG+mTLS', color: '#f85149', bidirectional: true, encrypted: true },
+            { from: 15, to: 14, type: 'https', port: '9200', label: 'ES+TLS', color: '#1f6feb', bidirectional: true, encrypted: true },
+            
+            // Workers to Data (encrypted)
+            { from: 9, to: 8, type: 'tls', port: '6379', label: 'BullMQ+TLS', color: '#1f6feb', bidirectional: true, encrypted: true },
+            { from: 9, to: 7, type: 'mtls', port: '5433', label: 'RO+mTLS', color: '#f85149', bidirectional: false, encrypted: true },
+            { from: 9, to: 10, type: 'https', port: '443', label: 'S3+KMS', color: '#1f6feb', bidirectional: false, encrypted: true },
+            
+            // Kafka to Workers & Services (encrypted)
+            { from: 18, to: 9, type: 'kafka', port: '9093', label: 'Consumer+TLS', color: '#ff7b72', bidirectional: false, encrypted: true },
+            { from: 18, to: 20, type: 'kafka', port: '9093', label: 'Events+TLS', color: '#ff7b72', bidirectional: true, encrypted: true },
+            
+            // WebSocket to Redis (pub/sub encrypted)
+            { from: 17, to: 8, type: 'tls', port: '6379', label: 'Pub/Sub+TLS', color: '#3fb950', bidirectional: true, encrypted: true },
+            
+            // AI Service (encrypted)
+            { from: 20, to: 7, type: 'mtls', port: '5432', label: 'PG+mTLS', color: '#f85149', bidirectional: false, encrypted: true },
+            { from: 5, to: 20, type: 'grpc', port: '50051', label: 'gRPC+TLS', color: '#a371f7', bidirectional: true, encrypted: true },
+            
+            // Monitoring (TLS)
+            { from: 11, to: 5, type: 'https', port: '9090', label: 'Metrics+TLS', color: '#e85d1c', bidirectional: false, encrypted: true },
+            { from: 11, to: 7, type: 'https', port: '9187', label: 'PG Exp+TLS', color: '#e85d1c', bidirectional: false, encrypted: true },
+            { from: 11, to: 8, type: 'https', port: '9121', label: 'Redis+TLS', color: '#e85d1c', bidirectional: false, encrypted: true },
+            { from: 12, to: 11, type: 'https', port: '9090', label: 'PromQL+TLS', color: '#f46800', bidirectional: false, encrypted: true },
+            
+            // Audit logging to SIEM
+            { from: 5, to: 29, type: 'https', port: '514', label: 'Logs+TLS', color: '#6f42c1', bidirectional: false, encrypted: true },
+            { from: 9, to: 29, type: 'https', port: '514', label: 'Logs+TLS', color: '#6f42c1', bidirectional: false, encrypted: true },
+            { from: 8, to: 29, type: 'https', port: '514', label: 'Logs+TLS', color: '#6f42c1', bidirectional: false, encrypted: true },
+            { from: 6, to: 29, type: 'https', port: '8200', label: 'Audit+TLS', color: '#6f42c1', bidirectional: false, encrypted: true }
+            { from: 11, to: 5, type: 'http', port: '9090', label: 'Metrics', color: '#e85d1c', bidirectional: false },
+            { from: 11, to: 7, type: 'http', port: '9187', label: 'PG Exporter', color: '#e85d1c', bidirectional: false },
+            { from: 11, to: 8, type: 'http', port: '9121', label: 'Redis Exp', color: '#e85d1c', bidirectional: false },
+            { from: 12, to: 11, type: 'http', port: '9090', label: 'PromQL', color: '#f46800', bidirectional: false }
+        ];
+        
+        // State
+        let showConnections = true;
+        let hoveredNode = null;
+        let draggedNode = null;
+        let offsetX = 0;
+        let offsetY = 0;
+        let scale = 1;
+        let panX = 0;
+        let panY = 0;
+        
+        // Drawing functions
+        function drawArrow(x1, y1, x2, y2, color, bidirectional = false) {
+            const headlen = 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            // Arrowhead at end
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            // Bidirectional arrow at start
+            if (bidirectional) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x1 + headlen * Math.cos(angle - Math.PI / 6), y1 + headlen * Math.sin(angle - Math.PI / 6));
+        function drawNode(node) {
+            const isHovered = hoveredNode === node;
+            
+            // Shadow for depth
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = isHovered ? 20 : 10;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 4;
+            
+            // Node background
+            ctx.fillStyle = node.color;
+            ctx.fillRect(node.x, node.y, node.width, node.height);
+            
+            // Border (green if encrypted)
+            ctx.strokeStyle = isHovered ? '#ffffff' : (node.encrypted ? '#3fb950' : '#30363d');
+            ctx.lineWidth = isHovered ? 3 : (node.encrypted ? 2 : 1);
+            ctx.strokeRect(node.x, node.y, node.width, node.height);
+            
+            ctx.shadowColor = 'transparent';
+            
+            // Encryption badge
+            if (node.encrypted) {
+                ctx.fillStyle = '#238636';
+                ctx.fillRect(node.x + node.width - 25, node.y + 5, 20, 12);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('🔒', node.x + node.width - 15, node.y + 13);
+            }
+            
+            // At-rest encryption badge
+            if (node.encryptedAtRest) {
+                ctx.fillStyle = '#1f6feb';
+                ctx.fillRect(node.x + node.width - 50, node.y + 5, 20, 12);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('💾', node.x + node.width - 40, node.y + 13);
+            }
+            // Border
+            ctx.strokeStyle = isHovered ? '#ffffff' : '#30363d';
+            ctx.lineWidth = isHovered ? 3 : 1;
+            ctx.strokeRect(node.x, node.y, node.width, node.height);
+            
+            ctx.shadowColor = 'transparent';
+            
+            // Text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = isHovered ? 'bold 13px Arial' : '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const lines = node.name.split('\n');
+            const lineHeight = 16;
+            const startY = node.y + node.height / 2 - (lines.length - 1) * lineHeight / 2;
+            
+            lines.forEach((line, i) => {
+                ctx.fillText(line, node.x + node.width / 2, startY + i * lineHeight);
+            });
+            
+            // Layer badge
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(node.x, node.y, node.width, 18);
+            ctx.fillStyle = '#8b949e';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(node.layer, node.x + node.width / 2, node.y + 9);
+        }
+        
+        function drawConnection(conn) {
+            const fromNode = nodes.find(n => n.id === conn.from);
+            const toNode = nodes.find(n => n.id === conn.to);
+            
+            if (!fromNode || !toNode) return;
+            
+            const x1 = fromNode.x + fromNode.width / 2;
+            const y1 = fromNode.y + fromNode.height / 2;
+            const x2 = toNode.x + toNode.width / 2;
+            const y2 = toNode.y + toNode.height / 2;
+            
+            // Draw arrow
+            drawArrow(x1, y1, x2, y2, conn.color, conn.bidirectional);
+            
+            // Draw label
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.9)';
+            ctx.fillRect(midX - 35, midY - 12, 70, 24);
+            
+            ctx.fillStyle = conn.color;
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(conn.label, midX, midY - 2);
+            
+            ctx.fillStyle = '#8b949e';
+            ctx.font = '9px Arial';
+            ctx.fillText(`:${conn.port}`, midX, midY + 8);
+        }
+        
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            ctx.translate(panX, panY);
+            ctx.scale(scale, scale);
+            
+            // Draw grid
+            ctx.strokeStyle = '#21262d';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width / scale; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height / scale);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height / scale; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width / scale, y);
+                ctx.stroke();
+            }
+            
+            // Draw connections first (behind nodes)
+            if (showConnections) {
+                connections.forEach(conn => drawConnection(conn));
+            }
+            
+            // Draw nodes
+            nodes.forEach(node => drawNode(node));
+            
+            ctx.restore();
+        }
+        
+        // Event handlers
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left - panX) / scale;
+            const mouseY = (e.clientY - rect.top - panY) / scale;
+            
+            if (draggedNode) {
+                draggedNode.x = mouseX - offsetX;
+                draggedNode.y = mouseY - offsetY;
+                draw();
+                return;
+            }
+            
+            // Check hover
+            let foundHover = null;
+            for (const node of nodes) {
+                if (mouseX >= node.x && mouseX <= node.x + node.width &&
+                    mouseY >= node.y && mouseY <= node.y + node.height) {
+                    foundHover = node;
+                    break;
+                }
+            }
+            
+            if (foundHover !== hoveredNode) {
+                hoveredNode = foundHover;
+                draw();
+            }
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left - panX) / scale;
+            const mouseY = (e.clientY - rect.top - panY) / scale;
+            
+            for (const node of nodes) {
+                if (mouseX >= node.x && mouseX <= node.x + node.width &&
+                    mouseY >= node.y && mouseY <= node.y + node.height) {
+                    draggedNode = node;
+                    offsetX = mouseX - node.x;
+                    offsetY = mouseY - node.y;
+                    break;
+                }
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            draggedNode = null;
+        });
+        
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            scale *= delta;
+            scale = Math.max(0.5, Math.min(2, scale));
+            draw();
+        });
+        
+        // Control functions
+        function resetView() {
+            scale = 1;
+            panX = 0;
+            panY = 0;
+            draw();
+        }
+        
+        function toggleConnections() {
+            showConnections = !showConnections;
+            draw();
+        }
+        
+        function exportDiagram() {
+            const link = document.createElement('a');
+            link.download = 'koh-atlas-architecture.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>
