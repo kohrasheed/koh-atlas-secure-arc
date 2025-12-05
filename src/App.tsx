@@ -39,6 +39,13 @@ import ComponentLibrary, { CustomComponent } from '@/components/ComponentLibrary
 import BackupManager, { ProjectBackup } from '@/components/BackupManager';
 import { collectReportData, downloadPDFReport } from '@/lib/pdf-report/generator.tsx';
 // import { downloadDocumentation } from '@/lib/documentation-generator';
+import { 
+  SecurityAnalyzer, 
+  COMPLIANCE_FRAMEWORKS, 
+  ComplianceFramework,
+  CVEVulnerability,
+  KNOWN_CVES
+} from '@/lib/security-analyzer';
 import {
   ComponentConfig,
   SecurityFinding,
@@ -419,6 +426,18 @@ function App() {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [isAnalyzingConnection, setIsAnalyzingConnection] = useState(false);
   const [isAIAnalyzing, setIsAIAnalyzing] = useState(false);
+  
+  // Compliance & CVE
+  const [selectedFramework, setSelectedFramework] = useState<ComplianceFramework | null>(COMPLIANCE_FRAMEWORKS[0]);
+  const [complianceResults, setComplianceResults] = useState<{
+    passed: any[];
+    failed: any[];
+    notApplicable: any[];
+    score: number;
+  } | null>(null);
+  const [cveResults, setCveResults] = useState<{ component: any; cves: CVEVulnerability[] }[]>([]);
+  const [strideThreats, setStrideThreats] = useState<any[]>([]);
+  const [selectedThreatCategory, setSelectedThreatCategory] = useState<string>('All');
   
   // Performance Metrics
   const [showMetricsOverlay, setShowMetricsOverlay] = useState(false);
@@ -4578,6 +4597,10 @@ The connection between ${nodeDetails[0]?.label || 'Component 1'} and ${nodeDetai
               <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="hidden lg:inline truncate">Validation</span>
             </TabsTrigger>
+            <TabsTrigger value="compliance" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Scales className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="hidden lg:inline truncate">Compliance</span>
+            </TabsTrigger>
             <TabsTrigger value="metrics" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <ChartBar className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="hidden lg:inline truncate">Metrics</span>
@@ -5520,456 +5543,6 @@ ${validationResult.issues.map(issue => `
             </ScrollArea>
           </TabsContent>
           
-          <TabsContent value="metrics" className="flex-1 min-h-0 px-4 pb-4">
-            <ScrollArea className="h-full">
-              <div className="space-y-4 py-2">
-                {selectedNode ? (
-                  <>
-                    {(() => {
-                      const nodeData = selectedNode.data as any;
-                      return (
-                        <div className="space-y-2">
-                          <h3 className="font-medium flex items-center gap-2">
-                            <ChartBar className="w-4 h-4" />
-                            Node Metrics: {String(selectedNode.data.label)}
-                          </h3>
-                          
-                          {/* Cost Metrics */}
-                          <Card>
-                            <CardHeader className="pb-2">
-                              <CardTitle className="text-sm flex items-center gap-2">
-                                <CurrencyDollar className="w-4 h-4" />
-                                Cost
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <Label className="text-xs">Monthly Cost ($)</Label>
-                                  <Input
-                                    type="number"
-                                    placeholder="0"
-                                    value={nodeData.metrics?.cost?.monthly || ''}
-                                onChange={(e) => updateNodeMetrics(selectedNode.id, {
-                                  cost: {
-                                    ...nodeData.metrics?.cost,
-                                    monthly: parseFloat(e.target.value) || 0,
-                                    currency: 'USD'
-                                  }
-                                })}
-                                className="mt-1"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Currency</Label>
-                              <Select 
-                    value={selectedFramework?.id} 
-                    onValueChange={(value) => {
-                      const framework = COMPLIANCE_FRAMEWORKS.find(f => f.id === value);
-                      setSelectedFramework(framework || null);
-                      setComplianceResults(null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select compliance framework" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COMPLIANCE_FRAMEWORKS.map(framework => (
-                        <SelectItem key={framework.id} value={framework.id}>
-                          {framework.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedFramework && (
-                    <p className="text-xs text-muted-foreground">{selectedFramework.description}</p>
-                  )}
-                </div>
-
-                <Button
-                  onClick={() => {
-                    if (!selectedFramework) return;
-                    const analyzer = new SecurityAnalyzer();
-                    const results = analyzer.checkCompliance(
-                      selectedFramework,
-                      [],
-                      edges.map(e => ({
-                        id: e.id,
-                        from: e.source!,
-                        to: e.target!,
-                        protocol: e.data?.protocol || 'Unknown',
-                        ports: [e.data?.port || 0],
-                        encryption: e.data?.encryption || 'None',
-                        auth: e.data?.auth || 'None',
-                        purpose: e.label as string || '',
-                        dataClass: 'Unknown',
-                        egress: false,
-                        controls: []
-                      }))
-                    );
-                    setComplianceResults(results);
-                    
-                    const cves = analyzer.checkCVEs([]);
-                    setCveResults(cves);
-                    
-                    // Run AI analysis for compliance-specific recommendations
-                    if (nodes.length > 0) {
-                      setIsAIAnalyzing(true);
-                      setShowAIPanel(true);
-                      getAIRecommendations(nodes, edges)
-                        .then(result => {
-                          setAiAnalysisResult(result);
-                          if (result.cacheHit) {
-                            toast.success(`Compliance: ${results.score.toFixed(0)}% compliant. Insights from cache (instant, $0.00)`);
-                          } else {
-                            toast.success(`Compliance: ${results.score.toFixed(0)}% compliant. Analysis cost: $${result.tokenUsage?.cost.toFixed(4) || '0.00'}`);
-                          }
-                        })
-                        .catch(error => {
-                          console.error('AI analysis failed:', error);
-                          toast.success(`Compliance check complete: ${results.score.toFixed(0)}% compliant`);
-                        })
-                        .finally(() => {
-                          setIsAIAnalyzing(false);
-                        });
-                    } else {
-                      toast.success(`Compliance check complete: ${results.score.toFixed(0)}% compliant`);
-                    }
-                  }}
-                  className="w-full"
-                  disabled={!selectedFramework || isAIAnalyzing}
-                >
-                  {isAIAnalyzing ? (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="w-4 h-4 mr-2" />
-                      Run Compliance Check
-                    </>
-                  )}
-                </Button>
-
-                {complianceResults && (
-                  <div className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg flex items-center justify-between">
-                          <span>Compliance Score</span>
-                          <Badge 
-                            variant={complianceResults.score >= 80 ? 'default' : complianceResults.score >= 60 ? 'secondary' : 'destructive'}
-                            className="text-lg px-3 py-1"
-                          >
-                            {complianceResults.score.toFixed(0)}%
-                          </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div>
-                            <div className="text-2xl font-bold text-green-600">{complianceResults.passed.length}</div>
-                            <div className="text-xs text-muted-foreground">Passed</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-red-600">{complianceResults.failed.length}</div>
-                            <div className="text-xs text-muted-foreground">Failed</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-gray-600">{complianceResults.notApplicable.length}</div>
-                            <div className="text-xs text-muted-foreground">N/A</div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {complianceResults.failed.length > 0 && (
-                      <div>
-                        <h3 className="font-medium mb-2 text-red-600">Failed Requirements</h3>
-                        <div className="space-y-2">
-                          {complianceResults.failed.map((req: any) => (
-                            <Card key={req.id} className="border-red-200">
-                              <CardHeader className="pb-2">
-                                <CardTitle className="text-sm flex items-center justify-between">
-                                  <span>{req.control}</span>
-                                  <Badge variant="outline" className="text-xs">{req.id}</Badge>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <p className="text-xs text-muted-foreground">{req.description}</p>
-                                <Badge variant="secondary" className="mt-2 text-xs">{req.category}</Badge>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {complianceResults.passed.length > 0 && (
-                      <details className="group">
-                        <summary className="cursor-pointer font-medium text-green-600">
-                          ✓ Passed Requirements ({complianceResults.passed.length})
-                        </summary>
-                        <div className="space-y-2 mt-2">
-                          {complianceResults.passed.map((req: any) => (
-                            <Card key={req.id} className="border-green-200">
-                              <CardHeader className="pb-2">
-                                <CardTitle className="text-sm flex items-center justify-between">
-                                  <span>{req.control}</span>
-                                  <Badge variant="outline" className="text-xs">{req.id}</Badge>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <p className="text-xs text-muted-foreground">{req.description}</p>
-                                <Badge variant="secondary" className="mt-2 text-xs">{req.category}</Badge>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </details>
-                    )}
-                  </div>
-                )}
-
-                <div className="pt-4 border-t border-border">
-                  <h3 className="font-medium mb-2 flex items-center gap-2">
-                    <Bug className="w-4 h-4" />
-                    Known CVEs
-                  </h3>
-                  <div className="space-y-2">
-                    {KNOWN_CVES.slice(0, 5).map(cve => (
-                      <Card key={cve.id} className={`${cve.severity === 'critical' ? 'border-red-500' : ''}`}>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm flex items-center justify-between">
-                            <span className="font-mono">{cve.id}</span>
-                            <Badge 
-                              variant={cve.severity === 'critical' ? 'destructive' : 'default'}
-                            >
-                              {cve.severity.toUpperCase()}
-                            </Badge>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-1">
-                          <p className="text-xs font-medium">{cve.component}</p>
-                          <p className="text-xs text-muted-foreground">{cve.description}</p>
-                          <div className="flex gap-2 items-center text-xs">
-                            {cve.cvssScore && (
-                              <Badge variant="outline" className="text-xs">
-                                CVSS: {cve.cvssScore}
-                              </Badge>
-                            )}
-                            {cve.fixedVersion && (
-                              <Badge variant="secondary" className="text-xs">
-                                Fixed: {cve.fixedVersion}
-                              </Badge>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-border">
-                  <h3 className="font-medium mb-2 flex items-center gap-2">
-                    <Target className="w-4 h-4" />
-                    STRIDE Threat Modeling
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Analyze threats using Microsoft's STRIDE methodology: Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, and Elevation of Privilege
-                  </p>
-                  
-                  <Button
-                    onClick={() => {
-                      const analyzer = new SecurityAnalyzer();
-                      const threats = analyzer.generateSTRIDEThreats(
-                        nodes.map(n => ({
-                          id: n.id,
-                          name: (n.data as any).label || n.id,
-                          type: (n.data as any).component || (n.data as any).type || 'unknown',
-                          category: (n.data as any).category || 'unknown',
-                          properties: {},
-                          controls: []
-                        })),
-                        edges.map(e => ({
-                          id: e.id,
-                          from: e.source!,
-                          to: e.target!,
-                          protocol: (e.data as any)?.protocol || 'Unknown',
-                          ports: [(e.data as any)?.port || 0],
-                          encryption: (e.data as any)?.encryption || 'None',
-                          auth: (e.data as any)?.auth || 'None',
-                          purpose: e.label as string || '',
-                          dataClass: 'Unknown',
-                          egress: false,
-                          controls: []
-                        }))
-                      );
-                      setStrideThreats(threats);
-                      
-                      // Run AI analysis for enhanced threat insights
-                      if (nodes.length > 0) {
-                        setIsAIAnalyzing(true);
-                        setShowAIPanel(true);
-                        getAIRecommendations(nodes, edges)
-                          .then(result => {
-                            setAiAnalysisResult(result);
-                            if (result.cacheHit) {
-                              toast.success(`Generated ${threats.length} STRIDE threats. Insights from cache (instant, $0.00)`);
-                            } else {
-                              toast.success(`Generated ${threats.length} STRIDE threats. Analysis cost: $${result.tokenUsage?.cost.toFixed(4) || '0.00'}`);
-                            }
-                          })
-                          .catch(error => {
-                            console.error('AI analysis failed:', error);
-                            toast.success(`Generated ${threats.length} STRIDE threats for ${nodes.length} components`);
-                          })
-                          .finally(() => {
-                            setIsAIAnalyzing(false);
-                          });
-                      } else {
-                        toast.success(`Generated ${threats.length} STRIDE threats for ${nodes.length} components`);
-                      }
-                    }}
-                    className="w-full mb-3"
-                    disabled={nodes.length === 0 || isAIAnalyzing}
-                  >
-                    {isAIAnalyzing ? (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <Target className="w-4 h-4 mr-2" />
-                        Generate STRIDE Analysis
-                      </>
-                    )}
-                  </Button>
-
-                  {strideThreats.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex gap-1 flex-wrap">
-                        {['All', 'Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'].map(category => (
-                          <Button
-                            key={category}
-                            size="sm"
-                            variant={selectedThreatCategory === category ? 'default' : 'outline'}
-                            onClick={() => setSelectedThreatCategory(category)}
-                            className="text-xs"
-                          >
-                            {category === 'All' ? `All (${strideThreats.length})` : 
-                             `${category.charAt(0)} (${strideThreats.filter(t => t.category === category).length})`}
-                          </Button>
-                        ))}
-                      </div>
-
-                      <div className="space-y-2">
-                        {strideThreats
-                          .filter(t => selectedThreatCategory === 'All' || t.category === selectedThreatCategory)
-                          .map(threat => (
-                            <Card 
-                              key={threat.id} 
-                              className="hover:bg-accent/5 transition-colors cursor-pointer"
-                              onClick={() => {
-                                // Highlight the component associated with this threat
-                                clearHighlights();
-                                setNodes((nds: Node[]) => nds.map((node: Node) => ({
-                                  ...node,
-                                  data: {
-                                    ...node.data,
-                                    isHighlighted: node.id === threat.componentId
-                                  }
-                                })));
-                                // Also highlight any edges connected to this component
-                                setEdges((eds: Edge[]) => eds.map((edge: Edge) => ({
-                                  ...edge,
-                                  style: {
-                                    ...edge.style,
-                                    stroke: (edge.source === threat.componentId || edge.target === threat.componentId) 
-                                      ? '#a855f7' 
-                                      : ((edge.data as any)?.encryption === 'None' ? '#ef4444' : '#10b981'),
-                                    strokeWidth: (edge.source === threat.componentId || edge.target === threat.componentId) ? 3 : 2,
-                                    filter: (edge.source === threat.componentId || edge.target === threat.componentId) 
-                                      ? 'drop-shadow(0 0 8px #a855f7)' 
-                                      : undefined
-                                  }
-                                })));
-                                toast.info(`Highlighting ${threat.componentType} component`);
-                              }}
-                            >
-                              <CardHeader className="pb-2">
-                                <CardTitle className="text-sm flex items-center justify-between">
-                                  <span>{threat.category}</span>
-                                  <div className="flex gap-1">
-                                    <Badge variant={threat.impact === 'Critical' ? 'destructive' : 'default'}>
-                                      {threat.impact}
-                                    </Badge>
-                                    <Badge 
-                                      variant={
-                                        threat.status === 'Mitigated' ? 'default' :
-                                        threat.status === 'Partially Mitigated' ? 'secondary' : 'destructive'
-                                      }
-                                    >
-                                      {threat.status}
-                                    </Badge>
-                                  </div>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-2">
-                                <p className="text-xs"><strong>{threat.componentType}:</strong> {threat.threat}</p>
-                                <div>
-                                  <div className="text-xs font-medium mb-1">Mitigations:</div>
-                                  <ul className="space-y-1">
-                                    {threat.mitigations.map((mit: string, idx: number) => (
-                                      <li key={idx} className="text-xs text-muted-foreground flex items-start">
-                                        <span className="mr-1">•</span>
-                                        <span>{mit}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                                <Badge variant="outline" className="text-xs">
-                                  Likelihood: {threat.likelihood}
-                                </Badge>
-                              </CardContent>
-                            </Card>
-                          ))}
-                      </div>
-
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-sm">Threat Summary</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-xs">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <div className="font-medium">Total Threats:</div>
-                              <div className="text-2xl font-bold">{strideThreats.length}</div>
-                            </div>
-                            <div>
-                              <div className="font-medium">Unmitigated:</div>
-                              <div className="text-2xl font-bold text-red-600">
-                                {strideThreats.filter(t => t.status === 'Unmitigated').length}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-1 pt-2 border-t">
-                            {['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'].map(cat => (
-                              <Badge key={cat} variant="secondary" className="text-xs">
-                                {cat.split(' ').map(w => w[0]).join('')}: {strideThreats.filter(t => t.category === cat).length}
-                              </Badge>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </ScrollArea>
-          </TabsContent>
           
           <TabsContent value="metrics" className="flex-1 min-h-0 px-4 pb-4">
             <ScrollArea className="h-full">
