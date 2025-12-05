@@ -1,11 +1,19 @@
 {
-  "version": "2.0.0-enterprise",
+  "version": "2.1.0-enterprise",
   "timestamp": 1733270400000,
   "projectName": "Koh Atlas Enterprise Security Architecture - Complete Implementation",
   "description": "Production-ready secure architecture with comprehensive security controls, monitoring, and compliance. All 27 critical security issues resolved with defense-in-depth approach.",
   "metadata": {
     "securityRating": "A- (8.5/10)",
-    "compliance": ["SOC2 Type II", "ISO27001:2022", "GDPR Article 32", "HIPAA", "PCI-DSS v4.0", "NIST 800-53", "CIS Benchmarks v8"],
+    "compliance": [
+      "SOC2 Type II",
+      "ISO27001:2022",
+      "GDPR Article 32",
+      "HIPAA",
+      "PCI-DSS v4.0",
+      "NIST 800-53",
+      "CIS Benchmarks v8"
+    ],
     "issuesResolved": 27,
     "criticalIssuesFixed": 3,
     "highIssuesFixed": 8,
@@ -19,11 +27,76 @@
     "lastSecurityAudit": "2025-12-02",
     "nextPenetrationTest": "2026-03-01"
   },
+  "architectureSecurityMetadata": {
+    "hasNetworkSegmentation": true,
+    "networkSegmentationDetails": {
+      "vpcEnabled": true,
+      "vpcCidr": "10.0.0.0/16",
+      "publicSubnets": [
+        "10.0.1.0/24"
+      ],
+      "privateSubnets": [
+        "10.0.2.0/24"
+      ],
+      "dataSubnets": [
+        "10.0.3.0/24"
+      ],
+      "isolatedSubnets": [
+        "10.0.4.0/24"
+      ]
+    },
+    "hasNetworkFirewall": true,
+    "firewallType": "aws-network-firewall",
+    "firewallDetails": "AWS Network Firewall + Security Groups + NACLs with default deny",
+    "hasDNSSecurity": true,
+    "dnsProvider": "Route53",
+    "dnssecEnabled": true,
+    "hasDDoSProtection": true,
+    "ddosProvider": "CloudFlare",
+    "ddosCapacity": "134 Tbps",
+    "hasServiceMesh": true,
+    "serviceMeshType": "istio",
+    "automaticMtls": true,
+    "centralizedSecretManagement": true,
+    "secretManagementTool": "hashicorp-vault",
+    "secretRotationEnabled": true,
+    "secretRotationFrequency": "90-days",
+    "centralizedAuditLogging": true,
+    "siemTool": "ELK",
+    "siemRetention": "90-days",
+    "encryptionAtRestPercentage": 100,
+    "encryptionInTransitPercentage": 100,
+    "complianceFrameworks": [
+      "SOC2",
+      "ISO27001",
+      "GDPR",
+      "HIPAA",
+      "PCI-DSS",
+      "NIST-800-53",
+      "CIS"
+    ],
+    "disasterRecovery": {
+      "enabled": true,
+      "rto": "1h",
+      "rpo": "5min",
+      "multiRegion": true,
+      "primaryRegion": "us-east-1",
+      "secondaryRegion": "us-west-2",
+      "backupStrategy": "continuous WAL + daily full backup"
+    },
+    "zeroTrustArchitecture": true,
+    "defenseInDepth": true,
+    "leastPrivilegeAccess": true,
+    "multiFactorAuthenticationRequired": true
+  },
   "nodes": [
     {
       "id": "1",
       "type": "custom",
-      "position": {"x": 100, "y": 50},
+      "position": {
+        "x": 100,
+        "y": 50
+      },
       "data": {
         "type": "web-browser",
         "label": "React Frontend PWA",
@@ -54,17 +127,54 @@
           "Automatic logout on suspicious activity"
         ],
         "dependencies": {
-          "runtime": ["React 19", "React Router v6", "ReactFlow", "Socket.io-client"],
-          "security": ["DOMPurify", "zod (client-side validation)"],
-          "monitoring": ["@sentry/react", "web-vitals"]
+          "runtime": [
+            "React 19",
+            "React Router v6",
+            "ReactFlow",
+            "Socket.io-client"
+          ],
+          "security": [
+            "DOMPurify",
+            "zod (client-side validation)"
+          ],
+          "monitoring": [
+            "@sentry/react",
+            "web-vitals"
+          ]
+        },
+        "securityFlags": {
+          "encryptedAtRest": false,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": true,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "Sentry",
+          "activityMonitoring": false,
+          "networkSegmentation": "public-subnet",
+          "directInternetAccess": true,
+          "mfaRequired": false,
+          "rbacEnabled": false,
+          "secretsManagement": "none",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "Snyk",
+          "complianceFrameworks": [
+            "SOC2",
+            "GDPR"
+          ]
         }
       },
-      "measured": {"width": 200, "height": 150}
+      "measured": {
+        "width": 200,
+        "height": 150
+      }
     },
     {
       "id": "2",
       "type": "custom",
-      "position": {"x": 100, "y": 240},
+      "position": {
+        "x": 100,
+        "y": 240
+      },
       "data": {
         "type": "edge-cdn",
         "label": "CloudFlare CDN + DDoS Protection",
@@ -99,12 +209,23 @@
           "botManagement": {
             "enabled": true,
             "machinelearning": "ML-based bot detection",
-            "challenges": ["JavaScript challenge", "CAPTCHA", "Managed challenge"],
-            "allowedBots": ["Google", "Bing", "legitimate crawlers"]
+            "challenges": [
+              "JavaScript challenge",
+              "CAPTCHA",
+              "Managed challenge"
+            ],
+            "allowedBots": [
+              "Google",
+              "Bing",
+              "legitimate crawlers"
+            ]
           },
           "tlsConfiguration": {
             "minVersion": "TLS 1.3",
-            "cipherSuites": ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+            "cipherSuites": [
+              "TLS_AES_256_GCM_SHA384",
+              "TLS_CHACHA20_POLY1305_SHA256"
+            ],
             "http3": "Enabled (QUIC protocol)",
             "zeroRTT": "Enabled for performance"
           }
@@ -119,14 +240,42 @@
           "realTimeAnalytics": true,
           "threatIntelligence": "Integrated with CloudFlare threat feeds",
           "logRetention": "30 days"
+        },
+        "securityFlags": {
+          "encryptedAtRest": true,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": true,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "CloudFlare Logs",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "CloudFlare Analytics",
+          "networkSegmentation": "edge-network",
+          "directInternetAccess": true,
+          "mfaRequired": false,
+          "rbacEnabled": true,
+          "secretsManagement": "CloudFlare",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "CloudFlare",
+          "complianceFrameworks": [
+            "SOC2",
+            "ISO27001",
+            "PCI-DSS"
+          ]
         }
       },
-      "measured": {"width": 200, "height": 140}
+      "measured": {
+        "width": 200,
+        "height": 140
+      }
     },
     {
       "id": "3",
       "type": "custom",
-      "position": {"x": 380, "y": 50},
+      "position": {
+        "x": 380,
+        "y": 50
+      },
       "data": {
         "type": "waf",
         "label": "Application WAF (ModSecurity)",
@@ -171,12 +320,23 @@
           },
           "geoBlocking": {
             "mode": "whitelist",
-            "allowedCountries": ["US", "CA", "GB", "EU", "AU", "JP"],
+            "allowedCountries": [
+              "US",
+              "CA",
+              "GB",
+              "EU",
+              "AU",
+              "JP"
+            ],
             "blockedCountries": "Known high-risk regions from threat intelligence"
           },
           "ipReputation": {
             "enabled": true,
-            "sources": ["AbuseIPDB", "Spamhaus", "CloudFlare Threat Feed"],
+            "sources": [
+              "AbuseIPDB",
+              "Spamhaus",
+              "CloudFlare Threat Feed"
+            ],
             "autoBlock": "Automatically block IPs with reputation score < 20"
           }
         },
@@ -185,14 +345,42 @@
           "sampledAllowed": "10% of allowed requests",
           "destination": "SIEM + CloudWatch Logs",
           "retention": "90 days"
+        },
+        "securityFlags": {
+          "encryptedAtRest": false,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": true,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "SIEM",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "ModSecurity Audit Log",
+          "networkSegmentation": "public-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": false,
+          "rbacEnabled": true,
+          "secretsManagement": "Vault",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "Trivy",
+          "complianceFrameworks": [
+            "SOC2",
+            "PCI-DSS",
+            "NIST-800-53"
+          ]
         }
       },
-      "measured": {"width": 220, "height": 160}
+      "measured": {
+        "width": 220,
+        "height": 160
+      }
     },
     {
       "id": "4",
       "type": "custom",
-      "position": {"x": 380, "y": 250},
+      "position": {
+        "x": 380,
+        "y": 250
+      },
       "data": {
         "type": "load-balancer-global",
         "label": "HA Proxy Load Balancer",
@@ -207,7 +395,9 @@
         "security": {
           "sslTermination": {
             "enabled": true,
-            "protocols": ["TLSv1.3"],
+            "protocols": [
+              "TLSv1.3"
+            ],
             "cipherSuites": [
               "TLS_AES_256_GCM_SHA384",
               "TLS_CHACHA20_POLY1305_SHA256",
@@ -232,7 +422,11 @@
           }
         },
         "features": {
-          "algorithms": ["Round Robin", "Least Connections", "IP Hash"],
+          "algorithms": [
+            "Round Robin",
+            "Least Connections",
+            "IP Hash"
+          ],
           "activeAlgorithm": "Least Connections with health check weighting",
           "sessionPersistence": {
             "method": "Cookie-based sticky sessions",
@@ -254,23 +448,62 @@
             "maxIdleTime": "30 seconds",
             "keepAlive": true
           },
-          "protocolSupport": ["HTTP/1.1", "HTTP/2", "HTTP/3 (QUIC)", "WebSocket"]
+          "protocolSupport": [
+            "HTTP/1.1",
+            "HTTP/2",
+            "HTTP/3 (QUIC)",
+            "WebSocket"
+          ]
         },
         "monitoring": {
-          "metrics": ["Request rate", "Error rate", "Response time", "Active connections", "Backend health"],
+          "metrics": [
+            "Request rate",
+            "Error rate",
+            "Response time",
+            "Active connections",
+            "Backend health"
+          ],
           "alerts": [
             "Backend unhealthy > 1 minute",
             "Response time p99 > 500ms",
             "Error rate > 1%"
           ]
+        },
+        "securityFlags": {
+          "encryptedAtRest": false,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": false,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "SIEM",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "HAProxy Stats",
+          "hasBackup": false,
+          "networkSegmentation": "public-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": false,
+          "rbacEnabled": true,
+          "secretsManagement": "Vault",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "Trivy",
+          "complianceFrameworks": [
+            "SOC2",
+            "ISO27001"
+          ]
         }
       },
-      "measured": {"width": 220, "height": 160}
+      "measured": {
+        "width": 220,
+        "height": 160
+      }
     },
     {
       "id": "5",
       "type": "custom",
-      "position": {"x": 700, "y": 100},
+      "position": {
+        "x": 700,
+        "y": 100
+      },
       "data": {
         "type": "api-gateway",
         "label": "API Gateway",
@@ -295,7 +528,12 @@
         },
         "authorization": {
           "model": "RBAC + ABAC hybrid",
-          "roles": ["admin", "architect", "viewer", "auditor"],
+          "roles": [
+            "admin",
+            "architect",
+            "viewer",
+            "auditor"
+          ],
           "permissions": "Fine-grained resource-level (e.g., 'design:read', 'design:write')",
           "enforcement": "Middleware chain + Casbin policy engine"
         },
@@ -324,7 +562,10 @@
           "certificates": "Let's Encrypt auto-renewed + cert-manager",
           "hsts": "max-age=31536000; includeSubDomains; preload",
           "cors": {
-            "origins": ["https://app.kohatlas.com", "https://admin.kohatlas.com"],
+            "origins": [
+              "https://app.kohatlas.com",
+              "https://admin.kohatlas.com"
+            ],
             "credentials": true,
             "maxAge": "86400"
           },
@@ -392,15 +633,60 @@
           },
           "timeout": "30s request timeout, 5s idle timeout"
         },
-        "security": ["JWT Auth", "Input Validation", "Rate Limiting", "mTLS", "RBAC/ABAC", "Vault Secrets", "PII Redaction", "OpenTelemetry Tracing"],
-        "compliance": ["SOC2 (CC6.1)", "ISO27001 (A.9.4.2)", "OWASP API Security Top 10"],
-        "dependencies": ["vault", "postgresql", "redis", "workers"]
+        "security": [
+          "JWT Auth",
+          "Input Validation",
+          "Rate Limiting",
+          "mTLS",
+          "RBAC/ABAC",
+          "Vault Secrets",
+          "PII Redaction",
+          "OpenTelemetry Tracing"
+        ],
+        "compliance": [
+          "SOC2 (CC6.1)",
+          "ISO27001 (A.9.4.2)",
+          "OWASP API Security Top 10"
+        ],
+        "dependencies": [
+          "vault",
+          "postgresql",
+          "redis",
+          "workers"
+        ],
+        "securityFlags": {
+          "encryptedAtRest": false,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": true,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "SIEM",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "Prometheus + Grafana",
+          "hasBackup": false,
+          "networkSegmentation": "private-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": false,
+          "rbacEnabled": true,
+          "secretsManagement": "Vault",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "Snyk",
+          "complianceFrameworks": [
+            "SOC2",
+            "ISO27001",
+            "GDPR",
+            "HIPAA"
+          ]
+        }
       }
     },
     {
       "id": "6",
       "type": "custom",
-      "position": {"x": 700, "y": 300},
+      "position": {
+        "x": 700,
+        "y": 300
+      },
       "data": {
         "type": "bastion-host",
         "label": "HashiCorp Vault",
@@ -439,7 +725,10 @@
             "description": "Dynamic database credentials (auto-rotating)",
             "ttl": "1 hour (credentials expire and regenerate)",
             "rotation": "Automatic rotation every 24 hours",
-            "databases": ["PostgreSQL (primary + replica)", "Redis ACLs"],
+            "databases": [
+              "PostgreSQL (primary + replica)",
+              "Redis ACLs"
+            ],
             "privileges": "Least privilege per service (read-only for analytics, read-write for API)"
           },
           "pki": {
@@ -451,8 +740,18 @@
           },
           "transit": {
             "description": "Encryption-as-a-Service (EaaS)",
-            "keyTypes": ["AES-256-GCM (default)", "RSA-4096", "ECDSA P-256"],
-            "operations": ["Encrypt", "Decrypt", "Sign", "Verify", "HMAC"],
+            "keyTypes": [
+              "AES-256-GCM (default)",
+              "RSA-4096",
+              "ECDSA P-256"
+            ],
+            "operations": [
+              "Encrypt",
+              "Decrypt",
+              "Sign",
+              "Verify",
+              "HMAC"
+            ],
             "keyRotation": "Automatic 90-day rotation with backward compatibility",
             "usage": "Encrypt PII in database (SSN, credit cards, emails)"
           },
@@ -474,15 +773,24 @@
           "leastPrivilege": "Services granted minimum required paths only",
           "examplePolicy": {
             "path_kv/api-gateway/*": {
-              "capabilities": ["read", "list"]
+              "capabilities": [
+                "read",
+                "list"
+              ]
             },
             "path_database/creds/api": {
-              "capabilities": ["read"]
+              "capabilities": [
+                "read"
+              ]
             }
           }
         },
         "auditLogging": {
-          "enabledDevices": ["File", "Syslog", "Socket"],
+          "enabledDevices": [
+            "File",
+            "Syslog",
+            "Socket"
+          ],
           "format": "JSON with full request/response logging",
           "piiHandling": "Automatic HMAC-SHA256 hashing of sensitive fields",
           "retention": "2 years in immutable S3 bucket (compliance requirement)",
@@ -519,15 +827,61 @@
           "gdpr": "Encryption at rest + right to be forgotten (secret deletion)",
           "hipaa": "PHI encryption + audit trail for healthcare data"
         },
-        "security": ["Secrets Management", "Dynamic Credentials", "Audit Logs", "mTLS Enforcement", "Auto-Unsealing", "KMS Integration", "FIPS 140-2"],
-        "dependencies": ["kms (AWS KMS/Azure Key Vault)", "postgresql", "siem"],
-        "clients": ["api-gateway", "workers", "postgresql", "redis"]
+        "security": [
+          "Secrets Management",
+          "Dynamic Credentials",
+          "Audit Logs",
+          "mTLS Enforcement",
+          "Auto-Unsealing",
+          "KMS Integration",
+          "FIPS 140-2"
+        ],
+        "dependencies": [
+          "kms (AWS KMS/Azure Key Vault)",
+          "postgresql",
+          "siem"
+        ],
+        "clients": [
+          "api-gateway",
+          "workers",
+          "postgresql",
+          "redis"
+        ],
+        "securityFlags": {
+          "encryptedAtRest": true,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": false,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "SIEM",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "Vault Audit Device",
+          "hasBackup": true,
+          "backupFrequency": "6h",
+          "networkSegmentation": "data-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": true,
+          "rbacEnabled": true,
+          "secretsManagement": "self",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "HashiCorp Security",
+          "complianceFrameworks": [
+            "SOC2",
+            "ISO27001",
+            "HIPAA",
+            "PCI-DSS",
+            "NIST-800-53"
+          ]
+        }
       }
     },
     {
       "id": "7",
       "type": "custom",
-      "position": {"x": 900, "y": 100},
+      "position": {
+        "x": 900,
+        "y": 100
+      },
       "data": {
         "type": "database",
         "label": "PostgreSQL Primary",
@@ -567,7 +921,12 @@
         },
         "authorization": {
           "model": "Role-Based Access Control (RBAC) + Row-Level Security (RLS)",
-          "roles": ["api_user", "analyst", "admin", "auditor"],
+          "roles": [
+            "api_user",
+            "analyst",
+            "admin",
+            "auditor"
+          ],
           "rls": {
             "enabled": true,
             "policies": [
@@ -600,7 +959,7 @@
           ]
         },
         "performance": {
-          "connectionPooling": "PgBouncer in transaction mode (max 500 connections → 100 backend)",
+          "connectionPooling": "PgBouncer in transaction mode (max 500 connections \u2192 100 backend)",
           "queryOptimization": "pg_stat_statements for slow query analysis",
           "vacuuming": "Autovacuum enabled (aggressive on high-write tables)",
           "partitioning": "audit_log partitioned by month (range partitioning)",
@@ -631,7 +990,12 @@
         },
         "auditLogging": {
           "extension": "pgaudit for comprehensive audit trail",
-          "loggedEvents": ["DDL changes", "DML on sensitive tables", "Role changes", "Authentication failures"],
+          "loggedEvents": [
+            "DDL changes",
+            "DML on sensitive tables",
+            "Role changes",
+            "Authentication failures"
+          ],
           "format": "JSON logs streamed to Elasticsearch via Filebeat",
           "retention": "2 years in audit_log table (compliance requirement)",
           "tamperProofing": "Write-once audit table with append-only constraint"
@@ -649,15 +1013,63 @@
           "hipaa": "164.312(a)(2)(iv) + 164.312(e)(2)(ii) (PHI encryption)",
           "pciDss": "Requirement 3.4 (Cardholder Data Encryption)"
         },
-        "security": ["Encryption at Rest", "TLS 1.3", "Row Level Security", "Backups", "SCRAM-SHA-256", "mTLS", "Vault Dynamic Credentials", "PgBouncer", "pgaudit"],
-        "dependencies": ["vault (dynamic credentials)", "pgbouncer (connection pooling)", "s3 (backups)", "etcd (Patroni coordination)"],
-        "clients": ["api-gateway", "workers", "analytics"]
+        "security": [
+          "Encryption at Rest",
+          "TLS 1.3",
+          "Row Level Security",
+          "Backups",
+          "SCRAM-SHA-256",
+          "mTLS",
+          "Vault Dynamic Credentials",
+          "PgBouncer",
+          "pgaudit"
+        ],
+        "dependencies": [
+          "vault (dynamic credentials)",
+          "pgbouncer (connection pooling)",
+          "s3 (backups)",
+          "etcd (Patroni coordination)"
+        ],
+        "clients": [
+          "api-gateway",
+          "workers",
+          "analytics"
+        ],
+        "securityFlags": {
+          "encryptedAtRest": true,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": false,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "SIEM",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "pgAudit",
+          "hasBackup": true,
+          "backupFrequency": "5min",
+          "networkSegmentation": "data-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": true,
+          "rbacEnabled": true,
+          "secretsManagement": "Vault",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "AWS Inspector",
+          "complianceFrameworks": [
+            "SOC2",
+            "ISO27001",
+            "GDPR",
+            "HIPAA",
+            "PCI-DSS"
+          ]
+        }
       }
     },
     {
       "id": "8",
       "type": "custom",
-      "position": {"x": 900, "y": 250},
+      "position": {
+        "x": 900,
+        "y": 250
+      },
       "data": {
         "type": "cache",
         "label": "Redis Cluster",
@@ -700,13 +1112,20 @@
           },
           "jobQueue": {
             "description": "BullMQ job queue for async analysis tasks",
-            "queues": ["security-analysis", "export-pdf", "email-notifications"],
+            "queues": [
+              "security-analysis",
+              "export-pdf",
+              "email-notifications"
+            ],
             "persistence": "AOF enabled (every write persisted)",
             "reliability": "Job retry with exponential backoff (max 5 attempts)"
           },
           "pubsub": {
             "description": "Real-time notifications to connected clients",
-            "channels": ["design-updates", "system-alerts"],
+            "channels": [
+              "design-updates",
+              "system-alerts"
+            ],
             "subscribers": "WebSocket server subscribes to push updates"
           }
         },
@@ -782,15 +1201,57 @@
           "gdpr": "Encryption at rest + in transit for user session data",
           "hipaa": "TLS 1.3 + ACLs for PHI caching (if applicable)"
         },
-        "security": ["TLS 1.3", "ACLs v2", "Vault Dynamic Credentials", "mTLS", "Encrypted Persistence", "Sentinel HA", "Lua Script Sandboxing"],
-        "dependencies": ["vault (dynamic credentials)", "sentinel (failover)", "s3 (backups)"],
-        "clients": ["api-gateway", "workers"]
+        "security": [
+          "TLS 1.3",
+          "ACLs v2",
+          "Vault Dynamic Credentials",
+          "mTLS",
+          "Encrypted Persistence",
+          "Sentinel HA",
+          "Lua Script Sandboxing"
+        ],
+        "dependencies": [
+          "vault (dynamic credentials)",
+          "sentinel (failover)",
+          "s3 (backups)"
+        ],
+        "clients": [
+          "api-gateway",
+          "workers"
+        ],
+        "securityFlags": {
+          "encryptedAtRest": true,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": false,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "SIEM",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "Redis Sentinel",
+          "hasBackup": true,
+          "backupFrequency": "daily",
+          "networkSegmentation": "data-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": false,
+          "rbacEnabled": true,
+          "secretsManagement": "Vault",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "Trivy",
+          "complianceFrameworks": [
+            "SOC2",
+            "ISO27001",
+            "PCI-DSS"
+          ]
+        }
       }
     },
     {
       "id": "9",
       "type": "custom",
-      "position": {"x": 700, "y": 450},
+      "position": {
+        "x": 700,
+        "y": 450
+      },
       "data": {
         "type": "app-server",
         "label": "Background Workers",
@@ -835,22 +1296,15 @@
             "timeout": "30 minutes"
           }
         },
-        "security": {
-          "sandboxing": {
-            "method": "VM2 sandbox for user-provided code execution (if applicable)",
-            "restrictions": "No file system access, no network access, no child processes",
-            "timeout": "10 seconds per code execution",
-            "memoryLimit": "256MB per sandbox"
-          },
-          "databaseAccess": {
-            "mode": "Read-only for analysis workers (SELECT only)",
-            "credentials": "Vault dynamic credentials with 1-hour TTL",
-            "connectionPool": "Max 10 connections per worker (prevent connection exhaustion)"
-          },
-          "secretsManagement": "All API keys from Vault (Anthropic, SendGrid, AWS)",
-          "networkIsolation": "Workers in private subnet (no direct internet access)",
-          "outboundProxy": "All external API calls via HTTP proxy with allow-list"
-        },
+        "security": [
+          "Sandboxed Execution",
+          "Read-only DB",
+          "Resource Limits",
+          "Vault Secrets",
+          "Network Isolation",
+          "Dead Letter Queue",
+          "Job Timeout Enforcement"
+        ],
         "resourceLimits": {
           "cpu": "2 vCPU per worker (throttled at 2 cores)",
           "memory": "4GB RAM per worker (OOMKill at 4GB)",
@@ -909,15 +1363,47 @@
           "soc2": "Type II compliant (CC7.2 - System Monitoring)",
           "gdpr": "User data processed only as needed, deleted after 90 days"
         },
-        "security": ["Sandboxed Execution", "Read-only DB", "Resource Limits", "Vault Secrets", "Network Isolation", "Dead Letter Queue", "Job Timeout Enforcement"],
-        "dependencies": ["redis (BullMQ)", "vault (secrets)", "postgresql (read-only)", "anthropic-api", "s3 (exports)"],
-        "clients": ["api-gateway (job submission)"]
+        "dependencies": [
+          "redis (BullMQ)",
+          "vault (secrets)",
+          "postgresql (read-only)",
+          "anthropic-api",
+          "s3 (exports)"
+        ],
+        "clients": [
+          "api-gateway (job submission)"
+        ],
+        "securityFlags": {
+          "encryptedAtRest": false,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": false,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "SIEM",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "Prometheus",
+          "hasBackup": false,
+          "networkSegmentation": "private-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": false,
+          "rbacEnabled": true,
+          "secretsManagement": "Vault",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "Snyk",
+          "complianceFrameworks": [
+            "SOC2",
+            "ISO27001"
+          ]
+        }
       }
     },
     {
       "id": "10",
       "type": "custom",
-      "position": {"x": 1100, "y": 100},
+      "position": {
+        "x": 1100,
+        "y": 100
+      },
       "data": {
         "type": "cloud",
         "label": "S3 Storage",
@@ -931,13 +1417,18 @@
             "encryption": "SSE-KMS with AWS KMS key rotation",
             "versioning": "Enabled (keep 10 versions, 90-day retention)",
             "maxFileSize": "10MB per file",
-            "allowedTypes": ["image/png", "image/svg+xml", "application/pdf", "application/json"],
+            "allowedTypes": [
+              "image/png",
+              "image/svg+xml",
+              "application/pdf",
+              "application/json"
+            ],
             "lifecycle": "Delete versions older than 90 days"
           },
           "systemBackups": {
             "name": "kohatlas-backups-prod",
             "description": "PostgreSQL/Redis backups + Vault snapshots",
-            "storageClass": "S3 Standard-IA (infrequent access) → Glacier Deep Archive after 90 days",
+            "storageClass": "S3 Standard-IA (infrequent access) \u2192 Glacier Deep Archive after 90 days",
             "encryption": "SSE-KMS with customer-managed CMK",
             "versioning": "Enabled (immutable backups)",
             "mfaDelete": "Enabled (prevent accidental deletion)",
@@ -950,7 +1441,7 @@
           "auditLogs": {
             "name": "kohatlas-audit-logs-prod",
             "description": "Immutable audit logs from Vault, PostgreSQL, API Gateway",
-            "storageClass": "S3 Standard-IA → Glacier after 365 days",
+            "storageClass": "S3 Standard-IA \u2192 Glacier after 365 days",
             "encryption": "SSE-KMS + Object Lock (WORM mode)",
             "objectLock": "Governance mode (7 years retention)",
             "lifecycle": "Retain for 7 years (SOC2/HIPAA compliance)"
@@ -1000,8 +1491,8 @@
             "abortIncompleteUploads": "Abort multipart uploads after 7 days"
           },
           "backups": {
-            "transitionToIA": "Standard → Standard-IA after 30 days",
-            "transitionToGlacier": "Standard-IA → Glacier Deep Archive after 90 days",
+            "transitionToIA": "Standard \u2192 Standard-IA after 30 days",
+            "transitionToGlacier": "Standard-IA \u2192 Glacier Deep Archive after 90 days",
             "retention": "Keep for 7 years (compliance)"
           },
           "exports": {
@@ -1050,15 +1541,59 @@
           "compression": "Gzip-compress backups before upload (reduce storage by ~70%)",
           "estimatedCost": "$200-300/month for 1TB storage + transfers"
         },
-        "security": ["Encryption (SSE-KMS)", "Versioning", "MFA Delete", "Access Logs", "Object Lock (WORM)", "TLS 1.3 Enforcement", "Vault Dynamic IAM", "Cross-Region Replication"],
-        "dependencies": ["vault (dynamic IAM credentials)", "kms (encryption keys)", "cloudwatch (monitoring)"],
-        "clients": ["api-gateway (uploads)", "workers (exports)", "backup-system (backups)"]
+        "security": [
+          "Encryption (SSE-KMS)",
+          "Versioning",
+          "MFA Delete",
+          "Access Logs",
+          "Object Lock (WORM)",
+          "TLS 1.3 Enforcement",
+          "Vault Dynamic IAM",
+          "Cross-Region Replication"
+        ],
+        "dependencies": [
+          "vault (dynamic IAM credentials)",
+          "kms (encryption keys)",
+          "cloudwatch (monitoring)"
+        ],
+        "clients": [
+          "api-gateway (uploads)",
+          "workers (exports)",
+          "backup-system (backups)"
+        ],
+        "securityFlags": {
+          "encryptedAtRest": true,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": false,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "SIEM",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "S3 Access Logs",
+          "hasBackup": true,
+          "backupFrequency": "continuous",
+          "networkSegmentation": "isolated-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": true,
+          "rbacEnabled": true,
+          "secretsManagement": "AWS KMS",
+          "vulnerabilityScanning": false,
+          "complianceFrameworks": [
+            "SOC2",
+            "ISO27001",
+            "GDPR",
+            "HIPAA"
+          ]
+        }
       }
     },
     {
       "id": "11",
       "type": "custom",
-      "position": {"x": 1100, "y": 300},
+      "position": {
+        "x": 1100,
+        "y": 300
+      },
       "data": {
         "type": "app-server",
         "label": "Monitoring Stack",
@@ -1084,7 +1619,11 @@
           "grafana": {
             "version": "Grafana 10.x",
             "description": "Visualization and dashboards",
-            "dataSources": ["Prometheus", "Elasticsearch", "PostgreSQL"],
+            "dataSources": [
+              "Prometheus",
+              "Elasticsearch",
+              "PostgreSQL"
+            ],
             "dashboards": [
               "API Gateway Performance (requests/sec, latency, error rate)",
               "Database Health (connections, query time, cache hit ratio, replication lag)",
@@ -1147,11 +1686,14 @@
           "openTelemetry": {
             "description": "Distributed tracing for microservices",
             "collector": "OpenTelemetry Collector (OTLP protocol)",
-            "exporters": ["Jaeger (traces)", "Prometheus (metrics)"],
+            "exporters": [
+              "Jaeger (traces)",
+              "Prometheus (metrics)"
+            ],
             "tracing": {
               "samplingRate": "10% (sample 1 in 10 requests to reduce overhead)",
               "propagation": "W3C Trace Context (span IDs propagated across services)",
-              "traces": "API Gateway → Vault → PostgreSQL → Redis (full request path)"
+              "traces": "API Gateway \u2192 Vault \u2192 PostgreSQL \u2192 Redis (full request path)"
             },
             "jaeger": {
               "version": "Jaeger 1.50+",
@@ -1245,22 +1787,55 @@
           "costAllocation": "Tag all resources by service (api, db, cache, storage)",
           "optimization": "Right-sizing recommendations (downsize over-provisioned instances)"
         },
-        "security": {
-          "metricsAuth": "Prometheus secured with Basic Auth + TLS",
-          "grafanaAuth": "OAuth 2.0 via Auth0 (SSO)",
-          "sentryDsn": "Stored in Vault (rotated every 90 days)",
-          "logEncryption": "Logs encrypted in transit (TLS) + at rest (S3 SSE-KMS)",
-          "rbac": "Read-only access for developers, full access for SRE team"
-        },
+        "security": [
+          "Secure Metrics",
+          "Alerting",
+          "SIEM Integration",
+          "TLS 1.3 for All Exporters",
+          "OAuth 2.0 Authentication",
+          "RBAC for Dashboards"
+        ],
         "compliance": {
           "soc2": "Type II compliant (CC7.2 - System Monitoring)",
           "iso27001": "A.12.4.1 (Event logging)",
           "gdpr": "Article 32 (Security monitoring + incident response)",
           "hipaa": "164.312(b) (Audit controls)"
         },
-        "security": ["Secure Metrics", "Alerting", "SIEM Integration", "TLS 1.3 for All Exporters", "OAuth 2.0 Authentication", "RBAC for Dashboards"],
-        "dependencies": ["prometheus", "grafana", "sentry", "elasticsearch", "jaeger", "alertmanager"],
-        "clients": ["All services export metrics to Prometheus", "Logs streamed to Elasticsearch"]
+        "dependencies": [
+          "prometheus",
+          "grafana",
+          "sentry",
+          "elasticsearch",
+          "jaeger",
+          "alertmanager"
+        ],
+        "clients": [
+          "All services export metrics to Prometheus",
+          "Logs streamed to Elasticsearch"
+        ],
+        "securityFlags": {
+          "encryptedAtRest": true,
+          "encryptedInTransit": true,
+          "hasFirewall": true,
+          "hasWAF": false,
+          "auditLoggingEnabled": true,
+          "auditLoggingDestination": "self",
+          "activityMonitoring": true,
+          "activityMonitoringTool": "self-monitoring",
+          "hasBackup": true,
+          "backupFrequency": "daily",
+          "networkSegmentation": "isolated-subnet",
+          "directInternetAccess": false,
+          "mfaRequired": true,
+          "rbacEnabled": true,
+          "secretsManagement": "Vault",
+          "vulnerabilityScanning": true,
+          "vulnerabilityScanningTool": "Trivy",
+          "complianceFrameworks": [
+            "SOC2",
+            "ISO27001"
+          ]
+        }
       }
     }
   ],
@@ -1275,11 +1850,28 @@
         "protocol": "HTTPS/2 + HTTPS/3 (QUIC)",
         "encryption": "TLS 1.3 (AES-256-GCM, ChaCha20-Poly1305)",
         "authentication": "None (public internet traffic)",
-        "dataFlow": "User browser → CloudFlare CDN",
+        "dataFlow": "User browser \u2192 CloudFlare CDN",
         "bandwidth": "Up to 100 Gbps (CDN capacity)",
         "caching": "Static assets (HTML, CSS, JS, images) cached at edge",
         "compression": "Brotli + Gzip",
-        "security": ["DDoS protection", "Bot mitigation", "TLS fingerprinting"]
+        "security": [
+          "DDoS protection",
+          "Bot mitigation",
+          "TLS fingerprinting"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "none",
+          "authorizationEnabled": false,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "internet"
+        }
       }
     },
     {
@@ -1292,10 +1884,27 @@
         "protocol": "HTTPS/1.1",
         "encryption": "TLS 1.3 (AES-256-GCM)",
         "authentication": "None (CDN to WAF is trusted path)",
-        "dataFlow": "CloudFlare CDN → ModSecurity WAF",
+        "dataFlow": "CloudFlare CDN \u2192 ModSecurity WAF",
         "bandwidth": "10 Gbps dedicated link",
         "latency": "< 5ms (same datacenter)",
-        "security": ["CloudFlare IP whitelist", "OWASP CRS rule evaluation", "Rate limiting"]
+        "security": [
+          "CloudFlare IP whitelist",
+          "OWASP CRS rule evaluation",
+          "Rate limiting"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "internal"
+        }
       }
     },
     {
@@ -1309,10 +1918,27 @@
         "encryption": "TLS 1.3 with mutual authentication",
         "authentication": "Client certificates from Vault PKI (90-day validity)",
         "certificateValidation": "CN, SAN, key usage, expiration checked",
-        "dataFlow": "WAF → Load Balancer → API Gateway",
+        "dataFlow": "WAF \u2192 Load Balancer \u2192 API Gateway",
         "bandwidth": "10 Gbps",
         "connectionPooling": "Keep-alive connections (max 1000 concurrent)",
-        "security": ["Certificate pinning", "Zero-trust network", "Per-request authentication"]
+        "security": [
+          "Certificate pinning",
+          "Zero-trust network",
+          "Per-request authentication"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "mTLS",
+          "authenticated": true,
+          "authenticationType": "mtls",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "1000/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "internal"
+        }
       }
     },
     {
@@ -1325,11 +1951,28 @@
         "protocol": "HTTP/2 over mTLS",
         "encryption": "TLS 1.3 + mTLS (client certificate)",
         "authentication": "AppRole token (renewed every 1 hour)",
-        "dataFlow": "API Gateway → Vault (secrets retrieval, dynamic credentials)",
+        "dataFlow": "API Gateway \u2192 Vault (secrets retrieval, dynamic credentials)",
         "bandwidth": "1 Gbps",
         "requestRate": "~100 requests/minute (fetch secrets on demand)",
         "caching": "Secrets cached in memory for TTL duration (max 1 hour)",
-        "security": ["Token renewal automation", "Namespace isolation", "Audit logging"]
+        "security": [
+          "Token renewal automation",
+          "Namespace isolation",
+          "Audit logging"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "internal"
+        }
       }
     },
     {
@@ -1342,12 +1985,35 @@
         "protocol": "PostgreSQL wire protocol v3",
         "encryption": "TLS 1.3 + mTLS (client certificate from Vault)",
         "authentication": "SCRAM-SHA-256 with dynamic credentials (1-hour TTL)",
-        "dataFlow": "API Gateway → PgBouncer → PostgreSQL Primary",
+        "dataFlow": "API Gateway \u2192 PgBouncer \u2192 PostgreSQL Primary",
         "bandwidth": "10 Gbps",
-        "connectionPooling": "PgBouncer (500 client → 100 backend connections)",
-        "queries": ["INSERT designs", "UPDATE users", "SELECT * FROM designs WHERE user_id=?", "BEGIN/COMMIT transactions"],
+        "connectionPooling": "PgBouncer (500 client \u2192 100 backend connections)",
+        "queries": [
+          "INSERT designs",
+          "UPDATE users",
+          "SELECT * FROM designs WHERE user_id=?",
+          "BEGIN/COMMIT transactions"
+        ],
         "latency": "< 10ms (p95)",
-        "security": ["Row-level security (RLS)", "Prepared statements", "Connection encryption", "Read-write access"]
+        "security": [
+          "Row-level security (RLS)",
+          "Prepared statements",
+          "Connection encryption",
+          "Read-write access"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "data"
+        }
       }
     },
     {
@@ -1360,12 +2026,34 @@
         "protocol": "RESP3 (Redis Serialization Protocol v3)",
         "encryption": "TLS 1.3",
         "authentication": "Redis ACL with dynamic password from Vault (24-hour TTL)",
-        "dataFlow": "API Gateway → Redis Cluster (session store, cache, rate limiting)",
+        "dataFlow": "API Gateway \u2192 Redis Cluster (session store, cache, rate limiting)",
         "bandwidth": "10 Gbps",
         "connectionPooling": "ioredis (min=10, max=100 connections per API instance)",
-        "operations": ["GET/SET sessions", "INCR rate_limit counters", "ZADD/ZRANGE for sorted sets", "XADD for streams"],
+        "operations": [
+          "GET/SET sessions",
+          "INCR rate_limit counters",
+          "ZADD/ZRANGE for sorted sets",
+          "XADD for streams"
+        ],
         "latency": "< 1ms (p95)",
-        "security": ["ACL per-command permissions", "TLS encryption", "Password authentication"]
+        "security": [
+          "ACL per-command permissions",
+          "TLS encryption",
+          "Password authentication"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "mTLS",
+          "authenticated": true,
+          "authenticationType": "mtls",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "500/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "data"
+        }
       }
     },
     {
@@ -1378,12 +2066,33 @@
         "protocol": "BullMQ (Redis-backed job queue)",
         "encryption": "TLS 1.3 (via Redis connection)",
         "authentication": "Redis ACL (workers user)",
-        "dataFlow": "API Gateway → Redis → Background Workers (async job submission)",
+        "dataFlow": "API Gateway \u2192 Redis \u2192 Background Workers (async job submission)",
         "bandwidth": "1 Gbps",
-        "jobTypes": ["security-analysis", "export-pdf", "email-notifications"],
+        "jobTypes": [
+          "security-analysis",
+          "export-pdf",
+          "email-notifications"
+        ],
         "reliability": "Job persistence in Redis (AOF enabled)",
         "latency": "< 100ms job submission, variable processing time (1s-5min)",
-        "security": ["Job payload validation", "Resource limits per job", "Sandboxed execution"]
+        "security": [
+          "Job payload validation",
+          "Resource limits per job",
+          "Sandboxed execution"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "data"
+        }
       }
     },
     {
@@ -1396,12 +2105,32 @@
         "protocol": "PostgreSQL wire protocol v3",
         "encryption": "TLS 1.3 + mTLS",
         "authentication": "SCRAM-SHA-256 with dynamic credentials (read-only role)",
-        "dataFlow": "Background Workers → PostgreSQL Replica (read-only queries)",
+        "dataFlow": "Background Workers \u2192 PostgreSQL Replica (read-only queries)",
         "bandwidth": "10 Gbps",
         "connectionPooling": "Max 10 connections per worker",
-        "queries": ["SELECT designs for analysis", "SELECT user data for reports"],
+        "queries": [
+          "SELECT designs for analysis",
+          "SELECT user data for reports"
+        ],
         "permissions": "GRANT SELECT ONLY (no INSERT/UPDATE/DELETE)",
-        "security": ["Read-only role enforcement", "Connection encryption", "Vault dynamic credentials"]
+        "security": [
+          "Read-only role enforcement",
+          "Connection encryption",
+          "Vault dynamic credentials"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "internal"
+        }
       }
     },
     {
@@ -1414,11 +2143,31 @@
         "protocol": "RESP3 (Redis Streams for BullMQ)",
         "encryption": "TLS 1.3",
         "authentication": "Redis ACL (workers user with XREAD/XACK permissions)",
-        "dataFlow": "Background Workers → Redis (fetch jobs, update status)",
+        "dataFlow": "Background Workers \u2192 Redis (fetch jobs, update status)",
         "bandwidth": "1 Gbps",
-        "operations": ["XREAD (fetch jobs)", "XACK (acknowledge completion)", "XADD (update progress)"],
+        "operations": [
+          "XREAD (fetch jobs)",
+          "XACK (acknowledge completion)",
+          "XADD (update progress)"
+        ],
         "latency": "< 5ms",
-        "security": ["ACL per-command permissions", "TLS encryption"]
+        "security": [
+          "ACL per-command permissions",
+          "TLS encryption"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "mtls",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "500/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "data"
+        }
       }
     },
     {
@@ -1431,10 +2180,27 @@
         "protocol": "HTTPS (Vault HTTP API)",
         "encryption": "TLS 1.3 + mTLS",
         "authentication": "AppRole token (workers role)",
-        "dataFlow": "Workers → Vault (fetch Anthropic API key, SendGrid key, AWS credentials)",
+        "dataFlow": "Workers \u2192 Vault (fetch Anthropic API key, SendGrid key, AWS credentials)",
         "bandwidth": "1 Gbps",
         "requestRate": "~50 requests/minute (fetch secrets as needed)",
-        "security": ["Token renewal", "Least privilege access", "Audit logging"]
+        "security": [
+          "Token renewal",
+          "Least privilege access",
+          "Audit logging"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "data"
+        }
       }
     },
     {
@@ -1447,10 +2213,30 @@
         "protocol": "HTTPS (AWS S3 API)",
         "encryption": "TLS 1.3 + S3 SSE-KMS",
         "authentication": "AWS STS temporary credentials from Vault (15-min TTL)",
-        "dataFlow": "Workers → S3 (upload PDF exports, backup files)",
+        "dataFlow": "Workers \u2192 S3 (upload PDF exports, backup files)",
         "bandwidth": "Up to 10 Gbps (S3 multi-part upload)",
-        "operations": ["PutObject (exports)", "PutObject (backups)"],
-        "security": ["IAM role with least privilege", "Server-side encryption", "TLS enforcement"]
+        "operations": [
+          "PutObject (exports)",
+          "PutObject (backups)"
+        ],
+        "security": [
+          "IAM role with least privilege",
+          "Server-side encryption",
+          "TLS enforcement"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "data"
+        }
       }
     },
     {
@@ -1463,10 +2249,31 @@
         "protocol": "HTTPS (AWS S3 API)",
         "encryption": "TLS 1.3 + S3 SSE-KMS",
         "authentication": "AWS STS temporary credentials from Vault (15-min TTL)",
-        "dataFlow": "API Gateway → S3 (user file uploads, retrieve exports)",
+        "dataFlow": "API Gateway \u2192 S3 (user file uploads, retrieve exports)",
         "bandwidth": "Up to 10 Gbps",
-        "operations": ["PutObject (user uploads)", "GetObject (download exports)", "DeleteObject"],
-        "security": ["Pre-signed URLs (1-hour expiry)", "Content-Type validation", "Virus scanning"]
+        "operations": [
+          "PutObject (user uploads)",
+          "GetObject (download exports)",
+          "DeleteObject"
+        ],
+        "security": [
+          "Pre-signed URLs (1-hour expiry)",
+          "Content-Type validation",
+          "Virus scanning"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "internal"
+        }
       }
     },
     {
@@ -1479,11 +2286,33 @@
         "protocol": "HTTP (Prometheus scrape)",
         "encryption": "TLS 1.3",
         "authentication": "Basic Auth (prometheus user)",
-        "dataFlow": "API Gateway → Prometheus (metrics export)",
+        "dataFlow": "API Gateway \u2192 Prometheus (metrics export)",
         "bandwidth": "100 Mbps",
         "scrapeInterval": "15 seconds",
-        "metrics": ["http_requests_total", "http_request_duration_seconds", "jwt_auth_failures", "rate_limit_hits"],
-        "security": ["TLS encryption", "Basic authentication", "Internal network only"]
+        "metrics": [
+          "http_requests_total",
+          "http_request_duration_seconds",
+          "jwt_auth_failures",
+          "rate_limit_hits"
+        ],
+        "security": [
+          "TLS encryption",
+          "Basic authentication",
+          "Internal network only"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "internal"
+        }
       }
     },
     {
@@ -1496,9 +2325,29 @@
         "protocol": "HTTP (Prometheus postgres_exporter)",
         "encryption": "TLS 1.3",
         "authentication": "PostgreSQL monitoring user (read-only)",
-        "dataFlow": "PostgreSQL → Prometheus (database metrics)",
-        "metrics": ["pg_stat_database", "pg_replication_lag", "pg_cache_hit_ratio"],
-        "security": ["Read-only monitoring user", "TLS encryption"]
+        "dataFlow": "PostgreSQL \u2192 Prometheus (database metrics)",
+        "metrics": [
+          "pg_stat_database",
+          "pg_replication_lag",
+          "pg_cache_hit_ratio"
+        ],
+        "security": [
+          "Read-only monitoring user",
+          "TLS encryption"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "data"
+        }
       }
     },
     {
@@ -1511,9 +2360,29 @@
         "protocol": "HTTP (Prometheus redis_exporter)",
         "encryption": "TLS 1.3",
         "authentication": "Redis monitoring ACL user",
-        "dataFlow": "Redis → Prometheus (cache metrics)",
-        "metrics": ["redis_used_memory_bytes", "redis_cache_hit_rate", "redis_connected_clients"],
-        "security": ["ACL monitoring user (INFO + PING only)", "TLS encryption"]
+        "dataFlow": "Redis \u2192 Prometheus (cache metrics)",
+        "metrics": [
+          "redis_used_memory_bytes",
+          "redis_cache_hit_rate",
+          "redis_connected_clients"
+        ],
+        "security": [
+          "ACL monitoring user (INFO + PING only)",
+          "TLS encryption"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "mTLS",
+          "authenticated": true,
+          "authenticationType": "mtls",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "500/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "data"
+        }
       }
     },
     {
@@ -1526,9 +2395,26 @@
         "protocol": "HTTPS (webhooks)",
         "encryption": "TLS 1.3",
         "authentication": "API keys for PagerDuty, Slack, Email",
-        "dataFlow": "Alertmanager → PagerDuty/Slack/Email (critical alerts)",
+        "dataFlow": "Alertmanager \u2192 PagerDuty/Slack/Email (critical alerts)",
         "bandwidth": "10 Mbps",
-        "security": ["Webhook signing", "TLS encryption", "Rate limiting"]
+        "security": [
+          "Webhook signing",
+          "TLS encryption",
+          "Rate limiting"
+        ],
+        "securityFlags": {
+          "encrypted": true,
+          "encryptionProtocol": "TLS-1.3",
+          "authenticated": true,
+          "authenticationType": "jwt",
+          "authorizationEnabled": true,
+          "rateLimited": true,
+          "rateLimitValue": "100/min",
+          "bidirectional": false,
+          "dataFlowDirection": "outbound",
+          "loggingEnabled": true,
+          "networkZone": "internal"
+        }
       }
     }
   ],
@@ -1708,10 +2594,18 @@
     },
     "authentication": {
       "provider": "Auth0 / Clerk (OAuth 2.0 + OIDC)",
-      "methods": ["Password + MFA", "Social Login (Google, GitHub)", "Magic Link"],
+      "methods": [
+        "Password + MFA",
+        "Social Login (Google, GitHub)",
+        "Magic Link"
+      ],
       "mfa": {
         "enforced": "Required for admin + architect roles",
-        "methods": ["TOTP (Google Authenticator, Authy)", "SMS (fallback)", "WebAuthn (hardware keys)"]
+        "methods": [
+          "TOTP (Google Authenticator, Authy)",
+          "SMS (fallback)",
+          "WebAuthn (hardware keys)"
+        ]
       },
       "sessionManagement": {
         "storage": "Redis-backed sessions",
@@ -1743,16 +2637,19 @@
         "auditor": "Read-only access to audit logs + security reports"
       },
       "enforcement": {
-        "api": "Middleware chain (JWT validation → role check → resource ownership)",
+        "api": "Middleware chain (JWT validation \u2192 role check \u2192 resource ownership)",
         "database": "Row-Level Security (users can only access their own designs)",
         "engine": "Casbin for complex ABAC policies"
       }
     },
     "encryption": {
       "inTransit": {
-        "external": "TLS 1.3 (CloudFlare → WAF → Load Balancer)",
-        "internal": "mTLS with Vault-issued certificates (API → DB, API → Redis, API → Vault)",
-        "cipherSuites": ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+        "external": "TLS 1.3 (CloudFlare \u2192 WAF \u2192 Load Balancer)",
+        "internal": "mTLS with Vault-issued certificates (API \u2192 DB, API \u2192 Redis, API \u2192 Vault)",
+        "cipherSuites": [
+          "TLS_AES_256_GCM_SHA384",
+          "TLS_CHACHA20_POLY1305_SHA256"
+        ],
         "protocols": "TLS 1.3 only (TLS 1.2 and below disabled)"
       },
       "atRest": {
@@ -1772,9 +2669,19 @@
       "architecture": "Zero-trust network with VPC isolation",
       "vpc": {
         "cidr": "10.0.0.0/16",
-        "publicSubnets": ["10.0.1.0/24 (Load Balancer)", "10.0.2.0/24 (NAT Gateway)"],
-        "privateSubnets": ["10.0.10.0/24 (API Gateway)", "10.0.11.0/24 (Workers)", "10.0.12.0/24 (Databases)"],
-        "isolatedSubnets": ["10.0.20.0/24 (Vault)", "10.0.21.0/24 (Monitoring)"]
+        "publicSubnets": [
+          "10.0.1.0/24 (Load Balancer)",
+          "10.0.2.0/24 (NAT Gateway)"
+        ],
+        "privateSubnets": [
+          "10.0.10.0/24 (API Gateway)",
+          "10.0.11.0/24 (Workers)",
+          "10.0.12.0/24 (Databases)"
+        ],
+        "isolatedSubnets": [
+          "10.0.20.0/24 (Vault)",
+          "10.0.21.0/24 (Monitoring)"
+        ]
       },
       "securityGroups": {
         "lb": "Inbound: 443 from 0.0.0.0/0, Outbound: 3000 to API SG",
@@ -1794,7 +2701,12 @@
         "restricted": "Payment data (if applicable), healthcare data (if HIPAA)"
       },
       "pii": {
-        "fields": ["email", "name", "ip_address", "session_tokens"],
+        "fields": [
+          "email",
+          "name",
+          "ip_address",
+          "session_tokens"
+        ],
         "encryption": "pgcrypto for database columns, Vault Transit Engine for API",
         "anonymization": "HMAC-SHA256 in logs, pseudonymization for analytics",
         "retention": "90 days for logs, 7 years for audit trails",
@@ -1802,7 +2714,7 @@
       },
       "dlp": {
         "scanning": "Prevent PII in logs, alerts, exports",
-        "masking": "Automatic redaction (emails → e***@example.com, tokens → tok_***)"
+        "masking": "Automatic redaction (emails \u2192 e***@example.com, tokens \u2192 tok_***)"
       }
     },
     "monitoring": {
@@ -1830,7 +2742,12 @@
       },
       "siem": {
         "platform": "Splunk Enterprise Security / DataDog Security Monitoring",
-        "useCases": ["Brute force detection", "Privilege escalation", "Data exfiltration", "Compliance reporting"],
+        "useCases": [
+          "Brute force detection",
+          "Privilege escalation",
+          "Data exfiltration",
+          "Compliance reporting"
+        ],
         "alerts": "Real-time correlation rules + ML anomaly detection"
       },
       "uptime": {
@@ -1848,42 +2765,71 @@
       },
       "team": {
         "oncall": "24/7 PagerDuty rotation (2 SRE, 1 security engineer)",
-        "escalation": "Tier 1 (on-call SRE) → Tier 2 (security lead) → Tier 3 (CISO)"
+        "escalation": "Tier 1 (on-call SRE) \u2192 Tier 2 (security lead) \u2192 Tier 3 (CISO)"
       },
-      "tools": ["PagerDuty (alerting)", "Slack (communication)", "Jira (ticketing)", "SOAR platform (automation)"]
+      "tools": [
+        "PagerDuty (alerting)",
+        "Slack (communication)",
+        "Jira (ticketing)",
+        "SOAR platform (automation)"
+      ]
     },
     "compliance": {
       "frameworks": {
         "soc2": {
           "type": "Type II (continuous monitoring)",
-          "controlsCovered": ["CC6.1 (Logical Access)", "CC6.7 (Encryption)", "CC7.2 (Monitoring)"],
+          "controlsCovered": [
+            "CC6.1 (Logical Access)",
+            "CC6.7 (Encryption)",
+            "CC7.2 (Monitoring)"
+          ],
           "auditFrequency": "Annual",
           "auditor": "Big 4 accounting firm"
         },
         "iso27001": {
-          "controls": ["A.9.4.2 (Access Control)", "A.10.1.1 (Cryptographic Controls)", "A.12.4.1 (Event Logging)"],
+          "controls": [
+            "A.9.4.2 (Access Control)",
+            "A.10.1.1 (Cryptographic Controls)",
+            "A.12.4.1 (Event Logging)"
+          ],
           "certificationBody": "ANAB-accredited registrar",
           "surveillance": "Annual surveillance audits"
         },
         "gdpr": {
-          "articles": ["Article 32 (Security)", "Article 33 (Breach Notification)", "Article 17 (Right to Erasure)"],
+          "articles": [
+            "Article 32 (Security)",
+            "Article 33 (Breach Notification)",
+            "Article 17 (Right to Erasure)"
+          ],
           "dpo": "Data Protection Officer appointed",
           "dpia": "Data Protection Impact Assessment completed"
         },
         "hipaa": {
-          "rules": ["Security Rule (164.312)", "Privacy Rule (164.530)", "Breach Notification Rule"],
+          "rules": [
+            "Security Rule (164.312)",
+            "Privacy Rule (164.530)",
+            "Breach Notification Rule"
+          ],
           "baa": "Business Associate Agreements with all subprocessors",
           "phi": "Encrypted at rest + in transit, audit logs retained 7 years"
         },
         "pciDss": {
           "version": "PCI-DSS 4.0",
-          "requirements": ["Req 3.4 (Encryption)", "Req 8.2 (Authentication)", "Req 10.2 (Audit Logs)"],
+          "requirements": [
+            "Req 3.4 (Encryption)",
+            "Req 8.2 (Authentication)",
+            "Req 10.2 (Audit Logs)"
+          ],
           "qsa": "Qualified Security Assessor for annual validation",
           "scope": "CDE (Cardholder Data Environment) minimized to payment processor only"
         },
         "nist": {
           "framework": "NIST CSF 2.0 + NIST 800-53",
-          "controls": ["AC-2 (Account Management)", "SC-7 (Boundary Protection)", "AU-2 (Audit Logging)"]
+          "controls": [
+            "AC-2 (Account Management)",
+            "SC-7 (Boundary Protection)",
+            "AU-2 (Audit Logging)"
+          ]
         }
       },
       "reporting": {
@@ -1904,7 +2850,10 @@
     "containers": {
       "runtime": "Docker 24+ with containerd",
       "orchestration": "Kubernetes 1.28+ (EKS)",
-      "registries": ["Amazon ECR (private)", "GitHub Container Registry (backup)"],
+      "registries": [
+        "Amazon ECR (private)",
+        "GitHub Container Registry (backup)"
+      ],
       "imageScanning": "Trivy + Snyk for vulnerability scanning",
       "imageSigning": "Cosign for image provenance (SLSA Level 3)",
       "baseImages": "Distroless containers (minimal attack surface)"
@@ -1934,14 +2883,20 @@
         "psp": "Pod Security Standards (restricted profile)",
         "rbac": "Fine-grained RBAC for service accounts",
         "networkPolicies": "Default deny all, explicit allow per service",
-        "admissionControllers": ["OPA Gatekeeper (policy enforcement)", "Falco (runtime security)"]
+        "admissionControllers": [
+          "OPA Gatekeeper (policy enforcement)",
+          "Falco (runtime security)"
+        ]
       }
     },
     "cicd": {
       "platform": "GitHub Actions",
       "workflows": {
         "build": {
-          "triggers": ["push to main", "pull_request"],
+          "triggers": [
+            "push to main",
+            "pull_request"
+          ],
           "steps": [
             "Checkout code",
             "Setup Node.js 22",
@@ -1956,7 +2911,10 @@
           "duration": "~5 minutes"
         },
         "deploy": {
-          "triggers": ["push to main (after build passes)", "manual workflow_dispatch"],
+          "triggers": [
+            "push to main (after build passes)",
+            "manual workflow_dispatch"
+          ],
           "steps": [
             "Authenticate to AWS (OIDC)",
             "Update kubeconfig (EKS)",
@@ -1970,7 +2928,10 @@
           "duration": "~3 minutes"
         },
         "security": {
-          "triggers": ["schedule (daily at 2 AM)", "pull_request"],
+          "triggers": [
+            "schedule (daily at 2 AM)",
+            "pull_request"
+          ],
           "steps": [
             "npm audit (fail on high/critical)",
             "Snyk test (dependencies + container images)",
@@ -1991,13 +2952,30 @@
     "regions": {
       "primary": {
         "region": "us-east-1 (N. Virginia)",
-        "availabilityZones": ["us-east-1a", "us-east-1b", "us-east-1c"],
-        "services": ["API Gateway", "PostgreSQL Primary", "Redis Cluster", "Workers", "Vault Primary"]
+        "availabilityZones": [
+          "us-east-1a",
+          "us-east-1b",
+          "us-east-1c"
+        ],
+        "services": [
+          "API Gateway",
+          "PostgreSQL Primary",
+          "Redis Cluster",
+          "Workers",
+          "Vault Primary"
+        ]
       },
       "dr": {
         "region": "us-west-2 (Oregon)",
-        "availabilityZones": ["us-west-2a", "us-west-2b"],
-        "services": ["PostgreSQL Read Replica", "Redis Replica", "Vault Standby"],
+        "availabilityZones": [
+          "us-west-2a",
+          "us-west-2b"
+        ],
+        "services": [
+          "PostgreSQL Read Replica",
+          "Redis Replica",
+          "Vault Standby"
+        ],
         "failoverMode": "Active-Passive (manual failover with Route 53 health checks)"
       },
       "cdn": {
@@ -2028,8 +3006,20 @@
     "infrastructureAsCode": {
       "tool": "Terraform 1.6+",
       "structure": {
-        "modules": ["vpc", "eks", "rds", "elasticache", "s3", "iam", "monitoring"],
-        "environments": ["dev.tfvars", "staging.tfvars", "prod.tfvars"]
+        "modules": [
+          "vpc",
+          "eks",
+          "rds",
+          "elasticache",
+          "s3",
+          "iam",
+          "monitoring"
+        ],
+        "environments": [
+          "dev.tfvars",
+          "staging.tfvars",
+          "prod.tfvars"
+        ]
       },
       "stateManagement": "S3 backend with DynamoDB locking (encrypted + versioned)",
       "cicd": "Atlantis for Terraform PR automation (plan on PR, apply on merge)",
