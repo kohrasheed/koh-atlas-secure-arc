@@ -3015,9 +3015,9 @@ function App() {
       const connectionDetails = connectionEdges.map(edge => ({
         from: nodes.find(n => n.id === edge.source)?.data?.label || edge.source,
         to: nodes.find(n => n.id === edge.target)?.data?.label || edge.target,
-        protocol: edge.data?.protocol || 'Unspecified',
-        ports: edge.data?.ports || 'Any',
-        encryption: edge.data?.encrypted ? 'Yes' : 'No'
+        protocol: edge.data?.protocol || edge.label?.split(':')[0] || 'Unspecified',
+        ports: edge.label?.split(':')[1] || edge.data?.port || 'Any',
+        encryption: edge.data?.securityFlags?.encrypted ? 'Yes (TLS 1.3)' : edge.data?.encryption || 'No'
       }));
 
       // Try to call AI API via proxy server, fall back to mock if unavailable
