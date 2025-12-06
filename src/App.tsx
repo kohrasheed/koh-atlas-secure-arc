@@ -2628,168 +2628,20 @@ function App() {
     }
   }, [nodes, edges]);
 
-  // Security analysis
+  // Security analysis - AI-powered only (no pattern matching)
   const runSecurityAnalysis = async () => {
     // Clear any existing highlights first
     clearHighlights();
     
-    const newFindings: SecurityFinding[] = [];
-    const newAttackPaths: AttackPath[] = [];
-
-    // Analyze for common security issues
-    edges.forEach((edge: Edge) => {
-      const edgeData = edge.data || {};
-      
-      // Check for unencrypted connections
-      if (edgeData.protocol === 'HTTP' || edgeData.encryption === 'None') {
-        newFindings.push({
-          id: `unencrypted-${edge.id}`,
-          title: 'Unencrypted Communication',
-          severity: 'High',
-          description: `Connection ${edge.label} uses unencrypted communication`,
-          affected: [edge.source!, edge.target!],
-          recommendation: 'Implement TLS encryption for all communications',
-          standards: ['NIST 800-53 SC-8', 'ISO 27001 A.13.1.1']
-        });
-      }
-
-      // Check for direct database connections
-      const targetNode = nodes.find((n: Node) => n.id === edge.target);
-      const sourceNode = nodes.find((n: Node) => n.id === edge.source);
-      
-      if (targetNode?.data.type === 'database' && sourceNode?.data.type !== 'app-server') {
-        newFindings.push({
-          id: `direct-db-${edge.id}`,
-          title: 'Direct Database Access',
-          severity: 'Medium',
-          description: 'Direct database access bypasses application tier',
-          affected: [edge.source!, edge.target!],
-          recommendation: 'Route database access through application tier',
-          standards: ['OWASP Top 10', 'NIST 800-53 AC-3']
-        });
-      }
-    });
-
-    // Check for missing security controls
-    const hasFirewall = nodes.some((n: Node) => n.data.type === 'firewall');
-    const hasWAF = nodes.some((n: Node) => n.data.type === 'waf');
-    const hasDAM = nodes.some((n: Node) => n.data.type === 'dam');
-    const hasEdgeDNS = nodes.some((n: Node) => n.data.type === 'edge-dns');
-    const hasEdgeCDN = nodes.some((n: Node) => n.data.type === 'edge-cdn');
-    const hasBastionHost = nodes.some((n: Node) => n.data.type === 'bastion-host');
-    const hasSDWAN = nodes.some((n: Node) => n.data.type === 'sd-wan');
-    
-    if (!hasFirewall) {
-      newFindings.push({
-        id: 'missing-firewall',
-        title: 'Missing Firewall Protection',
-        severity: 'High',
-        description: 'No firewall protection detected in architecture',
-        affected: ['architecture'],
-        recommendation: 'Add firewall protection at network perimeters',
-        standards: ['NIST 800-53 SC-7', 'CIS Controls 12']
-      });
-    }
-
-    if (!hasWAF && nodes.some((n: Node) => n.data.type === 'web-server')) {
-      newFindings.push({
-        id: 'missing-waf',
-        title: 'Missing Web Application Firewall',
-        severity: 'Medium',
-        description: 'Web servers without WAF protection',
-        affected: nodes.filter((n: Node) => n.data.type === 'web-server').map((n: Node) => n.id),
-        recommendation: 'Deploy WAF to protect web applications',
-        standards: ['OWASP ASVS', 'PCI DSS 6.5.1']
-      });
-    }
-
-    if (!hasDAM && nodes.some((n: Node) => n.data.type === 'database')) {
-      newFindings.push({
-        id: 'missing-dam',
-        title: 'Missing Database Activity Monitoring',
-        severity: 'Medium',
-        description: 'Databases without activity monitoring and threat detection',
-        affected: nodes.filter((n: Node) => n.data.type === 'database').map((n: Node) => n.id),
-        recommendation: 'Deploy DAM to monitor database access and detect anomalies',
-        standards: ['NIST 800-53 AU-2', 'PCI DSS 10.2']
-      });
-    }
-
-    if (!hasEdgeDNS && nodes.some((n: Node) => ['web-server', 'api-gateway'].includes((n.data as any).type))) {
-      newFindings.push({
-        id: 'missing-edge-dns',
-        title: 'Missing Edge DNS Protection',
-        severity: 'Low',
-        description: 'No DNS security and performance optimization at edge',
-        affected: ['architecture'],
-        recommendation: 'Deploy Edge DNS for DDoS protection and DNS filtering',
-        standards: ['NIST 800-53 SC-20', 'CIS Controls 9']
-      });
-    }
-
-    if (!hasEdgeCDN && nodes.some((n: Node) => ['web-server', 'web-browser'].includes((n.data as any).type))) {
-      newFindings.push({
-        id: 'missing-edge-cdn',
-        title: 'Missing Edge CDN Protection',
-        severity: 'Low',
-        description: 'No content delivery network for performance and DDoS protection',
-        affected: nodes.filter((n: Node) => n.data.type === 'web-server').map((n: Node) => n.id),
-        recommendation: 'Deploy Edge CDN for content caching and DDoS mitigation',
-        standards: ['NIST 800-53 SC-5', 'OWASP Top 10']
-      });
-    }
-
-    // Check for missing Bastion Host for secure remote access
-    if (!hasBastionHost && nodes.some((n: Node) => ['database', 'app-server'].includes((n.data as any).type))) {
-      newFindings.push({
-        id: 'missing-bastion-host',
-        title: 'Missing Bastion Host for Secure Access',
-        severity: 'Medium',
-        description: 'No bastion host detected for secure remote access to internal resources',
-        affected: nodes.filter((n: Node) => ['database', 'app-server'].includes((n.data as any).type)).map((n: Node) => n.id),
-        recommendation: 'Deploy bastion host for secure, audited administrative access',
-        standards: ['NIST 800-53 AC-3', 'CIS Controls 4', 'NIST 800-53 AU-2']
-      });
-    }
-
-    // Check for missing SD-WAN for network optimization and security
-    if (!hasSDWAN && nodes.some((n: Node) => ['vpc-vnet', 'subnet'].includes((n.data as any).type))) {
-      newFindings.push({
-        id: 'missing-sd-wan',
-        title: 'Missing SD-WAN for Network Security',
-        severity: 'Low',
-        description: 'No software-defined WAN for network optimization and security policies',
-        affected: nodes.filter((n: Node) => ['vpc-vnet', 'subnet'].includes((n.data as any).type)).map((n: Node) => n.id),
-        recommendation: 'Consider SD-WAN for enhanced network security, traffic optimization, and centralized policy management',
-        standards: ['NIST 800-53 SC-7', 'CIS Controls 12']
-      });
-    }
-
-    // Generate attack paths
-    if (newFindings.length > 0) {
-      newAttackPaths.push({
-        id: 'web-attack',
-        name: 'Web Application Attack Path',
-        steps: [
-          'Attacker identifies unencrypted HTTP endpoints',
-          'Man-in-the-middle attack intercepts credentials',
-          'Direct database access bypasses application controls',
-          'Data exfiltration from database'
-        ],
-        impact: 'Data breach, compliance violations',
-        likelihood: 'High',
-        mitigations: ['Implement HTTPS', 'Add WAF', 'Database access controls', 'Network segmentation', 'Deploy DAM for database monitoring', 'Add Edge DNS for DNS protection', 'Use Edge CDN for DDoS mitigation', 'Deploy Bastion Host for secure access', 'Implement SD-WAN for network security']
-      });
-    }
-
-    // Run AI analysis to enhance findings with intelligent recommendations
+    // Use AI-only analysis - no pattern matching that produces false positives
+    // AI correctly reads securityFlags from kohGrid.json
     if (nodes.length > 0) {
       setIsAIAnalyzing(true);
       getAIRecommendations(nodes, edges)
         .then(result => {
           setAiAnalysisResult(result);
           
-          // Convert AI security recommendations to SecurityFinding format and merge
+          // Convert AI security recommendations to SecurityFinding format
           const aiSecurityFindings: SecurityFinding[] = result.recommendations
             .filter(rec => rec.category === 'security')
             .map(rec => {
@@ -2831,39 +2683,30 @@ function App() {
               };
             });
           
-          // Merge rule-based and AI findings
-          const mergedFindings = [...newFindings, ...aiSecurityFindings];
-          setFindings(mergedFindings);
+          // Use AI findings only (no pattern-matching false positives)
+          setFindings(aiSecurityFindings);
+          setAttackPaths([]); // AI provides better recommendations than generic attack paths
           
           if (result.cacheHit) {
-            toast.success(`Found ${mergedFindings.length} issues (${aiSecurityFindings.length} from AI analysis, cached, $0.00)`);
+            toast.success(`Found ${aiSecurityFindings.length} security issues (AI analysis, cached, $0.00)`);
           } else {
-            toast.success(`Found ${mergedFindings.length} issues (${aiSecurityFindings.length} from AI analysis, cost: $${result.tokenUsage?.cost.toFixed(4) || '0.00'})`);
+            toast.success(`Found ${aiSecurityFindings.length} security issues (AI analysis, cost: $${result.tokenUsage?.cost.toFixed(4) || '0.00'})`);
           }
         })
         .catch(error => {
           console.error('AI analysis failed:', error);
-          // Fall back to rule-based findings only
-          setFindings(newFindings);
-          if (newFindings.length === 0) {
-            toast.success('No security issues found!');
-          } else {
-            toast.warning(`Found ${newFindings.length} security issues`);
-          }
+          setFindings([]);
+          setAttackPaths([]);
+          toast.error('AI analysis failed. Please try again.');
         })
         .finally(() => {
           setIsAIAnalyzing(false);
         });
     } else {
-      setFindings(newFindings);
-      if (newFindings.length === 0) {
-        toast.success('No security issues found!');
-      } else {
-        toast.warning(`Found ${newFindings.length} security issues`);
-      }
+      setFindings([]);
+      setAttackPaths([]);
+      toast.info('Add components to analyze');
     }
-    
-    setAttackPaths(newAttackPaths);
   };
 
   // Architectural validation
