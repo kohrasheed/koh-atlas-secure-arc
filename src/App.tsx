@@ -5837,17 +5837,15 @@ ${validationResult.issues.map(issue => `
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="attack-sim" className="flex-1 min-h-0 px-4 pb-4">
-            <ScrollArea className="h-full">
-              <div className="py-2">
-                <AttackSimulation
-                  nodes={nodes}
-                  edges={edges}
-                  onNodesChange={setNodes}
-                  onEdgesChange={setEdges}
-                />
-              </div>
-            </ScrollArea>
+          <TabsContent value="attack-sim" className="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
+            <div className="h-full overflow-y-auto">
+              <AttackSimulation
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={setNodes}
+                onEdgesChange={setEdges}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
