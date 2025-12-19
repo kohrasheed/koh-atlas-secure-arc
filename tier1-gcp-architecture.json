@@ -1,0 +1,788 @@
+{
+  "metadata": {
+    "name": "Tier 1 - Minimal Enterprise GCP Architecture",
+    "tier": "Tier 1",
+    "description": "Production-ready architecture with MFA, CMEK, threat detection, and API security",
+    "monthlyCost": "$962",
+    "annualCost": "$12,394",
+    "securityScore": "7.5/10",
+    "sla": "99.5%",
+    "created": "2025-12-16"
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "custom",
+      "position": { "x": 100, "y": 50 },
+      "data": {
+        "type": "web-browser",
+        "label": "Client (Browser / PWA)",
+        "zone": "Client",
+        "cost": "$0/mo",
+        "notes": "React 19 + Vite PWA"
+      }
+    },
+    {
+      "id": "n2",
+      "type": "custom",
+      "position": { "x": 100, "y": 180 },
+      "data": {
+        "type": "edge-cdn",
+        "label": "Cloud CDN + Cloud Armor",
+        "zone": "Edge",
+        "cost": "$58/mo",
+        "gcpService": "Cloud CDN + Cloud Armor",
+        "specs": "Premium tier, WAF, DDoS protection",
+        "features": ["Global CDN", "WAF rules", "Rate limiting", "DDoS protection"]
+      }
+    },
+    {
+      "id": "n3",
+      "type": "custom",
+      "position": { "x": 100, "y": 310 },
+      "data": {
+        "type": "load-balancer-global",
+        "label": "HTTPS Load Balancer",
+        "zone": "Public Subnet",
+        "cost": "$21/mo",
+        "gcpService": "Cloud Load Balancing",
+        "specs": "HTTPS LB + Static IP",
+        "features": ["SSL termination", "Health checks", "Backend routing"]
+      }
+    },
+    {
+      "id": "n4",
+      "type": "custom",
+      "position": { "x": 380, "y": 240 },
+      "data": {
+        "type": "api-gateway",
+        "label": "API Gateway (Nginx Ingress)",
+        "zone": "App Tier - Private",
+        "cost": "$0/mo (on GKE)",
+        "gcpService": "GKE Ingress Controller",
+        "specs": "Nginx Ingress with OAuth 2.0",
+        "features": ["OAuth 2.0", "JWT validation", "Rate limiting", "API versioning", "Request signing"]
+      }
+    },
+    {
+      "id": "n5",
+      "type": "custom",
+      "position": { "x": 380, "y": 380 },
+      "data": {
+        "type": "app-server",
+        "label": "App Server (3 pods)",
+        "zone": "App Tier - Private",
+        "cost": "$155/mo (GKE cluster)",
+        "gcpService": "GKE Private Cluster",
+        "specs": "3x n2-standard-1 nodes (zonal)",
+        "features": ["Node.js 22", "HPA 3-10 pods", "Private endpoints", "Workload Identity"]
+      }
+    },
+    {
+      "id": "n6",
+      "type": "custom",
+      "position": { "x": 660, "y": 240 },
+      "data": {
+        "type": "database",
+        "label": "PostgreSQL (CMEK)",
+        "zone": "Data Tier - Private",
+        "cost": "$94/mo",
+        "gcpService": "Cloud SQL PostgreSQL",
+        "specs": "db-custom-2-7680, 100GB SSD, CMEK encrypted",
+        "features": ["Customer-managed keys", "7-day backups", "Private IP", "DLP scanning"]
+      }
+    },
+    {
+      "id": "n7",
+      "type": "custom",
+      "position": { "x": 660, "y": 380 },
+      "data": {
+        "type": "cache",
+        "label": "Redis (Cache + Queue)",
+        "zone": "Data Tier - Private",
+        "cost": "$79/mo",
+        "gcpService": "Memorystore Redis",
+        "specs": "Basic tier, 2GB, CMEK encrypted",
+        "features": ["Session storage", "Job queue", "Rate limiting", "Private IP"]
+      }
+    },
+    {
+      "id": "n8",
+      "type": "custom",
+      "position": { "x": 940, "y": 240 },
+      "data": {
+        "type": "cloud-storage",
+        "label": "Object Storage (CMEK)",
+        "zone": "Storage - Private",
+        "cost": "$3/mo",
+        "gcpService": "Cloud Storage",
+        "specs": "50GB Standard + 20GB Nearline, CMEK encrypted",
+        "features": ["Customer-managed keys", "DLP scanning", "Versioning", "Lifecycle policies"]
+      }
+    },
+    {
+      "id": "n9",
+      "type": "custom",
+      "position": { "x": 660, "y": 520 },
+      "data": {
+        "type": "bastion-host",
+        "label": "Vault + Secret Manager",
+        "zone": "Security",
+        "cost": "$1/mo",
+        "gcpService": "Secret Manager + Self-hosted Vault",
+        "specs": "10 secrets + Vault on GKE",
+        "features": ["Dynamic secrets", "Encryption as service", "Workload Identity", "Audit logging"]
+      }
+    },
+    {
+      "id": "n10",
+      "type": "custom",
+      "position": { "x": 380, "y": 520 },
+      "data": {
+        "type": "worker",
+        "label": "Background Workers (2 pods)",
+        "zone": "App Tier - Private",
+        "cost": "$0/mo (same GKE)",
+        "gcpService": "GKE Pods",
+        "specs": "2 pods, 250m CPU, 512Mi RAM each",
+        "features": ["Redis queue", "Async jobs", "Exports", "Private network"]
+      }
+    },
+    {
+      "id": "n11",
+      "type": "custom",
+      "position": { "x": 940, "y": 380 },
+      "data": {
+        "type": "monitoring",
+        "label": "Monitoring + Logging",
+        "zone": "Observability",
+        "cost": "$5/mo",
+        "gcpService": "Cloud Monitoring + Logging",
+        "specs": "20GB metrics, 10GB logs",
+        "features": ["Custom dashboards", "Alerting", "Distributed tracing", "Error reporting"]
+      }
+    },
+    {
+      "id": "n12",
+      "type": "custom",
+      "position": { "x": 940, "y": 520 },
+      "data": {
+        "type": "security",
+        "label": "Security Command Center",
+        "zone": "Security",
+        "cost": "$25/mo",
+        "gcpService": "SCC Premium",
+        "specs": "Event Threat Detection + Container Threat Detection",
+        "features": ["Threat detection", "Vulnerability scanning", "Misconfig detection", "Security analytics"]
+      }
+    },
+    {
+      "id": "n13",
+      "type": "custom",
+      "position": { "x": 100, "y": 520 },
+      "data": {
+        "type": "identity",
+        "label": "Cloud Identity (MFA/SSO)",
+        "zone": "Identity & Access",
+        "cost": "$72/mo",
+        "gcpService": "Cloud Identity Premium",
+        "specs": "12 users @ $6/user",
+        "features": ["MFA (TOTP, SMS)", "SAML/OIDC SSO", "Identity-Aware Proxy", "Adaptive auth"]
+      }
+    },
+    {
+      "id": "n14",
+      "type": "custom",
+      "position": { "x": 100, "y": 660 },
+      "data": {
+        "type": "security",
+        "label": "Cloud KMS (CMEK)",
+        "zone": "Encryption",
+        "cost": "$5/mo",
+        "gcpService": "Cloud KMS",
+        "specs": "5 encryption keys (DB, Redis, Storage, Backups, Secrets)",
+        "features": ["Customer-managed keys", "90-day rotation", "HSM-backed", "Audit logging"]
+      }
+    },
+    {
+      "id": "n15",
+      "type": "custom",
+      "position": { "x": 380, "y": 660 },
+      "data": {
+        "type": "security",
+        "label": "Data Loss Prevention",
+        "zone": "Security",
+        "cost": "$50/mo",
+        "gcpService": "Cloud DLP API",
+        "specs": "50GB/month scanning",
+        "features": ["PII detection", "PHI detection", "SSN masking", "Credit card masking"]
+      }
+    },
+    {
+      "id": "n16",
+      "type": "custom",
+      "position": { "x": 660, "y": 660 },
+      "data": {
+        "type": "network",
+        "label": "VPC + Private Service Connect",
+        "zone": "Networking",
+        "cost": "$55/mo",
+        "gcpService": "VPC + Cloud NAT + PSC",
+        "specs": "Custom VPC, Cloud NAT, Private Service Connect",
+        "features": ["Private GKE", "Private DB access", "VPC-SC perimeter", "Cloud NAT"]
+      }
+    },
+    {
+      "id": "n17",
+      "type": "custom",
+      "position": { "x": 940, "y": 660 },
+      "data": {
+        "type": "storage",
+        "label": "Audit Logs (7-year)",
+        "zone": "Compliance",
+        "cost": "$32/mo",
+        "gcpService": "Cloud Storage Archive",
+        "specs": "1TB archive storage",
+        "features": ["7-year retention", "Immutable logs", "Tamper-proof", "Compliance ready"]
+      }
+    },
+    {
+      "id": "n18",
+      "type": "custom",
+      "position": { "x": 100, "y": 800 },
+      "data": {
+        "type": "cicd",
+        "label": "CI/CD Pipeline",
+        "zone": "DevOps",
+        "cost": "$1/mo",
+        "gcpService": "Cloud Build + Artifact Registry",
+        "specs": "120 min/day builds, 10GB artifacts",
+        "features": ["Container builds", "Vulnerability scanning", "Binary authorization", "GitHub Actions"]
+      }
+    },
+    {
+      "id": "n19",
+      "type": "custom",
+      "position": { "x": 380, "y": 800 },
+      "data": {
+        "type": "security",
+        "label": "Policy Enforcement",
+        "zone": "Governance",
+        "cost": "$20/mo",
+        "gcpService": "Policy Controller + Config Sync",
+        "specs": "OPA policies + Terraform drift detection",
+        "features": ["Org policies", "VPC-SC", "Binary auth", "Drift detection"]
+      }
+    },
+    {
+      "id": "n20",
+      "type": "custom",
+      "position": { "x": 660, "y": 800 },
+      "data": {
+        "type": "backup",
+        "label": "Extended Backups",
+        "zone": "DR",
+        "cost": "$30/mo",
+        "gcpService": "Cloud SQL Backups",
+        "specs": "30-day retention, CMEK encrypted",
+        "features": ["PITR (7 days)", "30-day retention", "Encrypted backups", "Offsite copy"]
+      }
+    },
+    {
+      "id": "n21",
+      "type": "custom",
+      "position": { "x": 940, "y": 800 },
+      "data": {
+        "type": "api",
+        "label": "API Security Suite",
+        "zone": "API Management",
+        "cost": "$68/mo",
+        "gcpService": "Custom + BigQuery + Cloud Functions",
+        "specs": "Analytics, documentation, threat protection",
+        "features": ["OAuth 2.0", "API analytics", "Threat protection", "Bot detection", "API docs", "Observability"]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1-2",
+      "source": "n1",
+      "target": "n2",
+      "type": "smoothstep",
+      "label": "HTTPS 443",
+      "data": { "protocol": "HTTPS", "encrypted": true }
+    },
+    {
+      "id": "e2-3",
+      "source": "n2",
+      "target": "n3",
+      "type": "smoothstep",
+      "label": "HTTPS (CDN → LB)",
+      "data": { "protocol": "HTTPS", "encrypted": true, "notes": "Cloud Armor filtering" }
+    },
+    {
+      "id": "e3-4",
+      "source": "n3",
+      "target": "n4",
+      "type": "smoothstep",
+      "label": "HTTP/HTTPS (Internal)",
+      "data": { "protocol": "HTTP/HTTPS", "internal": true, "notes": "Private network" }
+    },
+    {
+      "id": "e4-5",
+      "source": "n4",
+      "target": "n5",
+      "type": "smoothstep",
+      "label": "Internal API",
+      "data": { "protocol": "HTTP", "internal": true, "notes": "OAuth validated" }
+    },
+    {
+      "id": "e4-6",
+      "source": "n4",
+      "target": "n6",
+      "type": "smoothstep",
+      "label": "PostgreSQL 5432 (Private)",
+      "data": { "protocol": "PostgreSQL", "encrypted": true, "notes": "Private IP + CMEK" }
+    },
+    {
+      "id": "e5-6",
+      "source": "n5",
+      "target": "n6",
+      "type": "smoothstep",
+      "label": "DB Read/Write",
+      "data": { "protocol": "PostgreSQL", "encrypted": true, "notes": "Workload Identity" }
+    },
+    {
+      "id": "e4-7",
+      "source": "n4",
+      "target": "n7",
+      "type": "smoothstep",
+      "label": "Redis 6379 (Cache/Rate Limit)",
+      "data": { "protocol": "Redis", "encrypted": true, "notes": "Private IP + CMEK" }
+    },
+    {
+      "id": "e5-7",
+      "source": "n5",
+      "target": "n7",
+      "type": "smoothstep",
+      "label": "Redis (Sessions)",
+      "data": { "protocol": "Redis", "encrypted": true }
+    },
+    {
+      "id": "e4-8",
+      "source": "n4",
+      "target": "n8",
+      "type": "smoothstep",
+      "label": "Storage API (CMEK)",
+      "data": { "protocol": "HTTPS", "encrypted": true, "notes": "DLP scanning enabled" }
+    },
+    {
+      "id": "e5-10",
+      "source": "n5",
+      "target": "n10",
+      "type": "smoothstep",
+      "label": "Job Enqueue",
+      "data": { "protocol": "Redis Queue", "internal": true }
+    },
+    {
+      "id": "e10-7",
+      "source": "n10",
+      "target": "n7",
+      "type": "smoothstep",
+      "label": "Redis Queue",
+      "data": { "protocol": "Redis", "encrypted": true }
+    },
+    {
+      "id": "e10-8",
+      "source": "n10",
+      "target": "n8",
+      "type": "smoothstep",
+      "label": "Exports / Backups",
+      "data": { "protocol": "HTTPS", "encrypted": true }
+    },
+    {
+      "id": "e4-9",
+      "source": "n4",
+      "target": "n9",
+      "type": "smoothstep",
+      "label": "Secrets / DB Creds",
+      "data": { "protocol": "Vault API", "encrypted": true, "notes": "Workload Identity" }
+    },
+    {
+      "id": "e10-9",
+      "source": "n10",
+      "target": "n9",
+      "type": "smoothstep",
+      "label": "API Keys / Secrets",
+      "data": { "protocol": "Vault API", "encrypted": true }
+    },
+    {
+      "id": "e5-9",
+      "source": "n5",
+      "target": "n9",
+      "type": "smoothstep",
+      "label": "Runtime Secrets",
+      "data": { "protocol": "Vault API", "encrypted": true }
+    },
+    {
+      "id": "e4-11",
+      "source": "n4",
+      "target": "n11",
+      "type": "smoothstep",
+      "label": "App Metrics / Logs",
+      "data": { "protocol": "gRPC", "internal": true }
+    },
+    {
+      "id": "e5-11",
+      "source": "n5",
+      "target": "n11",
+      "type": "smoothstep",
+      "label": "App Logs",
+      "data": { "protocol": "gRPC", "internal": true }
+    },
+    {
+      "id": "e6-11",
+      "source": "n6",
+      "target": "n11",
+      "type": "smoothstep",
+      "label": "DB Metrics / Slow Queries",
+      "data": { "protocol": "Cloud Monitoring", "internal": true }
+    },
+    {
+      "id": "e7-11",
+      "source": "n7",
+      "target": "n11",
+      "type": "smoothstep",
+      "label": "Cache Metrics",
+      "data": { "protocol": "Cloud Monitoring", "internal": true }
+    },
+    {
+      "id": "e13-4",
+      "source": "n13",
+      "target": "n4",
+      "type": "smoothstep",
+      "label": "IAP Authentication",
+      "data": { "protocol": "OIDC/SAML", "encrypted": true, "notes": "MFA enforced" }
+    },
+    {
+      "id": "e14-6",
+      "source": "n14",
+      "target": "n6",
+      "type": "smoothstep",
+      "label": "DB Encryption Key",
+      "data": { "protocol": "KMS API", "notes": "CMEK encryption" }
+    },
+    {
+      "id": "e14-7",
+      "source": "n14",
+      "target": "n7",
+      "type": "smoothstep",
+      "label": "Redis Encryption Key",
+      "data": { "protocol": "KMS API", "notes": "CMEK encryption" }
+    },
+    {
+      "id": "e14-8",
+      "source": "n14",
+      "target": "n8",
+      "type": "smoothstep",
+      "label": "Storage Encryption Key",
+      "data": { "protocol": "KMS API", "notes": "CMEK encryption" }
+    },
+    {
+      "id": "e15-6",
+      "source": "n15",
+      "target": "n6",
+      "type": "smoothstep",
+      "label": "DLP Scan (DB)",
+      "data": { "protocol": "DLP API", "notes": "PII/PHI detection" }
+    },
+    {
+      "id": "e15-8",
+      "source": "n15",
+      "target": "n8",
+      "type": "smoothstep",
+      "label": "DLP Scan (Storage)",
+      "data": { "protocol": "DLP API", "notes": "File scanning" }
+    },
+    {
+      "id": "e16-5",
+      "source": "n16",
+      "target": "n5",
+      "type": "smoothstep",
+      "label": "Private Network",
+      "data": { "protocol": "VPC", "notes": "Private GKE cluster" }
+    },
+    {
+      "id": "e12-all",
+      "source": "n12",
+      "target": "n5",
+      "type": "smoothstep",
+      "label": "Threat Detection",
+      "data": { "protocol": "SCC API", "notes": "Container scanning" }
+    },
+    {
+      "id": "e17-11",
+      "source": "n17",
+      "target": "n11",
+      "type": "smoothstep",
+      "label": "Audit Logs Archive",
+      "data": { "protocol": "Cloud Logging", "notes": "7-year retention" }
+    },
+    {
+      "id": "e18-5",
+      "source": "n18",
+      "target": "n5",
+      "type": "smoothstep",
+      "label": "Deploy Containers",
+      "data": { "protocol": "kubectl", "notes": "Binary authorization" }
+    },
+    {
+      "id": "e19-5",
+      "source": "n19",
+      "target": "n5",
+      "type": "smoothstep",
+      "label": "Policy Enforcement",
+      "data": { "protocol": "Admission Controller", "notes": "OPA policies" }
+    },
+    {
+      "id": "e20-6",
+      "source": "n20",
+      "target": "n6",
+      "type": "smoothstep",
+      "label": "Backup Schedule",
+      "data": { "protocol": "Cloud SQL Backup", "notes": "CMEK encrypted" }
+    },
+    {
+      "id": "e21-4",
+      "source": "n21",
+      "target": "n4",
+      "type": "smoothstep",
+      "label": "API Security",
+      "data": { "protocol": "Various", "notes": "Analytics, threat protection, docs" }
+    }
+  ],
+  "costBreakdown": {
+    "infrastructure": {
+      "compute": {
+        "gke": "$155/mo",
+        "description": "3x n2-standard-1 nodes, private cluster"
+      },
+      "database": {
+        "cloudSQL": "$94/mo",
+        "description": "PostgreSQL with CMEK encryption"
+      },
+      "cache": {
+        "redis": "$79/mo",
+        "description": "Memorystore Redis 2GB with CMEK"
+      },
+      "edge": {
+        "cdn": "$58/mo",
+        "description": "Cloud CDN + Cloud Armor WAF"
+      },
+      "networking": {
+        "total": "$55/mo",
+        "items": {
+          "loadBalancer": "$21/mo",
+          "vpc": "$0/mo",
+          "nat": "$34/mo"
+        }
+      },
+      "storage": {
+        "objectStorage": "$3/mo",
+        "backups": "$30/mo",
+        "auditLogs": "$32/mo"
+      },
+      "monitoring": {
+        "cloudMonitoring": "$5/mo"
+      },
+      "cicd": {
+        "artifactRegistry": "$1/mo"
+      }
+    },
+    "security": {
+      "identity": {
+        "cloudIdentity": "$72/mo",
+        "description": "12 users with MFA/SSO"
+      },
+      "encryption": {
+        "kms": "$5/mo",
+        "description": "5 CMEK keys"
+      },
+      "dlp": {
+        "cloudDLP": "$50/mo",
+        "description": "50GB/month scanning"
+      },
+      "threatDetection": {
+        "scc": "$25/mo",
+        "description": "Security Command Center Premium"
+      },
+      "secretsManagement": {
+        "vault": "$1/mo",
+        "description": "Secret Manager + self-hosted Vault"
+      },
+      "governance": {
+        "policyController": "$20/mo",
+        "description": "Policy enforcement + drift detection"
+      }
+    },
+    "api": {
+      "analytics": "$25/mo",
+      "documentation": "$5/mo",
+      "threatProtection": "$23/mo",
+      "observability": "$30/mo",
+      "governance": "$15/mo",
+      "overlap": "-$30/mo"
+    },
+    "thirdParty": {
+      "anthropic": "$17/mo",
+      "stripe": "$61/mo",
+      "pagerduty": "$10/mo",
+      "reCaptcha": "$10/mo"
+    },
+    "totals": {
+      "infrastructure": "$508/mo",
+      "security": "$173/mo",
+      "api": "$68/mo",
+      "thirdParty": "$98/mo",
+      "other": "$115/mo",
+      "monthly": "$962/mo",
+      "annual": "$11,544/mo"
+    }
+  },
+  "implementation": {
+    "phases": [
+      {
+        "phase": 1,
+        "name": "Foundation Setup",
+        "duration": "Week 1-2",
+        "cost": "$100",
+        "tasks": [
+          "GCP project setup",
+          "VPC and networking",
+          "Private GKE cluster creation",
+          "Cloud Identity setup"
+        ]
+      },
+      {
+        "phase": 2,
+        "name": "Security Layer",
+        "duration": "Week 3-4",
+        "cost": "$200",
+        "tasks": [
+          "Cloud KMS setup (CMEK)",
+          "VPC Service Controls",
+          "Security Command Center enable",
+          "DLP configuration"
+        ]
+      },
+      {
+        "phase": 3,
+        "name": "Application Tier",
+        "duration": "Week 5-7",
+        "cost": "$250",
+        "tasks": [
+          "Cloud SQL with CMEK",
+          "Memorystore Redis with CMEK",
+          "Nginx Ingress with OAuth",
+          "App deployment"
+        ]
+      },
+      {
+        "phase": 4,
+        "name": "API & Observability",
+        "duration": "Week 8-10",
+        "cost": "$200",
+        "tasks": [
+          "API security suite",
+          "Monitoring dashboards",
+          "Audit logging",
+          "Policy enforcement"
+        ]
+      },
+      {
+        "phase": 5,
+        "name": "Testing & Validation",
+        "duration": "Week 11-12",
+        "cost": "$100",
+        "tasks": [
+          "Security testing",
+          "Load testing",
+          "Documentation",
+          "Runbook creation"
+        ]
+      }
+    ],
+    "totalImplementation": {
+      "duration": "12 weeks (3 months)",
+      "cost": "$850",
+      "claudeEffort": "85% automated",
+      "manualEffort": "15% (testing, validation)"
+    }
+  },
+  "compliance": {
+    "ready": [
+      "SOC 2 Type I prep",
+      "GDPR (with proper DPA)",
+      "Data residency controls"
+    ],
+    "capabilities": [
+      "7-year audit trails",
+      "CMEK encryption",
+      "DLP scanning",
+      "MFA enforcement",
+      "Private networking",
+      "Threat detection",
+      "Immutable logs"
+    ]
+  },
+  "securityFeatures": {
+    "authentication": [
+      "MFA (TOTP, SMS, Hardware keys)",
+      "SSO (SAML, OIDC)",
+      "Identity-Aware Proxy",
+      "OAuth 2.0",
+      "JWT with RS256"
+    ],
+    "encryption": [
+      "CMEK for all data at rest",
+      "TLS 1.3 in transit",
+      "Database encryption",
+      "Storage encryption",
+      "Backup encryption"
+    ],
+    "network": [
+      "Private GKE cluster",
+      "VPC Service Controls",
+      "Private Service Connect",
+      "Cloud NAT",
+      "No public IPs"
+    ],
+    "detection": [
+      "Event Threat Detection",
+      "Container Threat Detection",
+      "Vulnerability scanning",
+      "Security Health Analytics",
+      "Anomaly detection"
+    ],
+    "dataProtection": [
+      "DLP scanning (PII, PHI, SSN)",
+      "Automated data masking",
+      "Field-level encryption",
+      "Access controls"
+    ],
+    "governance": [
+      "Organization policies",
+      "VPC-SC perimeters",
+      "Binary authorization",
+      "Terraform drift detection",
+      "OPA policies"
+    ]
+  },
+  "sla": {
+    "uptime": "99.5%",
+    "downtimePerYear": "43.8 hours",
+    "rto": "4 hours",
+    "rpo": "1 hour (PITR available)",
+    "notes": "Zonal deployment, upgrade to regional for 99.95%"
+  }
+}

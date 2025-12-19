@@ -1,0 +1,416 @@
+{
+  "metadata": {
+    "name": "Tier 1.5 - GCP Production-Hardened Architecture",
+    "tier": "Tier 1.5",
+    "description": "Production-ready Atlas Platform with Regional HA, Service Mesh, Complete Security",
+    "monthlyCost": "$1,340",
+    "annualCost": "$16,080",
+    "securityScore": "9.5/10",
+    "sla": "99.95%",
+    "created": "2025-12-17"
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "custom",
+      "position": {"x": 100, "y": 50},
+      "data": {
+        "type": "cdn",
+        "label": "Cloud CDN",
+        "zone": "Edge",
+        "cost": "$40/mo",
+        "gcpService": "Cloud CDN",
+        "specs": "Global edge caching, DDoS L7 protection",
+        "features": ["DDoS Protection", "Cloud Armor WAF", "Signed URLs"]
+      }
+    },
+    {
+      "id": "n2",
+      "type": "custom",
+      "position": {"x": 100, "y": 180},
+      "data": {
+        "type": "load-balancer-global",
+        "label": "HTTPS Load Balancer",
+        "zone": "Edge",
+        "cost": "$18/mo",
+        "gcpService": "Cloud Load Balancing",
+        "specs": "Layer 7, SSL termination, Cloud Armor",
+        "features": ["Managed SSL", "Cloud Armor", "IAP Ready"]
+      }
+    },
+    {
+      "id": "n3",
+      "type": "custom",
+      "position": {"x": 400, "y": 180},
+      "data": {
+        "type": "firewall",
+        "label": "Cloud Armor WAF",
+        "zone": "Edge Security",
+        "cost": "$10/mo",
+        "gcpService": "Cloud Armor",
+        "specs": "OWASP Top 10, adaptive DDoS",
+        "features": ["OWASP Top 10", "Rate Limiting", "Geo-blocking"]
+      }
+    },
+    {
+      "id": "n4",
+      "type": "custom",
+      "position": {"x": 100, "y": 310},
+      "data": {
+        "type": "vpc-vnet",
+        "label": "Shared VPC",
+        "zone": "Network",
+        "cost": "$15/mo",
+        "gcpService": "Virtual Private Cloud",
+        "specs": "Regional, 3 subnets, us-central1",
+        "features": ["Private IP", "VPC Flow Logs", "Private Google Access"]
+      }
+    },
+    {
+      "id": "n5",
+      "type": "custom",
+      "position": {"x": 400, "y": 310},
+      "data": {
+        "type": "security-service",
+        "label": "VPC Service Controls",
+        "zone": "Security Perimeter",
+        "cost": "$0 (included)",
+        "gcpService": "VPC Service Controls",
+        "specs": "Security perimeter, Google APIs only",
+        "features": ["Data Exfiltration Prevention", "API Access Control"]
+      }
+    },
+    {
+      "id": "n6",
+      "type": "custom",
+      "position": {"x": 100, "y": 440},
+      "data": {
+        "type": "kubernetes-cluster",
+        "label": "GKE Regional Cluster",
+        "zone": "Compute",
+        "cost": "$220/mo",
+        "gcpService": "Google Kubernetes Engine",
+        "specs": "Autopilot, 3 zones, 6-12 nodes, Confidential VMs",
+        "features": ["Workload Identity", "Binary Auth", "Confidential Nodes", "CMEK"]
+      }
+    },
+    {
+      "id": "n7",
+      "type": "custom",
+      "position": {"x": 400, "y": 440},
+      "data": {
+        "type": "service-mesh",
+        "label": "Anthos Service Mesh",
+        "zone": "Network",
+        "cost": "$50/mo",
+        "gcpService": "Anthos Service Mesh",
+        "specs": "Managed Istio, automatic mTLS pod-to-pod",
+        "features": ["mTLS Everywhere", "Zero-Trust", "Authorization Policies"]
+      }
+    },
+    {
+      "id": "n8",
+      "type": "custom",
+      "position": {"x": 700, "y": 440},
+      "data": {
+        "type": "security-service",
+        "label": "Policy Controller",
+        "zone": "Security",
+        "cost": "$0 (included)",
+        "gcpService": "Anthos Config Management",
+        "specs": "OPA-based, PSS restricted",
+        "features": ["Pod Security Standards", "OPA", "Admission Control"]
+      }
+    },
+    {
+      "id": "n9",
+      "type": "custom",
+      "position": {"x": 100, "y": 570},
+      "data": {
+        "type": "database",
+        "label": "Cloud SQL PostgreSQL HA",
+        "zone": "Data",
+        "cost": "$260/mo",
+        "gcpService": "Cloud SQL",
+        "specs": "PostgreSQL 16, HA, 1 read replica, PITR",
+        "features": ["CMEK", "Automated Backups", "PITR", "Private IP", "IAM Auth"]
+      }
+    },
+    {
+      "id": "n10",
+      "type": "custom",
+      "position": {"x": 400, "y": 570},
+      "data": {
+        "type": "proxy",
+        "label": "Cloud SQL Auth Proxy",
+        "zone": "Data",
+        "cost": "$0 (included)",
+        "gcpService": "Cloud SQL Proxy",
+        "specs": "Sidecar proxy, IAM auth, automatic TLS",
+        "features": ["IAM Authentication", "Automatic TLS", "Workload Identity"]
+      }
+    },
+    {
+      "id": "n11",
+      "type": "custom",
+      "position": {"x": 700, "y": 570},
+      "data": {
+        "type": "cache",
+        "label": "Memorystore Redis HA",
+        "zone": "Data",
+        "cost": "$115/mo",
+        "gcpService": "Memorystore for Redis",
+        "specs": "Redis 7.x, Standard Tier, 5GB, HA",
+        "features": ["CMEK", "TLS", "AUTH", "Private IP", "Auto Failover"]
+      }
+    },
+    {
+      "id": "n12",
+      "type": "custom",
+      "position": {"x": 100, "y": 700},
+      "data": {
+        "type": "object-storage",
+        "label": "Cloud Storage",
+        "zone": "Data",
+        "cost": "$23/mo",
+        "gcpService": "Cloud Storage",
+        "specs": "STANDARD class, versioning, lifecycle",
+        "features": ["CMEK", "Versioning", "Uniform Bucket Access"]
+      }
+    },
+    {
+      "id": "n13",
+      "type": "custom",
+      "position": {"x": 400, "y": 700},
+      "data": {
+        "type": "key-management",
+        "label": "Cloud KMS",
+        "zone": "Security",
+        "cost": "$1/mo",
+        "gcpService": "Cloud Key Management Service",
+        "specs": "5 keys, 90-day rotation",
+        "features": ["CMEK", "Auto Rotation", "Key Access Logging"]
+      }
+    },
+    {
+      "id": "n14",
+      "type": "custom",
+      "position": {"x": 700, "y": 700},
+      "data": {
+        "type": "secrets-vault",
+        "label": "Secret Manager",
+        "zone": "Security",
+        "cost": "$1/mo",
+        "gcpService": "Secret Manager",
+        "specs": "4 secrets, CMEK, 90-day rotation",
+        "features": ["CMEK", "Auto Rotation", "Version Control", "Audit Logging"]
+      }
+    },
+    {
+      "id": "n15",
+      "type": "custom",
+      "position": {"x": 100, "y": 830},
+      "data": {
+        "type": "api-gateway",
+        "label": "Cloud Endpoints",
+        "zone": "API Layer",
+        "cost": "$35/mo",
+        "gcpService": "Cloud Endpoints",
+        "specs": "ESPv2 sidecar, OpenAPI 3.0, 100 req/min",
+        "features": ["JWT Auth", "Rate Limiting", "Request Logging"]
+      }
+    },
+    {
+      "id": "n16",
+      "type": "custom",
+      "position": {"x": 400, "y": 830},
+      "data": {
+        "type": "container-service",
+        "label": "Cloud Run Workers",
+        "zone": "Compute",
+        "cost": "$45/mo",
+        "gcpService": "Cloud Run",
+        "specs": "2 vCPU, 4GB, 0-10 instances, serverless",
+        "features": ["Binary Auth", "VPC Connector", "CMEK", "Workload Identity"]
+      }
+    },
+    {
+      "id": "n17",
+      "type": "custom",
+      "position": {"x": 700, "y": 830},
+      "data": {
+        "type": "nat-gateway",
+        "label": "Cloud NAT",
+        "zone": "Network",
+        "cost": "$10/mo",
+        "gcpService": "Cloud NAT",
+        "specs": "Regional NAT, auto IP, full logging",
+        "features": ["Static IP Assignment", "Connection Logging"]
+      }
+    },
+    {
+      "id": "n18",
+      "type": "custom",
+      "position": {"x": 100, "y": 960},
+      "data": {
+        "type": "proxy",
+        "label": "Secure Web Proxy",
+        "zone": "Network",
+        "cost": "$15/mo",
+        "gcpService": "Secure Web Proxy (Cloud Run)",
+        "specs": "Squid proxy, FQDN allow-listing",
+        "features": ["FQDN Allow-listing", "Request Logging", "Block Unknown"]
+      }
+    },
+    {
+      "id": "n19",
+      "type": "custom",
+      "position": {"x": 400, "y": 960},
+      "data": {
+        "type": "certificate-authority",
+        "label": "Certificate Authority Service",
+        "zone": "Security",
+        "cost": "$200/mo",
+        "gcpService": "Certificate Authority Service",
+        "specs": "DevOps tier, RSA 4096, auto-renewal",
+        "features": ["Private CA", "Auto Certificate Rotation"]
+      }
+    },
+    {
+      "id": "n20",
+      "type": "custom",
+      "position": {"x": 700, "y": 960},
+      "data": {
+        "type": "identity-service",
+        "label": "Cloud Identity Premium",
+        "zone": "Security",
+        "cost": "$60/mo",
+        "gcpService": "Cloud Identity",
+        "specs": "10 users, SSO, MFA enforced",
+        "features": ["SSO", "MFA", "Password Policies", "Session Management"]
+      }
+    },
+    {
+      "id": "n21",
+      "type": "custom",
+      "position": {"x": 100, "y": 1090},
+      "data": {
+        "type": "monitoring-service",
+        "label": "Security Command Center",
+        "zone": "Security",
+        "cost": "$150/mo",
+        "gcpService": "Security Command Center Premium",
+        "specs": "Premium, 10 alert rules, threat detection",
+        "features": ["Threat Detection", "Vulnerability Scanning", "Real-time Alerts"]
+      }
+    },
+    {
+      "id": "n22",
+      "type": "custom",
+      "position": {"x": 400, "y": 1090},
+      "data": {
+        "type": "security-service",
+        "label": "Binary Authorization",
+        "zone": "Security",
+        "cost": "$0 (included)",
+        "gcpService": "Binary Authorization",
+        "specs": "Image attestation, vuln scanning, DENY_ALL",
+        "features": ["Image Signing", "Vulnerability Scanning", "Attestation"]
+      }
+    },
+    {
+      "id": "n23",
+      "type": "custom",
+      "position": {"x": 700, "y": 1090},
+      "data": {
+        "type": "security-service",
+        "label": "Cloud DLP API",
+        "zone": "Security",
+        "cost": "$15/mo",
+        "gcpService": "Cloud Data Loss Prevention",
+        "specs": "PII/PHI detection, daily scans",
+        "features": ["PII Detection", "Data Classification", "Auto Redaction"]
+      }
+    },
+    {
+      "id": "n24",
+      "type": "custom",
+      "position": {"x": 100, "y": 1220},
+      "data": {
+        "type": "logging-service",
+        "label": "Cloud Logging",
+        "zone": "Observability",
+        "cost": "$25/mo",
+        "gcpService": "Cloud Logging",
+        "specs": "Dual sinks: BigQuery (90d) + Archive (7y WORM)",
+        "features": ["Immutable WORM", "Bucket Lock 7y", "CMEK", "Audit Trail"]
+      }
+    },
+    {
+      "id": "n25",
+      "type": "custom",
+      "position": {"x": 400, "y": 1220},
+      "data": {
+        "type": "monitoring-service",
+        "label": "Cloud Monitoring",
+        "zone": "Observability",
+        "cost": "$15/mo",
+        "gcpService": "Cloud Monitoring",
+        "specs": "3 dashboards, 5 alert policies",
+        "features": ["Performance Monitoring", "Alerting", "SLO Tracking"]
+      }
+    },
+    {
+      "id": "n26",
+      "type": "custom",
+      "position": {"x": 700, "y": 1220},
+      "data": {
+        "type": "identity-service",
+        "label": "Firebase Authentication",
+        "zone": "Application",
+        "cost": "$0 (free tier)",
+        "gcpService": "Firebase Authentication",
+        "specs": "Google/Email/SAML, 1h token expiry",
+        "features": ["OAuth 2.0", "JWT", "Session Management", "MFA Support"]
+      }
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "n1", "target": "n2", "label": "HTTPS"},
+    {"id": "e2", "source": "n2", "target": "n3", "label": "WAF"},
+    {"id": "e3", "source": "n3", "target": "n15", "label": "HTTPS"},
+    {"id": "e4", "source": "n15", "target": "n6", "label": "HTTPS"},
+    {"id": "e5", "source": "n6", "target": "n4", "label": "deployed in"},
+    {"id": "e6", "source": "n4", "target": "n5", "label": "protected by"},
+    {"id": "e7", "source": "n6", "target": "n7", "label": "mTLS"},
+    {"id": "e8", "source": "n6", "target": "n8", "label": "enforced by"},
+    {"id": "e9", "source": "n6", "target": "n10", "label": "TLS+IAM"},
+    {"id": "e10", "source": "n10", "target": "n9", "label": "TLS"},
+    {"id": "e11", "source": "n6", "target": "n11", "label": "TLS+AUTH"},
+    {"id": "e12", "source": "n6", "target": "n12", "label": "TLS+IAM"},
+    {"id": "e13", "source": "n13", "target": "n9", "label": "encrypts"},
+    {"id": "e14", "source": "n13", "target": "n11", "label": "encrypts"},
+    {"id": "e15", "source": "n13", "target": "n12", "label": "encrypts"},
+    {"id": "e16", "source": "n6", "target": "n14", "label": "gRPC/TLS+IAM"},
+    {"id": "e17", "source": "n16", "target": "n14", "label": "gRPC/TLS+IAM"},
+    {"id": "e18", "source": "n6", "target": "n16", "label": "HTTPS+IAM"},
+    {"id": "e19", "source": "n16", "target": "n4", "label": "deployed in"},
+    {"id": "e20", "source": "n16", "target": "n18", "label": "HTTP (proxy)"},
+    {"id": "e21", "source": "n18", "target": "n17", "label": "HTTPS"},
+    {"id": "e22", "source": "n19", "target": "n7", "label": "issues certs"},
+    {"id": "e23", "source": "n20", "target": "n26", "label": "SSO"},
+    {"id": "e24", "source": "n21", "target": "n6", "label": "monitors"},
+    {"id": "e25", "source": "n21", "target": "n16", "label": "monitors"},
+    {"id": "e26", "source": "n6", "target": "n22", "label": "gRPC"},
+    {"id": "e27", "source": "n16", "target": "n22", "label": "validates"},
+    {"id": "e28", "source": "n23", "target": "n9", "label": "scans"},
+    {"id": "e29", "source": "n23", "target": "n12", "label": "scans"},
+    {"id": "e30", "source": "n24", "target": "n6", "label": "logs"},
+    {"id": "e31", "source": "n24", "target": "n16", "label": "logs"},
+    {"id": "e32", "source": "n24", "target": "n9", "label": "logs"},
+    {"id": "e33", "source": "n25", "target": "n6", "label": "monitors"},
+    {"id": "e34", "source": "n25", "target": "n16", "label": "monitors"},
+    {"id": "e35", "source": "n25", "target": "n9", "label": "monitors"},
+    {"id": "e36", "source": "n15", "target": "n26", "label": "JWT"}
+  ]
+}

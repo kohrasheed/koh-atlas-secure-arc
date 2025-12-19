@@ -1,0 +1,443 @@
+{
+  "metadata": {
+    "name": "Tier 1.5 - GCP Production-Hardened Architecture",
+    "tier": "Tier 1.5",
+    "description": "Production-ready Atlas Platform with Regional HA, Service Mesh, and Complete Security Controls",
+    "monthlyCost": "$1,340",
+    "annualCost": "$16,080",
+    "securityScore": "9.5/10",
+    "sla": "99.95%",
+    "created": "2025-12-17"
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "custom",
+      "position": {"x": 100, "y": 50},
+      "data": {
+        "type": "cdn",
+        "label": "Cloud CDN",
+        "zone": "Edge",
+        "cost": "$40/mo",
+        "gcpService": "Cloud CDN",
+        "specs": "Global edge caching, cache invalidation API",
+        "features": ["DDoS Protection L7", "Cloud Armor WAF", "Signed URLs"]
+      }
+    },
+    {
+      "id": "n2",
+      "type": "custom",
+      "position": {"x": 100, "y": 180},
+      "data": {
+        "type": "load-balancer-global",
+        "label": "Global HTTPS Load Balancer",
+        "zone": "Edge",
+        "cost": "$18/mo",
+        "gcpService": "Cloud Load Balancing",
+        "specs": "Layer 7 HTTPS, SSL termination, Cloud Armor",
+        "features": ["Managed SSL Certificates", "Cloud Armor WAF", "IAP Ready"]
+      }
+    },
+    {
+      "id": "n3",
+      "type": "custom",
+      "position": {"x": 400, "y": 180},
+      "data": {
+        "type": "firewall",
+        "label": "Cloud Armor WAF",
+        "zone": "Edge",
+        "cost": "$10/mo",
+        "gcpService": "Cloud Armor",
+        "specs": "OWASP Top 10, adaptive DDoS, rate limiting",
+        "features": ["DDoS Protection", "OWASP Top 10", "Rate Limiting", "Geo-blocking"]
+      }
+    },
+    {
+      "id": "vpc-1",
+      "type": "custom",
+      "position": {"x": 100, "y": 310},
+      "data": {
+        "type": "vpc-vnet",
+        "label": "Shared VPC",
+        "zone": "Network",
+        "cost": "$15/mo",
+        "gcpService": "Virtual Private Cloud",
+        "specs": "Regional VPC, 3 subnets (pods, services, proxy), us-central1",
+        "features": ["Private IP ranges", "VPC Flow Logs", "Private Google Access"],
+        "encryption": "N/A",
+        "authentication": "IAM"
+      }
+    },
+    {
+      "id": "vpc-sc-1",
+      "type": "custom",
+      "position": {"x": 400, "y": 310},
+      "data": {
+        "type": "firewall",
+        "label": "VPC Service Controls",
+        "zone": "Security Perimeter",
+        "cost": "$0 (included)",
+        "gcpService": "VPC Service Controls",
+        "specs": "Security perimeter, ingress/egress policies, Cloud Run tested",
+        "features": ["Data Exfiltration Prevention", "Ingress Control", "Google API Access Control"],
+        "encryption": "N/A",
+        "authentication": "Context-aware access"
+      }
+    },
+    {
+      "id": "gke-1",
+      "type": "custom",
+      "position": {"x": 100, "y": 440},
+      "data": {
+        "type": "kubernetes-cluster",
+        "label": "GKE Regional Cluster",
+        "zone": "Compute",
+        "cost": "$220/mo",
+        "gcpService": "Google Kubernetes Engine",
+        "specs": "Autopilot, 3 zones, 6-12 nodes, n2d-standard-2, Confidential VMs",
+        "features": ["Workload Identity", "Binary Authorization", "Shielded Nodes", "Confidential Nodes (AMD SEV)", "Private Cluster", "CMEK Encryption"],
+        "encryption": "CMEK + Confidential Computing",
+        "authentication": "Workload Identity"
+      }
+    },
+    {
+      "id": "asm-1",
+      "type": "custom",
+      "position": {"x": 400, "y": 440},
+      "data": {
+        "type": "service-mesh",
+        "label": "Anthos Service Mesh",
+        "zone": "Network",
+        "cost": "$50/mo",
+        "gcpService": "Anthos Service Mesh",
+        "specs": "Managed Istio, automatic mTLS pod-to-pod, zero-trust networking",
+        "features": ["mTLS Everywhere", "Zero-Trust Networking", "Authorization Policies", "Certificate Automation"],
+        "encryption": "mTLS (TLS 1.3)",
+        "authentication": "mTLS certificates"
+      }
+    },
+    {
+      "id": "policy-1",
+      "type": "custom",
+      "position": {"x": 700, "y": 440},
+      "data": {
+        "type": "security-service",
+        "label": "Policy Controller",
+        "zone": "Security",
+        "cost": "$0 (included)",
+        "gcpService": "Anthos Config Management",
+        "specs": "OPA-based, Pod Security Standards restricted profile",
+        "features": ["Pod Security Standards", "OPA Policy Enforcement", "Admission Control"],
+        "encryption": "N/A",
+        "authentication": "N/A"
+      }
+    },
+    {
+      "id": "cloudsql-1",
+      "type": "custom",
+      "position": {"x": 100, "y": 570},
+      "data": {
+        "type": "database",
+        "label": "Cloud SQL PostgreSQL HA",
+        "zone": "Data",
+        "cost": "$260/mo",
+        "gcpService": "Cloud SQL",
+        "specs": "PostgreSQL 16, db-custom-2-8192, HA, 1 read replica, PITR",
+        "features": ["CMEK Encryption", "Automated Backups", "PITR", "SSL/TLS Required", "Private IP Only", "IAM Authentication"],
+        "encryption": "CMEK + TLS 1.3",
+        "authentication": "IAM + SSL"
+      }
+    },
+    {
+      "id": "sqlproxy-1",
+      "type": "custom",
+      "position": {"x": 400, "y": 570},
+      "data": {
+        "type": "proxy",
+        "label": "Cloud SQL Auth Proxy",
+        "zone": "Data",
+        "cost": "$0 (included)",
+        "gcpService": "Cloud SQL Proxy",
+        "specs": "Sidecar proxy, IAM authentication, automatic TLS",
+        "features": ["IAM Authentication", "Automatic TLS", "No Password Exposure", "Workload Identity Integration"],
+        "encryption": "TLS 1.3",
+        "authentication": "IAM (Workload Identity)"
+      }
+    },
+    {
+      "id": "redis-1",
+      "type": "custom",
+      "position": {"x": 700, "y": 570},
+      "data": {
+        "type": "cache",
+        "label": "Memorystore Redis HA",
+        "zone": "Data",
+        "cost": "$115/mo",
+        "gcpService": "Memorystore for Redis",
+        "specs": "Redis 7.x, Standard Tier, 5GB, 1 replica, HA",
+        "features": ["CMEK Encryption", "TLS in-transit", "AUTH enabled", "Private IP only", "Automatic Failover"],
+        "encryption": "CMEK + TLS 1.2",
+        "authentication": "Redis AUTH"
+      }
+    },
+    {
+      "id": "storage-1",
+      "type": "custom",
+      "position": {"x": 100, "y": 700},
+      "data": {
+        "type": "object-storage",
+        "label": "Cloud Storage",
+        "zone": "Data",
+        "cost": "$23/mo",
+        "gcpService": "Cloud Storage",
+        "specs": "STANDARD class, us-central1, versioning, lifecycle policies",
+        "features": ["CMEK Encryption", "Versioning", "Uniform Bucket-Level Access", "Lifecycle Policies"],
+        "encryption": "CMEK",
+        "authentication": "IAM (Workload Identity)"
+      }
+    },
+    {
+      "id": "kms-1",
+      "type": "custom",
+      "position": {"x": 400, "y": 700},
+      "data": {
+        "type": "key-management",
+        "label": "Cloud KMS",
+        "zone": "Security",
+        "cost": "$1/mo",
+        "gcpService": "Cloud Key Management Service",
+        "specs": "5 keys, 90-day rotation, SOFTWARE protection",
+        "features": ["CMEK", "Automatic Rotation", "Key Access Logging", "IAM Policies"],
+        "encryption": "HSM (optional)",
+        "authentication": "IAM"
+      }
+    },
+    {
+      "id": "secrets-1",
+      "type": "custom",
+      "position": {"x": 700, "y": 700},
+      "data": {
+        "type": "secrets-vault",
+        "label": "Secret Manager",
+        "zone": "Security",
+        "cost": "$1/mo",
+        "gcpService": "Secret Manager",
+        "specs": "4 secrets, CMEK encryption, 90-day rotation, version control",
+        "features": ["CMEK Encryption", "Automatic Rotation", "Version Control", "IAM Access Control", "Audit Logging"],
+        "encryption": "CMEK",
+        "authentication": "IAM (Workload Identity)"
+      }
+    },
+    {
+      "id": "endpoints-1",
+      "type": "custom",
+      "position": {"x": 100, "y": 830},
+      "data": {
+        "type": "api-gateway",
+        "label": "Cloud Endpoints",
+        "zone": "API Layer",
+        "cost": "$35/mo",
+        "gcpService": "Cloud Endpoints",
+        "specs": "ESPv2 sidecar in GKE, OpenAPI 3.0, rate limiting 100 req/min",
+        "features": ["API Key Validation", "JWT Authentication", "Rate Limiting", "Request/Response Logging"],
+        "encryption": "TLS 1.3",
+        "authentication": "Firebase Auth + JWT"
+      }
+    },
+    {
+      "id": "cloudrun-1",
+      "type": "custom",
+      "position": {"x": 400, "y": 830},
+      "data": {
+        "type": "container-service",
+        "label": "Cloud Run Workers",
+        "zone": "Compute",
+        "cost": "$45/mo",
+        "gcpService": "Cloud Run",
+        "specs": "2 vCPU, 4GB RAM, 0-10 instances, serverless, VPC-SC tested",
+        "features": ["Binary Authorization", "VPC Connector", "CMEK Encryption", "Workload Identity", "VPC-SC Compatible"],
+        "encryption": "CMEK",
+        "authentication": "Workload Identity + IAM"
+      }
+    },
+    {
+      "id": "nat-1",
+      "type": "custom",
+      "position": {"x": 700, "y": 830},
+      "data": {
+        "type": "nat-gateway",
+        "label": "Cloud NAT",
+        "zone": "Network",
+        "cost": "$10/mo",
+        "gcpService": "Cloud NAT",
+        "specs": "Regional NAT gateway, us-central1, auto IP allocation, full logging",
+        "features": ["Static IP Assignment", "Connection Logging", "Egress Tracking"],
+        "encryption": "N/A",
+        "authentication": "N/A"
+      }
+    },
+    {
+      "id": "egress-proxy-1",
+      "type": "custom",
+      "position": {"x": 100, "y": 960},
+      "data": {
+        "type": "proxy",
+        "label": "Secure Web Proxy",
+        "zone": "Network",
+        "cost": "$15/mo",
+        "gcpService": "Secure Web Proxy (Cloud Run)",
+        "specs": "Cloud Run Squid proxy, FQDN allow-listing, 0-3 instances",
+        "features": ["FQDN Allow-listing", "Request Logging", "IAM Authentication", "Block Unknown Destinations"],
+        "encryption": "TLS 1.3",
+        "authentication": "Workload Identity"
+      }
+    },
+    {
+      "id": "cas-1",
+      "type": "custom",
+      "position": {"x": 400, "y": 960},
+      "data": {
+        "type": "certificate-authority",
+        "label": "Certificate Authority Service",
+        "zone": "Security",
+        "cost": "$200/mo",
+        "gcpService": "Certificate Authority Service",
+        "specs": "DevOps tier, RSA 4096, 90-day cert lifetime, auto-renewal",
+        "features": ["Private CA", "Automatic Certificate Rotation", "HSM-backed (optional)"],
+        "encryption": "RSA 4096",
+        "authentication": "IAM"
+      }
+    },
+    {
+      "id": "identity-1",
+      "type": "custom",
+      "position": {"x": 700, "y": 960},
+      "data": {
+        "type": "identity-service",
+        "label": "Cloud Identity",
+        "zone": "Security",
+        "cost": "$60/mo",
+        "gcpService": "Cloud Identity Premium",
+        "specs": "10 users, SSO, MFA enforced, 8-hour session timeout",
+        "features": ["SSO", "MFA Enforced", "Password Policies", "Session Management"],
+        "encryption": "N/A",
+        "authentication": "SSO + MFA"
+      }
+    },
+    {
+      "id": "scc-1",
+      "type": "custom",
+      "position": {"x": 100, "y": 1090},
+      "data": {
+        "type": "monitoring-service",
+        "label": "Security Command Center Premium",
+        "zone": "Security",
+        "cost": "$150/mo",
+        "gcpService": "Security Command Center",
+        "specs": "Premium tier, 10 alert rules, Event/Container Threat Detection",
+        "features": ["Threat Detection", "Vulnerability Scanning", "Compliance Monitoring", "Real-time Alerts"],
+        "encryption": "N/A",
+        "authentication": "IAM"
+      }
+    },
+    {
+      "id": "binauth-1",
+      "type": "custom",
+      "position": {"x": 400, "y": 1090},
+      "data": {
+        "type": "security-service",
+        "label": "Binary Authorization",
+        "zone": "Security",
+        "cost": "$0 (included)",
+        "gcpService": "Binary Authorization",
+        "specs": "Container image attestation, vulnerability scanning, DENY_ALL default",
+        "features": ["Image Signing", "Vulnerability Scanning", "Attestation Required", "Registry Allow-listing"],
+        "encryption": "N/A",
+        "authentication": "Certificate-based attestation"
+      }
+    },
+    {
+      "id": "dlp-1",
+      "type": "custom",
+      "position": {"x": 700, "y": 1090},
+      "data": {
+        "type": "security-service",
+        "label": "Cloud DLP API",
+        "zone": "Security",
+        "cost": "$15/mo",
+        "gcpService": "Cloud Data Loss Prevention",
+        "specs": "PII/PHI detection, masking/redaction, daily scans",
+        "features": ["PII Detection", "Data Classification", "Automatic Redaction"],
+        "encryption": "N/A",
+        "authentication": "IAM"
+      }
+    },
+    {
+      "id": "logging-1",
+      "type": "custom",
+      "position": {"x": 100, "y": 1220},
+      "data": {
+        "type": "logging-service",
+        "label": "Cloud Logging",
+        "zone": "Observability",
+        "cost": "$25/mo",
+        "gcpService": "Cloud Logging",
+        "specs": "30-day retention, dual sinks: BigQuery (90d) + Archive (7y WORM)",
+        "features": ["Immutable WORM Storage", "Bucket Lock (7 years)", "Dual Sink Redundancy", "CMEK Encryption", "Access Logging", "Audit Trail"],
+        "encryption": "CMEK",
+        "authentication": "IAM"
+      }
+    },
+    {
+      "id": "monitoring-1",
+      "type": "custom",
+      "position": {"x": 400, "y": 1220},
+      "data": {
+        "type": "monitoring-service",
+        "label": "Cloud Monitoring",
+        "zone": "Observability",
+        "cost": "$15/mo",
+        "gcpService": "Cloud Monitoring",
+        "specs": "3 dashboards, 5 alert policies, uptime checks every 1 min",
+        "features": ["Performance Monitoring", "Alerting", "SLO Tracking"],
+        "encryption": "N/A",
+        "authentication": "IAM"
+      }
+    },
+    {
+      "id": "firebaseauth-1",
+      "type": "custom",
+      "position": {"x": 700, "y": 1220},
+      "data": {
+        "type": "identity-service",
+        "label": "Firebase Authentication",
+        "zone": "Application",
+        "cost": "$0 (free tier)",
+        "gcpService": "Firebase Authentication",
+        "specs": "Google/Email/SAML SSO, 1h token expiry, token lifecycle controls",
+        "features": ["OAuth 2.0", "JWT Tokens", "Session Management", "Token Lifecycle Controls", "MFA Support"],
+        "encryption": "N/A",
+        "authentication": "OAuth 2.0 + JWT"
+      }
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "cdn-1", "target": "lb-1", "label": "HTTPS", "data": {"protocol": "HTTPS", "port": "443", "encryption": "TLS 1.3", "note": "CDN enabled on LB backend"}},
+    {"id": "e2", "source": "lb-1", "target": "endpoints-1", "label": "HTTPS", "data": {"protocol": "HTTPS", "port": "443", "encryption": "TLS 1.3", "note": "Cloud Armor policy attached to LB"}},
+    {"id": "e3", "source": "endpoints-1", "target": "gke-1", "label": "HTTPS", "data": {"protocol": "HTTPS", "port": "443", "encryption": "TLS 1.3"}},
+    {"id": "e4", "source": "gke-1", "target": "asm-1", "label": "mTLS", "data": {"protocol": "mTLS", "port": "N/A", "encryption": "mTLS (TLS 1.3)", "note": "Pod-to-pod mTLS within mesh"}},
+    {"id": "e5", "source": "gke-1", "target": "sqlproxy-1", "label": "TLS+IAM", "data": {"protocol": "TLS", "port": "5432", "encryption": "TLS 1.3", "authentication": "Workload Identity", "note": "Workload Identity authentication"}},
+    {"id": "e6", "source": "sqlproxy-1", "target": "cloudsql-1", "label": "TLS", "data": {"protocol": "TLS", "port": "5432", "encryption": "TLS 1.3"}},
+    {"id": "e7", "source": "gke-1", "target": "redis-1", "label": "TLS+AUTH", "data": {"protocol": "TLS", "port": "6379", "encryption": "TLS 1.2", "authentication": "Redis AUTH", "note": "Private IP + TLS + Redis AUTH"}},
+    {"id": "e8", "source": "gke-1", "target": "storage-1", "label": "TLS+IAM", "data": {"protocol": "HTTPS", "port": "443", "encryption": "TLS 1.3", "authentication": "Workload Identity", "note": "Workload Identity + HTTPS"}},
+    {"id": "e9", "source": "gke-1", "target": "cloudrun-1", "label": "HTTPS+IAM", "data": {"protocol": "HTTPS", "port": "443", "encryption": "TLS 1.3", "authentication": "IAM", "note": "Service-to-service auth via IAM"}},
+    {"id": "e10", "source": "cloudrun-1", "target": "egress-proxy-1", "label": "HTTP (proxy)", "data": {"protocol": "HTTP", "port": "3128", "encryption": "None", "note": "Internal proxy connection"}},
+    {"id": "e11", "source": "egress-proxy-1", "target": "nat-1", "label": "HTTPS", "data": {"protocol": "HTTPS", "port": "443", "encryption": "TLS 1.3"}},
+    {"id": "e12", "source": "nat-1", "target": "internet", "label": "HTTPS", "data": {"protocol": "HTTPS", "port": "443", "encryption": "TLS 1.3", "note": "FQDN allow-listed via egress proxy"}},
+    {"id": "e13", "source": "gke-1", "target": "secrets-1", "label": "gRPC/TLS+IAM", "data": {"protocol": "gRPC/TLS", "port": "443", "encryption": "TLS 1.3", "authentication": "Workload Identity"}},
+    {"id": "e14", "source": "cloudrun-1", "target": "secrets-1", "label": "gRPC/TLS+IAM", "data": {"protocol": "gRPC/TLS", "port": "443", "encryption": "TLS 1.3", "authentication": "Workload Identity"}},
+    {"id": "e15", "source": "gke-1", "target": "binauth-1", "label": "gRPC", "data": {"protocol": "gRPC", "port": "443", "encryption": "TLS 1.3", "note": "Admission webhook"}},
+    {"id": "e16", "source": "endpoints-1", "target": "firebaseauth-1", "label": "JWT", "data": {"protocol": "HTTPS", "port": "443", "encryption": "TLS 1.3", "authentication": "JWT validation"}}
+  ],
+  "version": "1.5.0"
+}
