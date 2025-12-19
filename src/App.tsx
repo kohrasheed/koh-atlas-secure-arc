@@ -116,6 +116,7 @@ import {
   ValidationResult, 
   ValidationIssue 
 } from '@/lib/architectural-validator';
+import { AttackSimulation } from '@/components/AttackSimulation';
 
 // Protocol configurations with common ports
 const protocolConfigs: Record<string, ProtocolConfig> = {
@@ -4452,6 +4453,10 @@ The connection between ${nodeDetails[0]?.label || 'Component 1'} and ${nodeDetai
               <HardDrives className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="hidden lg:inline truncate">Backup</span>
             </TabsTrigger>
+            <TabsTrigger value="attack-sim" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Target className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="hidden lg:inline truncate">Threats</span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="components" className="flex-1 min-h-0 px-4 pb-4">
@@ -5827,6 +5832,17 @@ ${validationResult.issues.map(issue => `
                   findings={findings}
                   attackPaths={attackPaths}
                   onLoadBackup={handleLoadBackup}
+                />
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="attack-sim" className="flex-1 min-h-0 px-4 pb-4">
+            <ScrollArea className="h-full">
+              <div className="py-2">
+                <AttackSimulation
+                  nodes={nodes}
+                  edges={edges}
                 />
               </div>
             </ScrollArea>
