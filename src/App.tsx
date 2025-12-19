@@ -4425,37 +4425,37 @@ The connection between ${nodeDetails[0]?.label || 'Component 1'} and ${nodeDetai
         {/* Content Tabs */}
         <Tabs defaultValue="components" className="flex-1 flex flex-col min-h-0">
           <TabsList className="flex flex-wrap w-full mx-4 mt-2 mb-2 flex-shrink-0 p-1 bg-muted/30 h-auto">
-            <TabsTrigger value="components" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="components" className="flex-1 min-w-0 text-[10px] sm:text-xs py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Palette className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden lg:inline truncate">Components</span>
+              <span className="hidden sm:inline truncate">Components</span>
             </TabsTrigger>
-            <TabsTrigger value="properties" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="properties" className="flex-1 min-w-0 text-[10px] sm:text-xs py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <ListBullets className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden lg:inline truncate">Properties</span>
+              <span className="hidden sm:inline truncate">Properties</span>
             </TabsTrigger>
-            <TabsTrigger value="analysis" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="analysis" className="flex-1 min-w-0 text-[10px] sm:text-xs py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Shield className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden lg:inline truncate">Analysis</span>
+              <span className="hidden sm:inline truncate">Analysis</span>
             </TabsTrigger>
-            <TabsTrigger value="validation" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="validation" className="flex-1 min-w-0 text-[10px] sm:text-xs py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden lg:inline truncate">Validation</span>
+              <span className="hidden sm:inline truncate">Validation</span>
             </TabsTrigger>
-            <TabsTrigger value="compliance" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="compliance" className="flex-1 min-w-0 text-[10px] sm:text-xs py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Scales className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden lg:inline truncate">Compliance</span>
+              <span className="hidden sm:inline truncate">Compliance</span>
             </TabsTrigger>
-            <TabsTrigger value="metrics" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="metrics" className="flex-1 min-w-0 text-[10px] sm:text-xs py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <ChartBar className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden lg:inline truncate">Metrics</span>
+              <span className="hidden sm:inline truncate">Metrics</span>
             </TabsTrigger>
-            <TabsTrigger value="backup" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="backup" className="flex-1 min-w-0 text-[10px] sm:text-xs py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <HardDrives className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden lg:inline truncate">Backup</span>
+              <span className="hidden sm:inline truncate">Backup</span>
             </TabsTrigger>
-            <TabsTrigger value="attack-sim" className="flex-1 min-w-0 text-[10px] py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="attack-sim" className="flex-1 min-w-0 text-[10px] sm:text-xs py-2 px-1 flex items-center justify-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Target className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden lg:inline truncate">Threats</span>
+              <span className="hidden sm:inline truncate">Threats</span>
             </TabsTrigger>
           </TabsList>
           

@@ -249,211 +249,299 @@ export function AttackSimulation({ nodes, edges, onNodesChange, onEdgesChange }:
   const abstractionLevelColor = abstractionLevel === 'full' ? 'text-yellow-600' : 'text-green-600';
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Attack Simulation & Threat Modeling
-            </CardTitle>
-            <CardDescription>
-              Discover potential attack paths and STRIDE threats in your architecture
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Select value={abstractionLevel} onValueChange={(v) => setAbstractionLevel(v as AbstractionLevel)}>
-              <SelectTrigger className="w-[180px]">
-                <div className="flex items-center gap-2">
-                  <span className={abstractionLevelIcon.props.className + ' ' + abstractionLevelColor}>
-                    {abstractionLevelIcon}
-                  </span>
-                  <SelectValue />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="confidential">
+    <div className="w-full space-y-4">
+      {/* Header Card with Actions */}
+      <Card className="border-2">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Shield className="h-6 w-6 text-primary" />
+                Attack Simulation & Threat Modeling
+              </CardTitle>
+              <CardDescription className="mt-1.5">
+                Discover potential attack paths and STRIDE threats in your architecture
+              </CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <Select value={abstractionLevel} onValueChange={(v) => setAbstractionLevel(v as AbstractionLevel)}>
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <div className="flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-green-600" />
-                    <span>Confidential</span>
+                    <span className={abstractionLevelIcon.props.className + ' ' + abstractionLevelColor}>
+                      {abstractionLevelIcon}
+                    </span>
+                    <SelectValue />
                   </div>
-                </SelectItem>
-                <SelectItem value="abstracted">
-                  <div className="flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-blue-600" />
-                    <span>Abstracted</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="full">
-                  <div className="flex items-center gap-2">
-                    <Unlock className="h-4 w-4 text-yellow-600" />
-                    <span>Full Details</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Button 
-              onClick={runSimulation} 
-              disabled={isRunning || nodes.length === 0}
-              className="gap-2"
-            >
-              {isRunning ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Running...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Run Simulation
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        {!result && !isRunning && (
-          <Alert>
-            <Shield className="h-4 w-4" />
-            <AlertDescription>
-              Click "Run Simulation" to discover attack paths, analyze STRIDE threats, and get AI-powered security recommendations.
-              {nodes.length === 0 && " (Import or create an architecture first)"}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {isRunning && (
-          <div className="space-y-4">
-            <div className="text-center py-8">
-              <div className="inline-flex items-center gap-3 text-lg">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                <span>Analyzing architecture security...</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                Discovering attack paths, performing STRIDE analysis, and consulting Claude AI
-              </p>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="confidential">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-green-600" />
+                      <span>Confidential</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="abstracted">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-blue-600" />
+                      <span>Abstracted</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="full">
+                    <div className="flex items-center gap-2">
+                      <Unlock className="h-4 w-4 text-yellow-600" />
+                      <span>Full Details</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={runSimulation} 
+                disabled={isRunning || nodes.length === 0}
+                size="lg"
+                className="gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
+              >
+                {isRunning ? (
+                  <>
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5" />
+                    Run Simulation
+                  </>
+                )}
+              </Button>
             </div>
           </div>
+        </CardHeader>
+      </Card>
+
+      {/* Empty State - Hero Section */}
+      {!result && !isRunning && (
+        <Card className="border-2 border-dashed bg-gradient-to-br from-background to-muted/20">
+          <CardContent className="pt-12 pb-12">
+            <div className="text-center max-w-2xl mx-auto space-y-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10">
+                <Shield className="h-10 w-10 text-primary" />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-2xl font-semibold">Security Threat Analysis</h3>
+                <p className="text-muted-foreground">
+                  {nodes.length === 0 
+                    ? "Import or create an architecture to begin security analysis"
+                    : "Click 'Run Simulation' to discover vulnerabilities and attack vectors"}
+                </p>
+              </div>
+
+              {nodes.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                  <div className="p-4 rounded-lg border bg-card">
+                    <div className="flex items-center gap-2 text-blue-600 mb-2">
+                      <TrendingUp className="h-5 w-5" />
+                      <span className="font-semibold">Attack Paths</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Discover potential routes attackers could take</p>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg border bg-card">
+                    <div className="flex items-center gap-2 text-purple-600 mb-2">
+                      <AlertTriangle className="h-5 w-5" />
+                      <span className="font-semibold">STRIDE Analysis</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Categorize threats across 6 categories</p>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg border bg-card">
+                    <div className="flex items-center gap-2 text-green-600 mb-2">
+                      <Sparkles className="h-5 w-5" />
+                      <span className="font-semibold">AI Insights</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Get Claude AI-powered recommendations</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+        {isRunning && (
+          <Card className="border-2 border-primary/50 bg-primary/5">
+            <CardContent className="pt-8 pb-8">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="inline-flex items-center gap-4 text-xl font-medium">
+                    <div className="relative">
+                      <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                      <div className="absolute inset-0 h-12 w-12 animate-ping rounded-full border-4 border-primary opacity-20" />
+                    </div>
+                    <span>Analyzing architecture security...</span>
+                  </div>
+                </div>
+                
+                <div className="max-w-md mx-auto space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span>Discovering attack paths</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent flex-shrink-0" />
+                    <span>Performing STRIDE threat analysis</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="h-4 w-4 rounded-full border-2 border-muted flex-shrink-0" />
+                    <span>Consulting Claude AI for vulnerabilities</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="h-4 w-4 rounded-full border-2 border-muted flex-shrink-0" />
+                    <span>Generating security report</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {result && (
-          <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as typeof selectedTab)}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="paths">
-                Attack Paths ({result.totalPaths})
-              </TabsTrigger>
-              <TabsTrigger value="stride">
-                STRIDE Analysis ({result.strideAnalysis.length})
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-6">
+            {/* Executive Summary Card */}
+            <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="space-y-1">
+                    <CardTitle className="text-3xl font-bold">
+                      Risk Score: {result.overallRiskScore}/100
+                    </CardTitle>
+                    <CardDescription className="text-base">
+                      Analysis of {result.totalPaths} attack path{result.totalPaths !== 1 ? 's' : ''} discovered
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {securityReport && (
+                      <Button 
+                        onClick={downloadReport} 
+                        variant="outline"
+                        className="gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download Report
+                      </Button>
+                    )}
+                    <Button 
+                      onClick={clearHighlight} 
+                      variant="outline"
+                      size="sm"
+                    >
+                      Clear Highlights
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <Card className="border-2 border-red-200 bg-red-50 dark:bg-red-950/20">
+                    <CardContent className="pt-6 pb-4">
+                      <div className="text-center space-y-1">
+                        <div className="text-3xl font-bold text-red-600">{result.criticalRisks.length}</div>
+                        <div className="text-sm font-medium text-red-700 dark:text-red-400">Critical</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-2 border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+                    <CardContent className="pt-6 pb-4">
+                      <div className="text-center space-y-1">
+                        <div className="text-3xl font-bold text-orange-600">{result.highRisks.length}</div>
+                        <div className="text-sm font-medium text-orange-700 dark:text-orange-400">High</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-2 border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
+                    <CardContent className="pt-6 pb-4">
+                      <div className="text-center space-y-1">
+                        <div className="text-3xl font-bold text-yellow-600">{result.mediumRisks.length}</div>
+                        <div className="text-sm font-medium text-yellow-700 dark:text-yellow-400">Medium</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-2 border-green-200 bg-green-50 dark:bg-green-950/20">
+                    <CardContent className="pt-6 pb-4">
+                      <div className="text-center space-y-1">
+                        <div className="text-3xl font-bold text-green-600">{result.lowRisks.length}</div>
+                        <div className="text-sm font-medium text-green-700 dark:text-green-400">Low</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-            <TabsContent value="overview" className="space-y-4">
-              {/* Overall Risk Score */}
+            {/* Tabbed Details */}
+            <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as typeof selectedTab)}>
+              <TabsList className="grid w-full grid-cols-3 h-auto">
+                <TabsTrigger value="overview" className="text-sm py-2.5">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="paths" className="text-sm py-2.5">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Attack Paths ({result.totalPaths})
+                </TabsTrigger>
+                <TabsTrigger value="stride" className="text-sm py-2.5">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  STRIDE ({result.strideAnalysis.length})
+                </TabsTrigger>
+              </TabsList>
+
+            <TabsContent value="overview" className="space-y-4 mt-4">
+              {/* Top Recommendations */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Overall Risk Score</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    Top Security Recommendations
+                  </CardTitle>
+                  <CardDescription>
+                    Priority actions to improve your architecture security posture
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-4">
-                    <div className={`text-6xl font-bold ${getRiskColor(result.overallRiskScore).split(' ')[0]}`}>
-                      {result.overallRiskScore}
-                    </div>
-                    <div className="flex-1">
-                      <Progress value={result.overallRiskScore} className="h-3" />
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Based on {result.totalPaths} attack paths analyzed
-                      </p>
-                    </div>
+                  <div className="space-y-3">
+                    {result.recommendations.slice(0, 5).map((rec, idx) => (
+                      <div key={idx} className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
+                          {idx + 1}
+                        </div>
+                        <p className="text-sm flex-1">{rec}</p>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Risk Distribution */}
-              <div className="grid grid-cols-4 gap-4">
-                <Card className="border-red-200 bg-red-50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-red-900">Critical</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-red-600">{result.criticalRisks.length}</div>
-                    <p className="text-xs text-red-700">Score ≥ 70</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-orange-200 bg-orange-50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-orange-900">High</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-orange-600">{result.highRisks.length}</div>
-                    <p className="text-xs text-orange-700">Score 50-69</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-yellow-200 bg-yellow-50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-yellow-900">Medium</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-yellow-600">{result.mediumRisks.length}</div>
-                    <p className="text-xs text-yellow-700">Score 30-49</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-green-200 bg-green-50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-green-900">Low</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-green-600">{result.lowRisks.length}</div>
-                    <p className="text-xs text-green-700">Score &lt; 30</p>
-                  </CardContent>
-                </Card>
-              </div>
-
               {/* Claude AI Analysis */}
               {claudeAnalysis && (
-                <Card className="border-purple-200 bg-purple-50">
+                <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-background dark:from-purple-950/20 dark:to-background">
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-purple-600" />
                       AI Security Analysis
                     </CardTitle>
+                    <CardDescription>
+                      Advanced vulnerability detection powered by Claude
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm">{claudeAnalysis}</p>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <div className="whitespace-pre-wrap text-sm">{claudeAnalysis}</div>
+                    </div>
                   </CardContent>
                 </Card>
               )}
-
-              {/* Recommendations */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg">Security Recommendations</CardTitle>
-                  {securityReport && (
-                    <Button variant="outline" size="sm" onClick={downloadReport} className="gap-2">
-                      <Download className="h-4 w-4" />
-                      Download Report
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {result.recommendations.map((rec, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span>{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
             </TabsContent>
 
-            <TabsContent value="paths" className="space-y-3">
+            <TabsContent value="paths" className="space-y-3 mt-4">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-sm text-muted-foreground">
                   Click on a path to highlight it in the diagram
@@ -619,8 +707,8 @@ export function AttackSimulation({ nodes, edges, onNodesChange, onEdgesChange }:
               ))}
             </TabsContent>
           </Tabs>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }
