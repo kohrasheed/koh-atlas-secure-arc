@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Node, Edge, useReactFlow } from '@xyflow/react';
+import { Node, Edge } from '@xyflow/react';
 import { 
   discoverAttackPaths, 
   performSTRIDEAnalysis, 
@@ -38,9 +38,11 @@ import {
 interface AttackSimulationProps {
   nodes: Node[];
   edges: Edge[];
+  onNodesChange?: (nodes: Node[]) => void;
+  onEdgesChange?: (edges: Edge[]) => void;
 }
 
-export function AttackSimulation({ nodes, edges }: AttackSimulationProps) {
+export function AttackSimulation({ nodes, edges, onNodesChange, onEdgesChange }: AttackSimulationProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<AttackSimulationResult | null>(null);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
@@ -49,7 +51,6 @@ export function AttackSimulation({ nodes, edges }: AttackSimulationProps) {
   const [abstractionLevel, setAbstractionLevel] = useState<AbstractionLevel>('abstracted');
   const [claudeAnalysis, setClaudeAnalysis] = useState<string>('');
   const [securityReport, setSecurityReport] = useState<string>('');
-  const { setNodes, setEdges } = useReactFlow();
 
   const runSimulation = useCallback(async () => {
     if (nodes.length === 0) {
@@ -161,60 +162,62 @@ export function AttackSimulation({ nodes, edges }: AttackSimulationProps) {
   };
 
   const highlightAttackPath = (path: AttackPath) => {
+    if (!onNodesChange || !onEdgesChange) return;
+    
     // Highlight nodes and edges in the attack path
-    setNodes(prevNodes => 
-      prevNodes.map(node => ({
-        ...node,
-        style: {
-          ...node.style,
-          opacity: path.path.includes(node.id) ? 1 : 0.3,
-          border: path.path.includes(node.id) ? '3px solid #ef4444' : undefined
-        }
-      }))
-    );
+    const highlightedNodes = nodes.map(node => ({
+      ...node,
+      style: {
+        ...node.style,
+        opacity: path.path.includes(node.id) ? 1 : 0.3,
+        border: path.path.includes(node.id) ? '3px solid #ef4444' : undefined
+      }
+    }));
     
-    setEdges(prevEdges =>
-      prevEdges.map(edge => {
-        const sourceIndex = path.path.indexOf(edge.source);
-        const targetIndex = path.path.indexOf(edge.target);
-        const isInPath = sourceIndex !== -1 && targetIndex === sourceIndex + 1;
-        
-        return {
-          ...edge,
-          style: {
-            ...edge.style,
-            opacity: isInPath ? 1 : 0.3,
-            stroke: isInPath ? '#ef4444' : undefined,
-            strokeWidth: isInPath ? 3 : undefined
-          }
-        };
-      })
-    );
-  };
-
-  const clearHighlight = () => {
-    setNodes(prevNodes => 
-      prevNodes.map(node => ({
-        ...node,
-        style: {
-          ...node.style,
-          opacity: 1,
-          border: undefined
-        }
-      }))
-    );
-    
-    setEdges(prevEdges =>
-      prevEdges.map(edge => ({
+    const highlightedEdges = edges.map(edge => {
+      const sourceIndex = path.path.indexOf(edge.source);
+      const targetIndex = path.path.indexOf(edge.target);
+      const isInPath = sourceIndex !== -1 && targetIndex === sourceIndex + 1;
+      
+      return {
         ...edge,
         style: {
           ...edge.style,
-          opacity: 1,
-          stroke: undefined,
-          strokeWidth: undefined
+          opacity: isInPath ? 1 : 0.3,
+          stroke: isInPath ? '#ef4444' : undefined,
+          strokeWidth: isInPath ? 3 : undefined
         }
-      }))
-    );
+      };
+    });
+    
+    onNodesChange(highlightedNodes);
+    onEdgesChange(highlightedEdges);
+  };
+
+  const clearHighlight = () => {
+    if (!onNodesChange || !onEdgesChange) return;
+    
+    const clearedNodes = nodes.map(node => ({
+      ...node,
+      style: {
+        ...node.style,
+        opacity: 1,
+        border: undefined
+      }
+    }));
+    
+    const clearedEdges = edges.map(edge => ({
+      ...edge,
+      style: {
+        ...edge.style,
+        opacity: 1,
+        stroke: undefined,
+        strokeWidth: undefined
+      }
+    }));
+    
+    onNodesChange(clearedNodes);
+    onEdgesChange(clearedEdges);
   };
 
   const downloadReport = () => {

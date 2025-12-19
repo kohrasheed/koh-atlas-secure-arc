@@ -5843,6 +5843,8 @@ ${validationResult.issues.map(issue => `
                 <AttackSimulation
                   nodes={nodes}
                   edges={edges}
+                  onNodesChange={setNodes}
+                  onEdgesChange={setEdges}
                 />
               </div>
             </ScrollArea>
