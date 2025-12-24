@@ -4,24 +4,21 @@ echo "🔍 Checking AI Recommendations Setup..."
 echo "======================================="
 echo ""
 
-# 1. Check .env file
-echo "1️⃣ Checking .env file..."
-if [ -f .env ]; then
-  echo "   ✅ .env file exists"
-  if grep -q "VITE_ANTHROPIC_API_KEY" .env 2>/dev/null; then
-    KEY_VALUE=$(grep "VITE_ANTHROPIC_API_KEY" .env | cut -d'=' -f2)
-    if [ -n "$KEY_VALUE" ] && [ "$KEY_VALUE" != "your-key-here" ]; then
-      KEY_PREFIX="${KEY_VALUE:0:10}"
-      KEY_SUFFIX="${KEY_VALUE: -10}"
-      echo "   ✅ API key configured: ${KEY_PREFIX}...${KEY_SUFFIX}"
-    else
-      echo "   ❌ API key not set or using placeholder"
-    fi
+# 1. Check render proxy endpoint
+echo "1️⃣ Checking Render proxy endpoint..."
+RENDER_URL="https://koh-atlas-secure-arc.onrender.com/api/anthropic"
+echo "   Testing: $RENDER_URL"
+
+if command -v curl &> /dev/null; then
+  # Test with OPTIONS request (CORS preflight)
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS "$RENDER_URL" 2>/dev/null)
+  if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "405" ]; then
+    echo "   ✅ Render proxy is accessible (HTTP $HTTP_CODE)"
   else
-    echo "   ❌ VITE_ANTHROPIC_API_KEY not found in .env"
+    echo "   ⚠️  Render proxy returned HTTP $HTTP_CODE"
   fi
 else
-  echo "   ❌ .env file not found"
+  echo "   ⚠️  curl not available, skipping proxy test"
 fi
 echo ""
 
@@ -51,14 +48,8 @@ echo "4️⃣ Checking dependencies..."
 if [ -f package.json ]; then
   echo "   ✅ package.json exists"
   
-  # Check if @anthropic-ai/sdk is installed
-  if npm list @anthropic-ai/sdk &> /dev/null; then
-    SDK_VERSION=$(npm list @anthropic-ai/sdk 2>/dev/null | grep @anthropic-ai/sdk | head -1)
-    echo "   ✅ Anthropic SDK installed: $SDK_VERSION"
-  else
-    echo "   ⚠️  Anthropic SDK not installed"
-    echo "   📦 Run: npm install @anthropic-ai/sdk"
-  fi
+  # Note: @anthropic-ai/sdk not needed - using render proxy
+  echo "   ℹ️  Using Render proxy (no SDK needed)"
   
   # Check React
   if npm list react &> /dev/null; then
@@ -80,24 +71,20 @@ echo ""
 echo "5️⃣ Checking TypeScript configuration..."
 if [ -f src/vite-env.d.ts ]; then
   echo "   ✅ vite-env.d.ts exists"
-  if grep -q "VITE_ANTHROPIC_API_KEY" src/vite-env.d.ts 2>/dev/null; then
-    echo "   ✅ Environment types configured"
-  else
-    echo "   ⚠️  Need to add VITE_ANTHROPIC_API_KEY type"
-  fi
+  echo "   ℹ️  No environment variables needed (using proxy)"
 else
-  echo "   ⚠️  vite-env.d.ts not found"
+  echo "   ℹ️  vite-env.d.ts not required for proxy setup"
 fi
 echo ""
 
 # 6. Check network connectivity
-echo "6️⃣ Testing network access to Anthropic API..."
+echo "6️⃣ Testing network access to Render proxy..."
 if command -v curl &> /dev/null; then
-  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://api.anthropic.com/v1/messages -H "x-api-key: test" -H "anthropic-version: 2023-06-01" 2>/dev/null)
-  if [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "400" ]; then
-    echo "   ✅ Can reach Anthropic API (got $HTTP_CODE - expected for test key)"
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$RENDER_URL" -X POST -H "Content-Type: application/json" -d '{"test": true}' 2>/dev/null)
+  if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "500" ]; then
+    echo "   ✅ Can reach Render proxy (HTTP $HTTP_CODE)"
   else
-    echo "   ⚠️  Unusual response: HTTP $HTTP_CODE"
+    echo "   ⚠️  Unusual response from Render proxy: HTTP $HTTP_CODE"
   fi
 else
   echo "   ⚠️  curl not available, skipping network test"
@@ -111,6 +98,19 @@ if [ -f src/lib/security-utils.ts ]; then
 else
   echo "   ⚠️  security-utils.ts not found"
 fi
+
+# 8. Check render deployment files
+echo "8️⃣ Checking render deployment..."
+if [ -f render.yaml ]; then
+  echo "   ✅ render.yaml exists"
+  if [ -f api/anthropic.ts ]; then
+    echo "   ✅ Anthropic proxy endpoint configured"
+  else
+    echo "   ⚠️  Proxy endpoint file not found"
+  fi
+else
+  echo "   ⚠️  render.yaml not found"
+fi
 echo ""
 
 # Summary
@@ -121,14 +121,13 @@ echo "======================================="
 ERRORS=0
 WARNINGS=0
 
-if [ ! -f .env ] || ! grep -q "VITE_ANTHROPIC_API_KEY=sk-ant-" .env 2>/dev/null; then
-  echo "❌ API key not properly configured"
-  ERRORS=$((ERRORS + 1))
-fi
-
-if ! npm list @anthropic-ai/sdk &> /dev/null; then
-  echo "⚠️  Anthropic SDK needs installation"
-  WARNINGS=$((WARNINGS + 1))
+# Check if render proxy is accessible
+if command -v curl &> /dev/null; then
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS "$RENDER_URL" 2>/dev/null)
+  if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ] && [ "$HTTP_CODE" != "405" ]; then
+    echo "⚠️  Render proxy may not be accessible"
+    WARNINGS=$((WARNINGS + 1))
+  fi
 fi
 
 if ! grep -q "^\.env$" .gitignore 2>/dev/null; then
@@ -137,9 +136,10 @@ if ! grep -q "^\.env$" .gitignore 2>/dev/null; then
 fi
 
 if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
-  echo "✅ All checks passed! Ready to implement AI recommendations."
+  echo "✅ All checks passed! Ready to use AI recommendations via Render proxy."
   echo ""
-  echo "🚀 Next step: Run implementation script"
+  echo "🚀 Architecture uses secure Render proxy for Claude API"
+  echo "   No API keys needed in frontend"
 else
   echo ""
   echo "Found $ERRORS error(s) and $WARNINGS warning(s)"

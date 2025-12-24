@@ -1,11 +1,80 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { AttackPath, STRIDEAnalysis } from './attack-simulation';
 import { Node } from '@xyflow/react';
 
-const client = new Anthropic({
-  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+// Use render proxy endpoint for Claude API calls
+const PROXY_ENDPOINT = 'https://koh-atlas-secure-arc.onrender.com/api/anthropic';
+
+// Use the same model as AI recommendations for consistency
+const CLAUDE_MODEL = 'claude-sonnet-4-5-20250929';
+
+/**
+ * Call Claude API via proxy
+ */
+async function callClaudeAPI(messages: any[], maxTokens: number = 4096, temperature: number = 0.3) {
+  try {
+    console.log('[Claude API] Making request to:', PROXY_ENDPOINT);
+    console.log('[Claude API] Using model:', CLAUDE_MODEL);
+    
+    const response = await fetch(PROXY_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: maxTokens,
+        temperature,
+        messages
+      })
+    });
+
+    console.log('[Claude API] Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Claude API] Error response:', errorText);
+      throw new Error(`Claude API error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('[Claude API] Response received successfully');
+    return data;
+  } catch (error) {
+    console.error('[Claude API] Request failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Clean and parse JSON response from Claude
+ */
+function parseClaudeJSON(text: string): any {
+  try {
+    console.log('[Claude Parse] Original length:', text.length);
+    
+    // Remove markdown code blocks if present
+    let cleaned = text.trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.substring(7);
+    }
+    if (cleaned.startsWith('```')) {
+      cleaned = cleaned.substring(3);
+    }
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.substring(0, cleaned.length - 3);
+    }
+    cleaned = cleaned.trim();
+    
+    console.log('[Claude Parse] Cleaned length:', cleaned.length);
+    const parsed = JSON.parse(cleaned);
+    console.log('[Claude Parse] Successfully parsed JSON');
+    return parsed;
+  } catch (error) {
+    console.error('[Claude Parse] Failed to parse:', error);
+    console.error('[Claude Parse] Text was:', text.substring(0, 500));
+    throw new Error('Failed to parse Claude response as JSON');
+  }
+}
 
 /**
  * Abstraction level for Claude API calls
@@ -106,15 +175,10 @@ Format your response as JSON:
   "recommendations": ["recommendation 1", "recommendation 2", ...]
 }`;
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      temperature: 0.3,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    });
+    const response = await callClaudeAPI([{
+      role: 'user',
+      content: prompt
+    }], 4096, 0.3);
 
     const content = response.content[0];
     if (content.type !== 'text') {
@@ -122,7 +186,7 @@ Format your response as JSON:
     }
 
     // Parse Claude's response
-    const result = JSON.parse(content.text);
+    const result = parseClaudeJSON(content.text);
     
     // Reorder attack paths based on Claude's prioritization
     const prioritizedPaths = result.prioritizedPathIds
@@ -142,10 +206,14 @@ Format your response as JSON:
     };
   } catch (error) {
     console.error('Claude API analysis failed:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
     // Fallback to basic analysis
     return {
-      analysis: 'AI analysis unavailable. Showing basic attack path analysis.',
+      analysis: `AI analysis unavailable. Showing basic attack path analysis.\n\nError: ${error instanceof Error ? error.message : String(error)}`,
       prioritizedPaths: attackPaths,
       additionalVulnerabilities: [],
       recommendations: [
@@ -205,22 +273,17 @@ Format response as JSON:
   "recommendations": ["recommendation 1", ...]
 }`;
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      temperature: 0.3,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    });
+    const response = await callClaudeAPI([{
+      role: 'user',
+      content: prompt
+    }], 4096, 0.3);
 
     const content = response.content[0];
     if (content.type !== 'text') {
       throw new Error('Unexpected response type from Claude API');
     }
 
-    const result = JSON.parse(content.text);
+    const result = parseClaudeJSON(content.text);
     
     return {
       analysis: result.analysis,
@@ -281,15 +344,10 @@ Create a professional security assessment report in Markdown format with:
 
 Keep it concise and actionable.`;
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8192,
-      temperature: 0.5,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    });
+    const response = await callClaudeAPI([{
+      role: 'user',
+      content: prompt
+    }], 8192, 0.5);
 
     const content = response.content[0];
     if (content.type !== 'text') {
